@@ -1,0 +1,315 @@
+#!/bin/busybox sh
+# /init of the rescue system (rescue/mkrescue.sh, docs/SICHERUNG.md#rettungssystem).
+# Runs under busybox sh, in RAM only (fastboot boot), mounts no partition and provides a USB
+# network at 10.15.19.82 (NCM, DHCP for the PC) with SSH for root. plinius-boot places the
+# key in /root/.ssh/authorized_keys via a second cpio archive.
+# Interface to plinius-boot: /bin/plinius-partlinks, /bin/plinius-reboot, /dev/disk/by-partlabel,
+# /etc/plinius-rescue-serial, /run/plinius-rescue-starting, the IP address and the USB IDs.
+# Keep them stable.
+#
+# Resilience: PID 1 only mounts, starts four independent jobs and then waits for signals, so a
+# failing or hanging step never ends PID 1 (kernel panic) and never blocks the others:
+#   modules  load the vendor modules, wait for the block devices, create the partition links
+#   usb      USB network as soon as a device controller appears (no time limit)
+#   display  logo and status on the screen (plinius-splash), if there is a display
+#   ssh      dropbear, restarted whenever it exits
+# Every step is logged to the kernel log and to /run/plinius-rescue.log (readable over ssh).
+# Tests (rescue/test-rescue.sh, QEMU has no USB device controller): PLINIUS_RESCUE_NETDEV=eth0 on
+# the kernel command line puts the address on that interface instead of a USB gadget.
+
+/bin/busybox --install -s /bin
+export PATH=/bin:/usr/bin HOME=/root
+
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+# Android GKI kernels (Volla OS on the Plinius) have no devtmpfs, Android's init creates the nodes
+# itself. Then /dev is a tmpfs: the basic nodes by hand, the rest from mdev, whose netlink daemon
+# also catches UFS and the SD card, which appear seconds later. PLINIUS_RESCUE_NODEVTMPFS=1 on the
+# kernel command line forces this path (tests).
+if [ -z "$PLINIUS_RESCUE_NODEVTMPFS" ] && mount -t devtmpfs devtmpfs /dev 2>/dev/null; then
+	devfs=devtmpfs
+else
+	devfs=mdev
+	mount -t tmpfs -o mode=0755,nosuid tmpfs /dev
+	mknod -m 600 /dev/console c 5 1
+	mknod -m 666 /dev/null c 1 3
+	mknod -m 666 /dev/zero c 1 5
+	mknod -m 666 /dev/full c 1 7
+	mknod -m 666 /dev/random c 1 8
+	mknod -m 666 /dev/urandom c 1 9
+	mknod -m 600 /dev/kmsg c 1 11
+	mknod -m 666 /dev/tty c 5 0
+	ln -s pts/ptmx /dev/ptmx
+	ln -s /proc/self/fd /dev/fd
+	ln -s /proc/self/fd/0 /dev/stdin
+	ln -s /proc/self/fd/1 /dev/stdout
+	ln -s /proc/self/fd/2 /dev/stderr
+	# Daemon first, then the scan, so that no device falls between the two
+	mdev -d
+	mdev -s
+fi
+mkdir -p /dev/pts
+mount -t devpts devpts /dev/pts
+mount -t tmpfs tmpfs /tmp
+mount -t tmpfs tmpfs /run
+mount -t configfs configfs /sys/kernel/config 2>/dev/null
+# Crash logs of the previous boot (ramoops), readable over ssh
+mount -t pstore pstore /sys/fs/pstore 2>/dev/null
+
+# Messages go to the kernel log (dmesg; after a crash, pstore). By default the kernel keeps only
+# about 10 lines per 5 s from user space and drops the rest.
+echo on > /proc/sys/kernel/printk_devkmsg 2>/dev/null
+# A failed redirection of exec would end the shell, so only if the device is there
+[ -w /dev/kmsg ] && exec >/dev/kmsg 2>&1
+log() {
+	echo "plinius-rescue: $*"
+	echo "$(cut -d' ' -f1 /proc/uptime) $*" >> /run/plinius-rescue.log
+}
+log "start (/dev: $devfs)"
+# Removed once the partition links are complete; plinius-boot waits for it before listing
+touch /run/plinius-rescue-starting
+
+# busybox reboot/halt/poweroff without -f signal PID 1 (TERM/USR1/USR2), as with busybox init.
+# A shell as PID 1 would otherwise ignore them. The kernel sends INT for Ctrl-Alt-Del.
+shutdown() {
+	log "$1"
+	kill -TERM -1 2>/dev/null
+	sync
+	case $1 in
+		reboot) plinius-reboot || reboot -f ;;
+		*) "$1" -f ;;
+	esac
+}
+trap 'shutdown reboot' TERM
+trap 'shutdown halt' USR1
+trap 'shutdown poweroff' USR2
+trap '' INT HUP
+
+# Partition names like udev (/dev/disk/by-partlabel). SD card first (detected by media type, not
+# by name: with eMMC both are mmcblk*), so that internal storage wins when names collide.
+# A separate program, because plinius-boot runs it again before every partition listing.
+cat > /bin/plinius-partlinks <<-'EOF'
+	#!/bin/sh
+	# Without devtmpfs a node may still be missing if mdev's daemon missed an event
+	grep -q '^devtmpfs /dev ' /proc/mounts || mdev -s
+	mkdir -p /dev/disk/by-partlabel
+	for pass in sd intern; do
+		for u in /sys/class/block/*/uevent; do
+			name=$(sed -n 's/^PARTNAME=//p' "$u")
+			dev=$(sed -n 's/^DEVNAME=//p' "$u")
+			[ -n "$name" ] && [ -n "$dev" ] || continue
+			disk=$(basename "$(dirname "$(readlink -f "${u%/uevent}")")")
+			medium=intern
+			[ "$(cat "/sys/block/$disk/device/type" 2>/dev/null)" = SD ] && medium=sd
+			[ $medium = $pass ] && ln -sfn "../../$dev" "/dev/disk/by-partlabel/$name"
+		done
+	done
+EOF
+chmod 755 /bin/plinius-partlinks
+
+# Serial number: passed in by plinius-boot from fastboot, else bootconfig (header v4), else cmdline
+serial=$(cat /etc/plinius-rescue-serial 2>/dev/null)
+[ -n "$serial" ] || serial=$(sed -n 's/^androidboot\.serialno = "\(.*\)"$/\1/p' /proc/bootconfig 2>/dev/null)
+[ -n "$serial" ] || serial=$(tr ' ' '\n' < /proc/cmdline | sed -n 's/^androidboot.serialno=//p' | head -n 1)
+# plinius-boot reads the serial number here (no getprop in the rescue system)
+[ -n "$serial" ] && echo "$serial" > /etc/plinius-rescue-serial
+
+# load_modules DIR LIST: insmod every module in LIST. The lists are not in dependency order
+# (Android's init resolves modules.dep itself), so failed modules are tried again until a pass
+# loads nothing new. Each module is logged before loading, so after a hang pstore shows which one.
+load_modules() {
+	dir=$1 todo=$(cat "$2") pass=1
+	while [ -n "$todo" ]; do
+		failed= loaded=0
+		for m in $todo; do
+			echo "plinius-rescue: insmod $m (pass $pass)"
+			case $m in /*) f=$m ;; *) f=$dir/$m ;; esac
+			if insmod "$f" 2>/dev/null; then loaded=$((loaded + 1)); else failed="$failed $m"; fi
+		done
+		log "$2 pass $pass: $loaded loaded"
+		[ $loaded -gt 0 ] || break
+		todo=$failed pass=$((pass + 1))
+	done
+	[ -z "$failed" ] || log "not loaded:$failed"
+}
+
+job_modules() {
+	# GKI devices: drivers (including the USB controller) are modules in the vendor ramdisk.
+	# The recovery list comes first: Android loads it for recovery and fastbootd, i.e. for a
+	# system that runs from the ramdisk alone with USB. On the Plinius it also has reboot-mode,
+	# without which "reboot bootloader" ends up in the normal system.
+	for dir in /lib/modules /lib/modules/*; do
+		[ -d "$dir" ] || continue
+		list=$dir/modules.load.recovery
+		[ -f "$list" ] || list=$dir/modules.load
+		[ -f "$list" ] || continue
+		load_modules "$dir" "$list"
+		# The recovery list lacks modules of the normal list that others need (on the Plinius
+		# vcp_status, without which the display driver mediatek-drm fails). So the rest of
+		# modules.load follows, together with what failed: the same set as a normal boot.
+		[ "$list" != "$dir/modules.load" ] && [ -f "$dir/modules.load" ] || continue
+		{ grep -vxF -f "$list" "$dir/modules.load"; for m in $failed; do echo "$m"; done; } \
+			> /run/modules.load.rest
+		[ -s /run/modules.load.rest ] && load_modules "$dir" /run/modules.load.rest
+	done
+
+	# UFS and the SD card register their devices asynchronously, seconds after the modules load.
+	# Wait until the number of block devices has not changed for 3 s (at most 30 s).
+	last=-1 same=0
+	for _ in $(seq 30); do
+		n=$(ls /sys/class/block | wc -l)
+		if [ "$n" = "$last" ]; then same=$((same + 1)); else same=0 last=$n; fi
+		[ $same -ge 3 ] && [ -n "$(grep -l '^PARTNAME=' /sys/class/block/*/uevent 2>/dev/null)" ] && break
+		sleep 1
+	done
+	plinius-partlinks
+	log "$last block devices, $(ls /dev/disk/by-partlabel | wc -l) partitions"
+	rm -f /run/plinius-rescue-starting
+
+	# For diagnosis only: an active watchdog that nobody kicks resets the phone
+	for w in /sys/class/watchdog/*; do
+		[ -d "$w" ] && log "$(basename "$w"): $(cat "$w/identity" "$w/state" "$w/timeout" 2>/dev/null | tr '\n' ' ')"
+	done
+	log "modules done"
+}
+
+# net_up IFACE: the phone's address and a DHCP server for the PC (restarted if it exits)
+net_up() {
+	for _ in $(seq 10); do
+		[ -e "/sys/class/net/$1" ] && break
+		sleep 1
+	done
+	ifconfig "$1" 10.15.19.82 netmask 255.255.255.0 up || log "$1: no address"
+	cat > /etc/udhcpd.conf <<-EOF
+		start 10.15.19.100
+		end 10.15.19.120
+		interface $1
+		lease_file /tmp/udhcpd.leases
+		option subnet 255.255.255.0
+	EOF
+	respawn udhcpd -f /etc/udhcpd.conf
+}
+
+# gadget_bind UDC FUNC: USB gadget with one network function (rndis/ncm) bound to UDC
+gadget_bind() {
+	G=/sys/kernel/config/usb_gadget/rescue
+	mkdir -p "$G/strings/0x409" "$G/configs/c.1/strings/0x409" || return 1
+	# Same IDs as the device package device-volla-ansuz
+	echo 0x0e8d > "$G/idVendor"
+	echo 0x2004 > "$G/idProduct"
+	echo "${serial:-plinius-rescue}" > "$G/strings/0x409/serialnumber"
+	echo "plinius-boot" > "$G/strings/0x409/manufacturer"
+	echo "Rescue system" > "$G/strings/0x409/product"
+	mkdir -p "$G/functions/$2.usb0" 2>/dev/null || return 1
+	echo "$2" > "$G/configs/c.1/strings/0x409/configuration"
+	ln -sfn "$G/functions/$2.usb0" "$G/configs/c.1/$2.usb0"
+	echo "$1" > "$G/UDC" && return 0
+	# Undo, so that the next function starts from an empty configuration
+	rm -f "$G/configs/c.1/$2.usb0"
+	rmdir "$G/functions/$2.usb0" 2>/dev/null
+	return 1
+}
+
+job_usb() {
+	if [ -n "$PLINIUS_RESCUE_NETDEV" ]; then
+		log "test network on $PLINIUS_RESCUE_NETDEV"
+		net_up "$PLINIUS_RESCUE_NETDEV"
+		return
+	fi
+	# The controller appears when its module is loaded; on the Plinius that is mtu3. No time
+	# limit, but a note in the log after 30 s.
+	waited=0
+	while :; do
+		udc=$(ls /sys/class/udc 2>/dev/null | grep -v dummy | head -n 1)
+		if [ -n "$udc" ]; then
+			# NCM; RNDIS only as a fallback (GKI kernels such as the Plinius' have no RNDIS)
+			for func in ncm rndis; do
+				gadget_bind "$udc" $func && break
+				log "USB network $func via $udc not possible"
+				func=
+			done
+			[ -n "$func" ] && break
+		fi
+		waited=$((waited + 1))
+		[ $waited = 30 ] && log "no usable USB device controller yet, still trying"
+		sleep 1
+	done
+	iface=$(cat "$G/functions/$func.usb0/ifname" 2>/dev/null)
+	case $iface in ""|*%*) iface=usb0 ;; esac
+	log "USB network $func via $udc, interface $iface"
+	net_up "$iface"
+
+	# Log the state of the USB port. If the PC has not configured the gadget after 20 s, the
+	# Type-C controller may have left the port in host or no role: switch it to device once.
+	last= unconfigured=0 forced=
+	while :; do
+		state=$(cat "/sys/class/udc/$udc/state" 2>/dev/null)
+		[ "$state" = "$last" ] || { log "USB state: $state"; last=$state; }
+		if [ "$state" = configured ]; then unconfigured=0; else unconfigured=$((unconfigured + 1)); fi
+		if [ $unconfigured -ge 20 ] && [ -z "$forced" ]; then
+			forced=1
+			for r in /sys/class/usb_role/*/role; do
+				[ -w "$r" ] || continue
+				log "$(basename "$(dirname "$r")"): role $(cat "$r"), switching to device"
+				echo device > "$r"
+			done
+		fi
+		sleep 2
+	done
+}
+
+# The screen: Arch logo, "Arch-Recovery", the address and a status line that changes every second
+# (rescue/plinius-splash.c). The display driver is a vendor module, so wait for it; without a
+# display (QEMU without a graphics card) the job just ends.
+job_display() {
+	card=/sys/class/drm/card0
+	for _ in $(seq 60); do
+		[ -e $card/dev ] && break
+		sleep 1
+	done
+	[ -e $card/dev ] || { log "no display"; return; }
+	# mdev names the node after DEVNAME (dri/card0); create it if it is missing
+	[ -e /dev/dri/card0 ] || { mkdir -p /dev/dri && mknod /dev/dri/card0 c $(tr : ' ' < $card/dev); }
+	# Android's light HAL sets the backlight, here it may still be dark: then 40 %
+	for b in /sys/class/leds/lcd-backlight /sys/class/backlight/*; do
+		[ -w "$b/brightness" ] || continue
+		max=$(cat "$b/max_brightness" 2>/dev/null)
+		[ "$(cat "$b/brightness" 2>/dev/null)" -ge $((max / 4)) ] 2>/dev/null ||
+			echo $((max * 2 / 5)) > "$b/brightness"
+		log "$(basename "$b"): brightness $(cat "$b/brightness") of $max"
+	done
+	log "display found"
+	# Accent colour of the phone's desktop, appended by plinius-boot (RRGGBB)
+	[ -r /etc/plinius-rescue-accent ] && export PLINIUS_SPLASH_COLOR="$(cat /etc/plinius-rescue-accent)"
+	plinius-splash /usr/share/plinius-rescue/font.psf /run/plinius-rescue.log "Arch-Recovery" \
+		"Rescue system for plinius-boot" "USB network 10.15.19.82, ssh root"
+	log "plinius-splash exited with $?"
+}
+
+# respawn CMD...: runs CMD in the background and restarts it whenever it exits
+respawn() {
+	(
+		while :; do
+			"$@"
+			log "$1 exited with $?, restarting"
+			sleep 2
+		done
+	) &
+}
+
+job_modules &
+job_usb &
+job_display &
+# Before the network, so it is listening as soon as the PC gets an address. -F: in the foreground
+# (for respawn), -E: log to stderr (kernel log), -R: create host keys, -s: no passwords.
+mkdir -p /etc/dropbear
+# -W: dropbear's default receive window of 24 KiB limits an image to about 5 MB/s on the phone's USB network
+respawn dropbear -F -E -R -s -p 22 -W 4194304
+log "jobs started"
+
+# PID 1 must never exit (kernel panic). wait returns on a signal, so the traps run at once;
+# it also reaps orphaned processes.
+while :; do
+	sleep 3600 &
+	wait $!
+done

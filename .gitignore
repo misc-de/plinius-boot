@@ -1,0 +1,14 @@
+# Build chroot, rescue ramdisk and test output
+/build/
+# makepkg
+/src/
+/pkg/
+*.pkg.tar.*
+# Python and its linters
+__pycache__/
+.ruff_cache/
+# Phone data never belongs into the repository
+*.img
+*.img.*
+# Development notes, kept locally in a repository of their own
+/docs/

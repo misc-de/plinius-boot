@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- A phone with a boot arrow: the app starts and installs systems on it -->
+  <rect x="32" y="10" width="64" height="108" rx="12" fill="#1a5fb4"/>
+  <rect x="32" y="8" width="64" height="108" rx="12" fill="#3584e4"/>
+  <rect x="38" y="18" width="52" height="88" rx="5" fill="#f6f5f4"/>
+  <rect x="56" y="11.5" width="16" height="3" rx="1.5" fill="#1a5fb4"/>
+  <path d="M64 30 82 52H71V72H57V52H46Z" fill="#3584e4"/>
+  <rect x="50" y="80" width="28" height="6" rx="3" fill="#1a5fb4"/>
+  <rect x="50" y="91" width="28" height="6" rx="3" fill="#99c1f1"/>
+</svg>

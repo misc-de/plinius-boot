@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.plinius.Boot</id>
+  <name>Plinius Boot</name>
+  <summary>Back up and flash Volla and FuriLabs phones</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <developer id="io.github.misc-de">
+    <name>misc-de</name>
+  </developer>
+  <description>
+    <p>
+      Installs Plinius on a Volla Phone Plinius in one go: onto its memory card next to Volla OS, or
+      instead of Volla OS. It also detects a phone connected over USB-C, backs up its partitions and
+      flashes them, unlocks its bootloader and starts a rescue system on it. It supports the Volla Phone Plinius (Plus) and the
+      FuriLabs FLX1 and FLX1s.
+    </p>
+    <p>
+      Writing partitions can leave a phone unable to start, and backups contain device data such as
+      the IMEI. The app needs access to USB devices and to your home folder.
+    </p>
+  </description>
+  <launchable type="desktop-id">org.plinius.Boot.desktop</launchable>
+  <url type="homepage">https://github.com/misc-de/plinius-boot</url>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.16" date="2026-11-21">
+      <description>
+        <p>The language comes first: Plinius speaks it from its first start on, the password prompt of the encryption included, and the keyboard follows it.</p>
+        <p>Before Volla OS on the phone is overwritten, the app wants a backup of what changes, made in the rescue system that is running: of these partitions alone or of the whole phone.</p>
+        <p>With a newer image the phone asks for a PIN or a password at its first start itself; the app asks only for images that cannot.</p>
+        <p>The drivers of the hardware (vendor and vendor_dlkm) come from Volla OS on the phone itself, for images that leave them out. If they differ from the ones Plinius was tested with, they are taken all the same and the app says so.</p>
+      </description>
+    </release>
+    <release version="0.15" date="2026-11-20">
+      <description>
+        <p>Installing Plinius for everybody: the start page says how to prepare the phone, and a connected phone leads straight to the installation. Choose where, onto the memory card or instead of Volla OS, and a PIN; the app downloads the image and does the rest while the phone restarts, and asks before anything is erased.</p>
+        <p>A memory card without a boot menu is set up the way the Volla Boot Manager does it. Plinius starts from the card with its own kernel, and the boot menu starts it by itself.</p>
+        <p>Everything from before is under Advanced.</p>
+      </description>
+    </release>
+    <release version="0.14" date="2026-11-11">
+      <description>
+        <p>The rescue system gets cryptsetup and dmsetup, so an encrypted data partition can be opened and checked there. They do not fit into its ramdisk; the app sends them over whenever it logs in to the rescue system.</p>
+      </description>
+    </release>
+    <release version="0.13" date="2026-11-09">
+      <description>
+        <p>The boot menu has a tab of its own next to Systems, so Systems starts with the ways to change systems and to the rescue system. In a narrow window the tabs move to the bottom.</p>
+      </description>
+    </release>
+    <release version="0.12" date="2026-11-09">
+      <description>
+        <p>The start page lists the connected phone and the phones known from earlier. Each phone has its own page with two parts: Systems shows the entries of its boot menu, each with its system, its partitions and how the memory card is divided; Backups holds only the backups of this phone and the way to create one.</p>
+      </description>
+    </release>
+    <release version="0.11" date="2026-11-08">
+      <description>
+        <p>Install a system on the phone itself, in place of Volla OS. It then starts without a memory card. Tested in a virtual machine only so far.</p>
+        <p>An image with the optional encryption asks once at its first start whether to encrypt the data, which can also be done later in the Settings.</p>
+        <p>The rescue system says when the boot menu must be used, and receives images about twice as fast.</p>
+      </description>
+    </release>
+    <release version="0.10" date="2026-11-04">
+      <description>
+        <p>Make room on the memory card and add new places. As an experiment, make places in the phone's own storage, which erases the data of Volla OS.</p>
+      </description>
+    </release>
+    <release version="0.9" date="2026-11-04">
+      <description>
+        <p>Install a system on the place of another one on the memory card, move systems and swap their places, with a copy on the PC as the way back.</p>
+      </description>
+    </release>
+    <release version="0.8" date="2026-11-04">
+      <description>
+        <p>Its own project under a new name, with an installer and as a Flatpak. A guided flow checks the tools and the phone, shows what is installed where and leads to the rescue system.</p>
+      </description>
+    </release>
+  </releases>
+</component>

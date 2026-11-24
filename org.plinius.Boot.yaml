@@ -1,0 +1,143 @@
+# Flatpak of Plinius Boot. Build it with tools/flatpak.sh, which also checks for the rescue ramdisk.
+#
+# GNOME 51 is the first runtime with Python 3.14 (compression.zstd). It brings ssh and ssh-keygen;
+# adb, fastboot and ip are not in it and are built here.
+id: org.plinius.Boot
+runtime: org.gnome.Platform
+runtime-version: '51'
+sdk: org.gnome.Sdk
+command: plinius-boot
+# In the app, not in an extra Locale extension: a single-file bundle would come without translations
+separate-locales: false
+
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  # USB: adb and fastboot talk to the phone through /dev/bus/usb
+  - --device=all
+  # The phone's USB network, and update packages from the web
+  - --share=network
+  # SSH keys with a passphrase
+  - --socket=ssh-auth
+  # Backups are large and go wherever the user wants them. The keys and original images in
+  # ~/.config and ~/.local/share are the same ones as outside the sandbox: a rescue system on a
+  # phone only lets in the key that made it (see CONFIG_HOME in the app).
+  - --filesystem=home
+  - --filesystem=/run/media
+  - --filesystem=/media
+  - --filesystem=/mnt
+
+cleanup:
+  - /include
+  - /lib/cmake
+  - /lib/pkgconfig
+  - /share/bash-completion
+  - /share/zsh
+  - /share/man
+  - '*.a'
+  - '*.la'
+
+modules:
+  # abseil and protobuf only for building android-tools, which links them statically. The versions
+  # that Arch Linux runs android-tools 37 with.
+  - name: abseil
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_CXX_STANDARD=17
+      - -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+      - -DBUILD_TESTING=OFF
+    cleanup:
+      - '*'
+    sources:
+      - type: archive
+        url: https://github.com/abseil/abseil-cpp/releases/download/20260817.0/abseil-cpp-20260817.0.tar.gz
+        sha256: f7e05179df39c45434cad433f5783840bb3788ef322976f9138bc6b72b3a107d
+
+  - name: protobuf
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_CXX_STANDARD=17
+      - -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+      - -Dprotobuf_BUILD_TESTS=OFF
+      - -Dprotobuf_BUILD_SHARED_LIBS=OFF
+      - -Dprotobuf_ABSL_PROVIDER=package
+    cleanup:
+      - '*'
+    sources:
+      - type: archive
+        url: https://github.com/protocolbuffers/protobuf/releases/download/v36.1/protobuf-36.1.tar.gz
+        sha256: dc74fa582f559cbd31614ddfefb4868f43c919d7184bde514bb47f90c6025eb8
+
+  # android-tools includes gtest_prod.h from its headers, nothing of it ends up in the app
+  - name: googletest
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_GMOCK=OFF
+    cleanup:
+      - '*'
+    sources:
+      - type: archive
+        url: https://github.com/google/googletest/releases/download/v1.17.0/googletest-1.17.0.tar.gz
+        sha256: 65fab701d9829d38cb77c14acdc431d2108bfdbf8979e40eb8ae567edf10b27c
+
+  # adb and fastboot from the AOSP sources. "fastboot -w" runs mke2fs.android and make_f2fs from
+  # the folder of its own binary, so these stay. Without mDNS, the only part that needs Rust.
+  - name: android-tools
+    buildsystem: cmake-ninja
+    # Not in the source folder: a generated link is called like the folder vendor/mkbootimg
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DANDROID_TOOLS_USE_BUNDLED_FMT=ON
+      - -DANDROID_TOOLS_ADB_ENABLE_MDNS=OFF
+    sources:
+      - type: archive
+        url: https://github.com/nmeum/android-tools/releases/download/37.0.0p1/android-tools-37.0.0p1.tar.xz
+        sha256: 2c6de1abe16b211c7d9f59276217e14fd9e0e18b20e331d3c84358f5dffd576e
+
+  # The app asks "ip route get" whether the phone's address is reached over a USB adapter
+  - name: iproute2
+    buildsystem: simple
+    build-commands:
+      - ./configure
+      # SUBDIRS instead of make -C: the include paths are set in the top-level Makefile
+      - make SUBDIRS="lib ip"
+      - install -Dm755 ip/ip /app/bin/ip
+    sources:
+      - type: archive
+        url: https://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-7.2.0.tar.xz
+        sha256: 4c2fa124c2cf0afd7ca34d1eeacba6ba048a56f6374e2aab93dafbdbd4eea9c0
+
+  - name: plinius-boot
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 plinius-boot /app/bin/plinius-boot
+      - install -Dm644 org.plinius.Boot.desktop /app/share/applications/org.plinius.Boot.desktop
+      - install -Dm644 org.plinius.Boot.metainfo.xml /app/share/metainfo/org.plinius.Boot.metainfo.xml
+      - install -Dm644 org.plinius.Boot.svg /app/share/icons/hicolor/scalable/apps/org.plinius.Boot.svg
+      - install -Dm644 plinius-rescue-aarch64.cpio.lz4 /app/share/plinius-boot/plinius-rescue-aarch64.cpio.lz4
+      - install -Dm644 plinius-rescue-tools-aarch64.tar.gz /app/share/plinius-boot/plinius-rescue-tools-aarch64.tar.gz
+      - install -Dm644 LICENSE /app/share/licenses/org.plinius.Boot/LICENSE
+      - |
+        for po in po/*.po; do
+          l=$(basename "$po" .po)
+          mkdir -p "/app/share/locale/$l/LC_MESSAGES"
+          msgfmt --check -o "/app/share/locale/$l/LC_MESSAGES/plinius-boot.mo" "$po"
+        done
+    sources:
+      - type: dir
+        path: .
+        skip:
+          - build
+          - .git
+          - pkg
+          - src
+      # Not in git, see tools/flatpak.sh
+      - type: file
+        path: build/rescue/plinius-rescue-aarch64.cpio.lz4
+      - type: file
+        path: build/rescue/plinius-rescue-tools-aarch64.tar.gz

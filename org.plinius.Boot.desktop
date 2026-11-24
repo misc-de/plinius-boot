@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Plinius Boot
+Comment=Back up and flash Volla and FuriLabs phones, unlock the bootloader, start a rescue system
+Comment[de]=Volla- und FuriLabs-Telefone sichern und bespielen, Bootloader entsperren, Rettungssystem starten
+Exec=plinius-boot
+Icon=org.plinius.Boot
+Terminal=false
+Categories=GTK;Utility;
+Keywords=Volla;Plinius;FuriLabs;FLX1;Backup;Restore;Flash;Rescue;Bootloader;Partition;IMEI;fastboot;
+Keywords[de]=Volla;Plinius;FuriLabs;FLX1;Sicherung;Backup;Wiederherstellen;Bespielen;Flashen;Rettungssystem;Bootloader;Partition;IMEI;fastboot;
+StartupNotify=true
