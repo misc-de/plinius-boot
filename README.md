@@ -113,12 +113,10 @@ Translations: de, es, fr, it, nl, pl, pt, ru.
 ### Flatpak
 
 Brings everything along, including adb, fastboot and the rescue system. It is available for x86_64 only
-so far. The repository is private for now, so the download needs the
-[GitHub CLI](https://cli.github.com/), logged in with `gh auth login` to an account with access to it.
-In any folder:
+so far. In any folder:
 
 ```sh
-gh release download -R misc-de/plinius-boot -p org.plinius.Boot-x86_64.flatpak --clobber
+curl -LO https://github.com/misc-de/plinius-boot/releases/latest/download/org.plinius.Boot-x86_64.flatpak
 flatpak install --user org.plinius.Boot-x86_64.flatpak
 flatpak run org.plinius.Boot
 ```
@@ -134,10 +132,39 @@ The sandbox is wide open by necessity: the app gets all devices (USB, for adb an
 network (the phone's USB network, update packages) and your home folder (backups, keys, originals).
 On the host, access to phones still depends on udev rules (Arch/Manjaro: package `android-udev`).
 
-### For your user, without root
+### Without Flatpak, from the archive
 
-Needs Python 3.14 or later (`compression.zstd`), python-gobject, gtk4, libadwaita, openssh,
-android-tools, iproute2 and gettext. The installer names whatever is missing.
+Every release also has `plinius-boot.tar.gz` and `plinius-boot.zip`, the same content in both: the app
+with its rescue system, about 12 MB. Unpack one and start the app right in its folder, nothing is
+installed then; or install it for your user, into `~/.local` with a menu entry:
+
+```sh
+curl -LO https://github.com/misc-de/plinius-boot/releases/latest/download/plinius-boot.tar.gz
+tar -xzf plinius-boot.tar.gz
+cd plinius-boot-*/
+./plinius-boot     # starts it from here
+./install.sh       # or installs it for your user, without root; the folder can go afterwards
+```
+
+The programs come from your system, `./install.sh` names whatever is missing, with its package:
+
+| | Arch, Manjaro | Debian 13, Ubuntu 25.04 or later | Fedora 41 or later |
+|---|---|---|---|
+| Python 3.13 or later with GTK 4 and libadwaita 1.6 or later | `python-gobject gtk4 libadwaita` | `python3-gi gir1.2-adw-1` | `python3-gobject libadwaita` |
+| zstd for Python, needed before Python 3.14 | (in Python 3.14) | `python3-zstandard` | `python3-zstandard` |
+| ssh, adb, fastboot, ip, msgfmt | `openssh android-tools iproute2 gettext` | `openssh-client adb fastboot iproute2 gettext` | `openssh-clients android-tools iproute gettext` |
+| USB access to phones (udev rules) | `android-udev` | `android-sdk-platform-tools-common` | see below |
+
+Whether the phone is allowed through USB shows `adb devices` while it is connected: it must list the
+phone without "no permissions". Ubuntu 24.04 has libadwaita 1.5, which is too old; the Flatpak works there. Instead of
+python-zstandard the app also takes `backports.zstd`, which is the same as zstd in Python 3.14.
+
+To update, unpack the new archive and run `./install.sh` again. `./uninstall.sh`, from the folder or
+from `~/.local/share/plinius-boot`, removes the installation.
+
+### For your user, from the repository
+
+The same `install.sh` works in a clone of the repository, which has no rescue system in it:
 
 ```sh
 ./install.sh                  # into ~/.local; run it again to update
@@ -163,7 +190,7 @@ by hand if you are sure. `uninstall.sh` refuses to run while the app is open.
 
 ## Building the rescue system
 
-The ramdisk is not in the repository, the Flatpak contains it. Without it, everything but the rescue system works. Building
+The ramdisk is not in the repository, the Flatpak and the archives contain it. Without it, everything but the rescue system works. Building
 needs no root, only user namespaces with subordinate IDs (`/etc/subuid`) and
 `qemu-user-static-binfmt`, plus `curl`, `bsdtar`, `gpg` and `lz4`.
 
@@ -199,7 +226,11 @@ qemu-user (`qemu-user-static-binfmt`) and is much slower.
 tools/flatpak.sh                 # build/flatpak/org.plinius.Boot-<arch>.flatpak, x86_64 and aarch64
 tools/flatpak.sh --arch x86_64   # only this architecture
 tools/flatpak.sh --arch x86_64 --release   # also publishes it as the release of the current version
+tools/archive.sh                 # build/release/plinius-boot.tar.gz and .zip, for use without Flatpak
 ```
+
+A release also carries the two archives of `tools/archive.sh`: the committed app with the rescue ramdisk
+and its tools in `build/rescue/`, where the app and `install.sh` look for them.
 
 The aarch64 build has never been finished, so releases contain x86_64 only for now.
 
@@ -212,6 +243,10 @@ rescue/test-rescue.sh   # the rescue system, in QEMU
 rescue/test-systems.sh  # installing, moving and swapping, setting up a card and the PIN, in QEMU with an emulated SD card
 ```
 
+`tests/test-install.sh` also builds both archives and runs the app from them. The zstd fallback for Python
+before 3.14 is tested by `tests/test-guide.py` when python-zstandard is installed; run it with Python 3.13 to
+test the whole app on top of it.
+
 ## Repository layout
 
 | Path | Contents |
@@ -220,7 +255,7 @@ rescue/test-systems.sh  # installing, moving and swapping, setting up a card and
 | `org.plinius.Boot.desktop`, `org.plinius.Boot.svg` | the desktop entry and the icon |
 | `po/` | translations |
 | `rescue/` | the rescue system: `mkrescue.sh`, `/init` (`rescue-init`), `plinius-splash.c`, `plinius-reboot.c`, and the QEMU test |
-| `tools/` | build chroot, shared script helpers, the Flatpak build |
+| `tools/` | build chroot, shared script helpers, the Flatpak build, the archives |
 | `install.sh`, `uninstall.sh` | per-user installation |
 | `org.plinius.Boot.yaml`, `org.plinius.Boot.metainfo.xml` | Flatpak manifest and app metadata |
 | `PKGBUILD` | Arch package of this working tree |

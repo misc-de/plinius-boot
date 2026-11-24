@@ -24,6 +24,12 @@
   <url type="homepage">https://github.com/misc-de/plinius-boot</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.17" date="2026-11-24">
+      <description>
+        <p>Also without Flatpak: every release has an archive with the app and its rescue system. Unpacked, the app starts right in its folder, or install.sh installs it for your user.</p>
+        <p>Python 3.13 is enough now, with python-zstandard; the installer names the packages for Debian and Ubuntu as well.</p>
+      </description>
+    </release>
     <release version="0.16" date="2026-11-21">
       <description>
         <p>The language comes first: Plinius speaks it from its first start on, the password prompt of the encryption included, and the keyboard follows it.</p>

@@ -40,14 +40,23 @@ fi
 
 # Missing programs are reported all at once, with the package to install
 missing=()
-python3 -c 'import compression.zstd' 2>/dev/null || missing+=("Python 3.14 or later (python)")
-python3 -c 'import gi; gi.require_version("Gtk", "4.0"); gi.require_version("Adw", "1")' 2>/dev/null ||
-	missing+=("GTK 4 and libadwaita for Python (python-gobject gtk4 libadwaita)")
-for need in ssh:openssh ssh-keygen:openssh adb:android-tools fastboot:android-tools ip:iproute2 msgfmt:gettext; do
-	command -v "${need%%:*}" >/dev/null || missing+=("${need%%:*} (${need##*:})")
+if ! python3 -c 'import sys; sys.exit(sys.version_info < (3, 13))' 2>/dev/null; then
+	missing+=("Python 3.13 or later (python | python3)")
+# Python 3.14 brings zstd, older ones take one of the two packages the app also knows
+elif ! python3 -c 'import compression.zstd' 2>/dev/null && ! python3 -c 'from backports import zstd' 2>/dev/null &&
+	! python3 -c 'import zstandard' 2>/dev/null; then
+	missing+=("zstd for Python before 3.14 (python-zstandard | python3-zstandard)")
+fi
+python3 -c 'import gi, sys; gi.require_version("Gtk", "4.0"); gi.require_version("Adw", "1")
+from gi.repository import Adw; sys.exit(Adw.get_minor_version() < 6)' 2>/dev/null ||
+	missing+=("GTK 4 and libadwaita 1.6 or later for Python (python-gobject gtk4 libadwaita | python3-gi gir1.2-adw-1)")
+for need in ssh:openssh:openssh-client ssh-keygen:openssh:openssh-client adb:android-tools:adb \
+	fastboot:android-tools:fastboot ip:iproute2:iproute2 msgfmt:gettext:gettext; do
+	IFS=: read -r program arch debian <<< "$need"
+	command -v "$program" >/dev/null || missing+=("$program ($arch | $debian)")
 done
 if ((${#missing[@]})); then
-	echo "Missing, in parentheses the Arch/Manjaro package:" >&2
+	echo "Missing, in parentheses the package on Arch/Manjaro | Debian/Ubuntu:" >&2
 	printf '  %s\n' "${missing[@]}" >&2
 	die "nothing was installed"
 fi

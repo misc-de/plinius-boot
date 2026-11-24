@@ -694,4 +694,84 @@ if shutil.which("mkfs.ext4") and shutil.which("debugfs"):
     check("the entries in the order the bootloader counts them, also with a hash index",
           order == stored and len(order) == 300 and hashed and order != sorted(order))
 
+# Python before 3.14 has no compression.zstd: the app then works through python-zstandard
+# (zstandard_compat). Checked against compression.zstd where it exists, else against python-zstandard.
+try:
+    import zstandard
+except ImportError:
+    zstandard = None
+    print("  skipped: python-zstandard is not installed, so the zstd fallback for Python before 3.14 is untested")
+if zstandard:
+    z = app.zstandard_compat(zstandard)
+    try:
+        from compression import zstd as reference
+    except ImportError:
+        reference = None
+    check("without compression.zstd the app runs on the fallback", reference is not None or isinstance(app.zstd, type(z)))
+
+    def ref_compress(data, checksum=False):
+        if reference:
+            return reference.compress(data, options={reference.CompressionParameter.checksum_flag: checksum})
+        return zstandard.ZstdCompressor(write_checksum=checksum).compress(data)
+
+    def ref_stream(data):
+        """Compressed without the content size in its header, as a stream is"""
+        out = io.BytesIO()
+        with zstandard.ZstdCompressor().stream_writer(out, closefd=False) as w:
+            w.write(data)
+        return out.getvalue()
+
+    def ref_decompress(blob):
+        if reference:
+            return reference.decompress(blob)
+        return zstandard.ZstdDecompressor().stream_reader(io.BytesIO(blob), read_across_frames=True).read()
+
+    # Random data (raw blocks), zeros (RLE blocks) and text (compressed blocks)
+    sample = os.urandom(300_000) + bytes(4 << 20) + b"text " * 60_000
+    packed = tmp / "fallback.zst"
+    level, workers = z.CompressionParameter.compression_level, z.CompressionParameter.nb_workers
+    with z.open(packed, "wb", options={level: 3, workers: 4}) as w:
+        for i in range(0, len(sample), 1 << 20):
+            w.write(sample[i:i + (1 << 20)])
+    check("what the fallback writes, with workers, unpacks elsewhere", ref_decompress(packed.read_bytes()) == sample)
+    with z.open(str(packed), "rb") as f:
+        pieces = list(iter(lambda: f.read(65536), b""))
+    check("and the fallback reads it back piece by piece", b"".join(pieces) == sample and len(pieces) > 1)
+
+    # Every kind of frame header: content size of 1, 2, 4 bytes or none, with and without checksum,
+    # several frames in a row and a skippable frame between them
+    skippable = (0x184D2A53).to_bytes(4, "little") + (3).to_bytes(4, "little") + b"abc"
+    parts = [b"x" * 10, b"y" * 1000, os.urandom(70_000)]
+    blob = ref_compress(parts[0]) + skippable + ref_compress(parts[1], checksum=True) + ref_stream(parts[2])
+    check("several frames, skippable ones and every header", z.decompress(blob) == b"".join(parts))
+    raw = io.BytesIO(blob)
+    with z.open(raw, "rb") as f:
+        whole = f.read()
+    check("an open file stays open, it belongs to the caller", whole == b"".join(parts) and not raw.closed)
+
+    def refused(blob, error):
+        try:
+            z.decompress(blob)
+        except error:
+            return True
+        except Exception:  # noqa: BLE001
+            return False
+        return False
+
+    full = ref_compress(sample, checksum=True)
+    check("a cut-off stream is an error, wherever it was cut",
+          all(refused(full[:cut], (EOFError, z.ZstdError)) for cut in (1, 4, 5, 9, 200, len(full) // 2, len(full) - 1)))
+    check("an empty file is no stream", refused(b"", EOFError) and refused(skippable, EOFError))
+    check("data after the last frame is an error", refused(full + b"garbage!", z.ZstdError))
+    # Magic number, frame header without content size, window, then a block of the reserved type 3
+    reserved = (0xFD2FB528).to_bytes(4, "little") + b"\x00\x00" + (3 << 1 | 1).to_bytes(3, "little")
+    frames = app.ZstdFrames()
+    frames.feed(reserved)
+    check("a block of the reserved type is no stream", frames.bad and not frames.complete())
+    try:
+        z.open(packed, "ab")
+        check("only reading and writing", False)
+    except ValueError:
+        check("only reading and writing", True)
+
 print("All guide checks passed")

@@ -114,11 +114,23 @@ for d in "${dirs[@]}"; do
 done
 before=$(cd "$prefix" && find . -type f | LC_ALL=C sort | xargs -d '\n' sha256sum)
 if PATH=$tmp/path "$root/install.sh" > "$tmp/out" 2>&1; then fail "installed without adb"; fi
-grep -q "adb (android-tools)" "$tmp/out" || fail "missing adb not reported: $(cat "$tmp/out")"
-grep -q "fastboot (android-tools)" "$tmp/out" || fail "missing fastboot not reported"
+grep -q "adb (android-tools | adb)" "$tmp/out" || fail "missing adb not reported: $(cat "$tmp/out")"
+grep -q "fastboot (android-tools | fastboot)" "$tmp/out" || fail "missing fastboot not reported"
 [[ $before == "$(cd "$prefix" && find . -type f | LC_ALL=C sort | xargs -d '\n' sha256sum)" ]] ||
 	fail "a failed install changed files"
 ok "missing programs are named and nothing changes"
+
+# Python before 3.14 without any zstd module: named, with the package that brings it
+mkdir "$tmp/nozstd"
+printf '#!/bin/sh\ncase "$*" in *zstd*|*zstandard*) exit 1 ;; esac\nexec %s "$@"\n' "$(command -v python3)" \
+	> "$tmp/nozstd/python3"
+chmod +x "$tmp/nozstd/python3"
+if PATH=$tmp/nozstd:$PATH "$root/install.sh" > "$tmp/out" 2>&1; then fail "installed without zstd"; fi
+grep -q "zstd for Python before 3.14 (python-zstandard | python3-zstandard)" "$tmp/out" ||
+	fail "missing zstd not reported: $(cat "$tmp/out")"
+[[ $before == "$(cd "$prefix" && find . -type f | LC_ALL=C sort | xargs -d '\n' sha256sum)" ]] ||
+	fail "a failed install changed files"
+ok "a missing zstd module is named"
 
 # The user's data, which must survive whatever happens
 mkdir -p "$XDG_CONFIG_HOME/plinius-boot" "$XDG_DATA_HOME/plinius-boot/originals/SER" \
@@ -155,5 +167,57 @@ ok "backups, keys and originals stay, the cache goes"
 if "$root/uninstall.sh" > "$tmp/out" 2>&1; then fail "uninstalled nothing successfully"; fi
 grep -q "no installation found" "$tmp/out" || fail "wrong message: $(cat "$tmp/out")"
 ok "a second uninstall says that nothing is there"
+
+# The archives for use without Flatpak (tools/archive.sh): unpacked, the app starts in its folder and
+# install.sh installs it, both with the rescue system from the archive
+echo fake-ramdisk > "$BUILD/rescue/plinius-rescue-aarch64.cpio.lz4"
+echo fake-tools > "$BUILD/rescue/plinius-rescue-tools-aarch64.tar.gz"
+packed=$("$root/tools/archive.sh" 2>"$tmp/out") || fail "tools/archive.sh: $(cat "$tmp/out")"
+mapfile -t archives <<< "$packed"
+version=$(cd "$root" && git show HEAD:plinius-boot | sed -n 's/^VERSION = "\(.*\)"$/\1/p')
+[[ ${archives[*]} == "$BUILD/release/plinius-boot.tar.gz $BUILD/release/plinius-boot.zip" ]] ||
+	fail "unexpected archives: ${archives[*]}"
+
+# Started from an unpacked folder: the app finds the ramdisk and tools in it, and its translations
+finds_data() {
+	(cd "$tmp" && LANGUAGE=de LC_ALL=C.UTF-8 python3 -I -B -c '
+import importlib.machinery, importlib.util, os, sys
+loader = importlib.machinery.SourceFileLoader("plinius_boot", sys.argv[1])
+app = importlib.util.module_from_spec(importlib.util.spec_from_loader(loader.name, loader))
+loader.exec_module(app)
+assert os.path.realpath(app.rescue_ramdisk()) == os.path.realpath(sys.argv[2]), app.rescue_ramdisk()
+assert os.path.realpath(app.rescue_tools()) == os.path.realpath(sys.argv[3]), app.rescue_tools()
+assert app._("About {name}") == "Über {name}", "no translation"
+' "$@")
+}
+for archive in "${archives[@]}"; do
+	unpacked=$tmp/unpacked-${archive##*.}
+	mkdir "$unpacked"
+	case $archive in
+		*.zip) unzip -q "$archive" -d "$unpacked" ;;
+		*) tar -xzf "$archive" -C "$unpacked" ;;
+	esac
+	dir=$unpacked/plinius-boot-$version
+	for f in plinius-boot install.sh uninstall.sh; do
+		[[ -x $dir/$f ]] || fail "$f is not executable in ${archive##*/}"
+	done
+	cmp -s "$dir/plinius-boot" <(cd "$root" && git show HEAD:plinius-boot) || fail "${archive##*/} holds another app than HEAD"
+	finds_data "$dir/plinius-boot" "$dir/build/rescue/plinius-rescue-aarch64.cpio.lz4" \
+		"$dir/build/rescue/plinius-rescue-tools-aarch64.tar.gz" || fail "the app in ${archive##*/} misses its data"
+done
+diff <(cd "$tmp/unpacked-gz" && find . | LC_ALL=C sort) <(cd "$tmp/unpacked-zip" && find . | LC_ALL=C sort) ||
+	fail "tar.gz and zip differ"
+ok "both archives hold the same, executable, and the app runs from the unpacked folder"
+
+# install.sh from the unpacked folder takes the rescue system along, then the folder can go
+dir=$tmp/unpacked-gz/plinius-boot-$version
+other=$tmp/from-archive
+env -u BUILD PREFIX="$other" "$dir/install.sh" > "$tmp/out" || fail "install.sh from the archive failed"
+grep -q -- "--build-rescue" "$tmp/out" && fail "the archive's install.sh misses the rescue system"
+rm -rf "$tmp/unpacked-gz" "$tmp/unpacked-zip"
+finds_data "$other/bin/plinius-boot" "$other/share/plinius-boot/plinius-rescue-aarch64.cpio.lz4" \
+	"$other/share/plinius-boot/plinius-rescue-tools-aarch64.tar.gz" || fail "installed from the archive, it misses its data"
+PREFIX="$other" "$other/share/plinius-boot/uninstall.sh" > /dev/null || fail "uninstall after the archive failed"
+ok "install.sh from the archive installs the rescue system too"
 
 echo "All install and uninstall checks passed"

@@ -44,10 +44,10 @@ import tempfile
 import threading
 import time
 import traceback
+import types
 import urllib.error
 import urllib.parse
 import urllib.request
-from compression import zstd
 
 import gi
 
@@ -55,10 +55,149 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gio, GLib, Gtk, Pango  # noqa: E402
 
+try:
+    from compression import zstd
+except ImportError:  # Python before 3.14, see the end of this block
+    zstd = None
+
+
+class ZstdFrames:
+    """Follows the zstd frames passing by (RFC 8878: frame header, block headers, checksum) without
+    unpacking them, to tell a complete stream from one that was cut off: python-zstandard reads a
+    cut-off file as a shorter one, compression.zstd raises EOFError."""
+
+    MAGIC, SKIPPABLE = 0xFD2FB528, 0x184D2A50
+
+    def __init__(self):
+        self.state, self.need, self.pending = "magic", 4, b""  # the header being read
+        self.skip = 0  # bytes to pass over: rest of the frame header, block content, checksum
+        self.checksum = self.bad = self.frame = False  # frame: one has ended, as an empty file is no stream
+
+    def feed(self, data):
+        view = memoryview(data)
+        while view and not self.bad:
+            if self.skip:
+                n = min(self.skip, len(view))
+                self.skip -= n
+            else:
+                n = min(self.need - len(self.pending), len(view))
+                self.pending += bytes(view[:n])
+                if len(self.pending) == self.need:
+                    header, self.pending = self.pending, b""
+                    self.step(header)
+            view = view[n:]
+
+    def step(self, header):
+        value = int.from_bytes(header, "little")
+        if self.state == "magic":
+            if value == self.MAGIC:
+                self.state, self.need = "descriptor", 1
+            elif value & ~0xF == self.SKIPPABLE:
+                self.state, self.need = "skippable", 4
+            else:
+                self.bad = True
+        elif self.state == "skippable":
+            self.state, self.need, self.skip = "magic", 4, value
+        elif self.state == "descriptor":
+            single = value >> 5 & 1
+            self.checksum = bool(value >> 2 & 1)
+            # window descriptor, dictionary ID, frame content size
+            self.skip = (1 - single) + (0, 1, 2, 4)[value & 3] + (single, 2, 4, 8)[value >> 6]
+            self.state, self.need = "block", 3
+        else:
+            kind = value >> 1 & 3
+            if kind == 3:  # reserved
+                self.bad = True
+                return
+            self.skip = 1 if kind == 1 else value >> 3  # an RLE block holds one byte
+            if value & 1:  # the frame's last block
+                self.skip += 4 if self.checksum else 0
+                self.state, self.need, self.frame = "magic", 4, True
+
+    def complete(self):
+        return self.frame and not self.bad and self.state == "magic" and not self.pending and not self.skip
+
+
+def zstandard_compat(zstandard):
+    """What the app uses of compression.zstd, on top of python-zstandard (python3-zstandard in Debian,
+    Ubuntu and Fedora). Files are only ever read from the start to the end, never with seek."""
+
+    class Parameter:
+        def __init__(self, high):
+            self.high = high
+
+        def bounds(self):
+            return 0, self.high
+
+    level, workers = Parameter(22), Parameter(256)
+
+    class Reader:
+        def __init__(self, raw, own):
+            self.raw, self.own, self.frames = raw, own, ZstdFrames()
+            source = types.SimpleNamespace(read=self.source)
+            self.stream = zstandard.ZstdDecompressor().stream_reader(source, read_across_frames=True, closefd=False)
+
+        def source(self, size):
+            data = self.raw.read(size)
+            self.frames.feed(data)
+            return data
+
+        def read(self, size=-1):
+            data = self.stream.read(size)
+            # At the end: b"", or everything at once
+            if size < 0 or (not data and size != 0):
+                if self.frames.bad:
+                    raise zstandard.ZstdError("data after the last frame is not zstd")
+                if not self.frames.complete():
+                    raise EOFError("Compressed file ended before the end-of-stream marker was reached")
+            return data
+
+        def close(self):
+            self.stream.close()
+            if self.own:
+                self.raw.close()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exc):
+            self.close()
+
+    def open_(file, mode="rb", options=None):
+        if mode not in ("rb", "wb"):
+            raise ValueError(f"mode {mode!r} is not supported")
+        own = isinstance(file, (str, bytes, os.PathLike))
+        raw = open(file, mode) if own else file
+        if mode == "rb":
+            return Reader(raw, own)
+        options = options or {}
+        compressor = zstandard.ZstdCompressor(level=options.get(level, 3), threads=options.get(workers, 0))
+        return compressor.stream_writer(raw, closefd=own)
+
+    def decompress(data):
+        with Reader(io.BytesIO(data), True) as f:
+            return f.read()
+
+    return types.SimpleNamespace(open=open_, decompress=decompress, ZstdError=zstandard.ZstdError,
+                                 CompressionParameter=types.SimpleNamespace(compression_level=level,
+                                                                            nb_workers=workers))
+
+
+if zstd is None:
+    try:
+        from backports import zstd  # compression.zstd as a package of its own
+    except ImportError:
+        try:
+            import zstandard
+        except ImportError:
+            sys.exit("Plinius Boot needs Python 3.14 or later, or for older ones python-zstandard "
+                     "(package python3-zstandard).")
+        zstd = zstandard_compat(zstandard)
+
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.16"
+VERSION = "0.17"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
