@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: plinius-boot\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-25 17:24+0100\n"
+"POT-Creation-Date: 2026-11-25 18:17+0100\n"
 "PO-Revision-Date: 2026-10-28 11:10+0100\n"
 "Last-Translator: plinius-boot\n"
 "Language-Team: none\n"
@@ -277,7 +277,7 @@ msgstr "Телефон отключён."
 msgid "Bootloader"
 msgstr "Загрузчик"
 
-#: plinius-boot:1640 plinius-boot:2634 plinius-boot:8846
+#: plinius-boot:1640 plinius-boot:2634 plinius-boot:8835
 msgid "Unknown phone"
 msgstr "Неизвестный телефон"
 
@@ -1429,7 +1429,7 @@ msgstr "Подробности"
 #: plinius-boot:6227 plinius-boot:6544 plinius-boot:6574 plinius-boot:6597
 #: plinius-boot:7441 plinius-boot:7463 plinius-boot:7548 plinius-boot:7604
 #: plinius-boot:7626 plinius-boot:7642 plinius-boot:8307 plinius-boot:8611
-#: plinius-boot:8967
+#: plinius-boot:8982
 msgid "Cancel"
 msgstr "Отмена"
 
@@ -1548,7 +1548,7 @@ msgstr "Разблокировка не завершена"
 #: plinius-boot:5532 plinius-boot:5537 plinius-boot:5641 plinius-boot:5739
 #: plinius-boot:5788 plinius-boot:6499 plinius-boot:6513 plinius-boot:7358
 #: plinius-boot:7504 plinius-boot:7536 plinius-boot:7592 plinius-boot:7932
-#: plinius-boot:9026
+#: plinius-boot:9041
 msgid "Close"
 msgstr "Закрыть"
 
@@ -1696,7 +1696,7 @@ msgstr ""
 msgid "Original {name}"
 msgstr "Исходный {name}"
 
-#: plinius-boot:5668 plinius-boot:5835 plinius-boot:7072 plinius-boot:8857
+#: plinius-boot:5668 plinius-boot:5835 plinius-boot:7072
 msgid "Searching…"
 msgstr "Поиск…"
 
@@ -3733,23 +3733,11 @@ msgstr "Проверить инструменты"
 msgid "About {name}"
 msgstr "О программе {name}"
 
-#: plinius-boot:8755
-msgid "Is USB debugging on?"
-msgstr "Отладка по USB включена?"
-
-#: plinius-boot:8755
-msgid "How to turn it on"
-msgstr "Как её включить"
-
-#: plinius-boot:8766
-msgid "Waiting for the phone…"
-msgstr "Ожидание телефона…"
-
-#: plinius-boot:8768
+#: plinius-boot:8761
 msgid "Connect the phone"
 msgstr "Подключите телефон"
 
-#: plinius-boot:8770
+#: plinius-boot:8763
 msgid ""
 "Connect the Volla Phone Plinius to this computer with a USB-C cable. The app "
 "finds it by itself."
@@ -3757,23 +3745,19 @@ msgstr ""
 "Подключите Volla Phone Plinius к этому компьютеру кабелем USB-C. Приложение "
 "найдёт его само."
 
-#: plinius-boot:8778 plinius-boot:8855
-msgid "Phones"
-msgstr "Телефоны"
-
-#: plinius-boot:8813
+#: plinius-boot:8802
 msgid "The app needs a few programs"
 msgstr "Приложению нужно несколько программ"
 
-#: plinius-boot:8814
+#: plinius-boot:8803
 msgid "Please provide what is missing here, then check again."
 msgstr "Установите здесь то, чего не хватает, и проверьте снова."
 
-#: plinius-boot:8820
+#: plinius-boot:8809
 msgid "How to provide them"
 msgstr "Как их установить"
 
-#: plinius-boot:8822
+#: plinius-boot:8811
 msgid ""
 "The Flatpak brings these programs along, so it seems to be damaged. Please "
 "install it again."
@@ -3781,15 +3765,15 @@ msgstr ""
 "Flatpak содержит эти программы, значит, он, похоже, повреждён. Установите "
 "его заново."
 
-#: plinius-boot:8825
+#: plinius-boot:8814
 msgid "Run this in a terminal:"
 msgstr "Выполните это в терминале:"
 
-#: plinius-boot:8826
+#: plinius-boot:8815
 msgid "Command"
 msgstr "Команда"
 
-#: plinius-boot:8828
+#: plinius-boot:8817
 msgid ""
 "Install them with your system's package manager, or use the Flatpak of this "
 "app, which brings them along."
@@ -3797,19 +3781,47 @@ msgstr ""
 "Установите их менеджером пакетов вашей системы или используйте Flatpak этого "
 "приложения, в котором они уже есть."
 
-#: plinius-boot:8830
+#: plinius-boot:8819
 msgid "Check again"
 msgstr "Проверить снова"
 
-#: plinius-boot:8858
-msgid "Connect a phone with a USB cable."
-msgstr "Подключите телефон кабелем USB."
+#: plinius-boot:8843
+msgid "Is USB debugging on?"
+msgstr "Отладка по USB включена?"
+
+#: plinius-boot:8843
+msgid "How to turn it on"
+msgstr "Как её включить"
+
+#: plinius-boot:8852
+msgid "Waiting for the phone…"
+msgstr "Ожидание телефона…"
+
+#: plinius-boot:8860
+msgid "A phone in the USB network"
+msgstr "Телефон в USB-сети"
+
+#: plinius-boot:8861
+msgid "Log in with the user name and password of its system to continue."
+msgstr "Войдите с именем пользователя и паролем его системы, чтобы продолжить."
 
 #: plinius-boot:8865
 msgid "locked"
 msgstr "заблокирован"
 
-#: plinius-boot:8908
+#: plinius-boot:8883
+msgid "Found"
+msgstr "Найдено"
+
+#: plinius-boot:8893
+msgid "Earlier phones and backups"
+msgstr "Прежние телефоны и резервные копии"
+
+#: plinius-boot:8894
+msgid "Their backups, also without a connection"
+msgstr "Их резервные копии, также без подключения"
+
+#: plinius-boot:8923
 #, python-brace-format
 msgid ""
 "A phone is connected, but this user may not open it over USB. Install the "
@@ -3818,7 +3830,7 @@ msgstr ""
 "Телефон подключён, но этому пользователю нельзя открывать его по USB. "
 "Установите пакет {package} и подключите телефон снова."
 
-#: plinius-boot:8910
+#: plinius-boot:8925
 msgid ""
 "A phone is connected, but this user may not open it over USB. It needs udev "
 "rules for Android devices."
@@ -3826,27 +3838,27 @@ msgstr ""
 "Телефон подключён, но этому пользователю нельзя открывать его по USB. Нужны "
 "правила udev для устройств Android."
 
-#: plinius-boot:8929
+#: plinius-boot:8944
 msgid "User name"
 msgstr "Имя пользователя"
 
-#: plinius-boot:8931
+#: plinius-boot:8946
 msgid "Password"
 msgstr "Пароль"
 
-#: plinius-boot:8940
+#: plinius-boot:8955
 msgid "This user name is not valid."
 msgstr "Недопустимое имя пользователя."
 
-#: plinius-boot:8953
+#: plinius-boot:8968
 msgid "Login failed. Check the user name and password."
 msgstr "Не удалось войти. Проверьте имя пользователя и пароль."
 
-#: plinius-boot:8964
+#: plinius-boot:8979
 msgid "Log in to the phone"
 msgstr "Вход на телефон"
 
-#: plinius-boot:8965
+#: plinius-boot:8980
 msgid ""
 "Use the user name and password of the system on the phone. The password is "
 "only kept while this app is running."
@@ -3854,36 +3866,36 @@ msgstr ""
 "Используйте имя пользователя и пароль системы на телефоне. Пароль хранится, "
 "только пока работает это приложение."
 
-#: plinius-boot:8967
+#: plinius-boot:8982
 msgid "Log in"
 msgstr "Войти"
 
-#: plinius-boot:8991
+#: plinius-boot:9006
 msgid "Storage location for backups"
 msgstr "Место хранения резервных копий"
 
-#: plinius-boot:9010
+#: plinius-boot:9025
 msgid "Inspect image file"
 msgstr "Изучить файл образа"
 
-#: plinius-boot:9022
+#: plinius-boot:9037
 #, python-brace-format
 msgid "Content: {kind}"
 msgstr "Содержимое: {kind}"
 
-#: plinius-boot:9023
+#: plinius-boot:9038
 #, python-brace-format
 msgid "File size: {size}"
 msgstr "Размер файла: {size}"
 
-#: plinius-boot:9025
+#: plinius-boot:9040
 msgid "The file is compressed with zstd."
 msgstr "Файл сжат с помощью zstd."
 
-#: plinius-boot:9034
+#: plinius-boot:9049
 msgid "All tools work."
 msgstr "Все инструменты работают."
 
-#: plinius-boot:9040
+#: plinius-boot:9055
 msgid "Back up and flash Volla and FuriLabs phones."
 msgstr "Резервное копирование и прошивка телефонов Volla и FuriLabs."

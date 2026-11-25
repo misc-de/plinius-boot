@@ -22,7 +22,10 @@ bar shows its progress under its step, and ticks it when it is done before the c
 1. **Connect:** the start page asks for the cable; how to turn on the developer options, "OEM unlocking"
    and "USB debugging" is folded under it. It names the newest image from
    `https://plinius.cais.de/images/latest.json` (name, https link on the same server, size, SHA-256), but
-   downloads nothing yet. A phone that turns up opens step 2 by itself.
+   downloads nothing yet. A phone that turns up opens step 2 by itself. The start page stays this step also
+   once the app knows phones: connected ones are listed with what to do (a phone in the USB network whose
+   system needs a login says so, with the button), the known ones that are not connected are folded under
+   "Earlier phones and backups".
 2. **Check:** what is known about the phone so far, then one click. That click decides: only now the image
    starts downloading (step 3). The app goes on by itself while the phone restarts: into the bootloader, unlocking it if it is still locked (this erases the phone's data and
    waits for a click and Volume up on the phone), into the rescue system, which reads the memory card. If

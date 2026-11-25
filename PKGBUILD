@@ -1,7 +1,7 @@
 # Maintainer: misc-de <misc-de@users.noreply.github.com>
 
 pkgname=plinius-boot
-pkgver=0.30
+pkgver=0.31
 pkgrel=1
 pkgdesc="Back up and flash Volla and FuriLabs phones, with a rescue system (runs on the PC)"
 arch=(any)

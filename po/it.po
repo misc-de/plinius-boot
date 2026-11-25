@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: plinius-boot\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-25 17:24+0100\n"
+"POT-Creation-Date: 2026-11-25 18:17+0100\n"
 "PO-Revision-Date: 2026-10-28 11:05+0100\n"
 "Last-Translator: plinius-boot\n"
 "Language-Team: none\n"
@@ -276,7 +276,7 @@ msgstr "Il telefono è stato scollegato."
 msgid "Bootloader"
 msgstr "Bootloader"
 
-#: plinius-boot:1640 plinius-boot:2634 plinius-boot:8846
+#: plinius-boot:1640 plinius-boot:2634 plinius-boot:8835
 msgid "Unknown phone"
 msgstr "Telefono sconosciuto"
 
@@ -1459,7 +1459,7 @@ msgstr "Dettagli"
 #: plinius-boot:6227 plinius-boot:6544 plinius-boot:6574 plinius-boot:6597
 #: plinius-boot:7441 plinius-boot:7463 plinius-boot:7548 plinius-boot:7604
 #: plinius-boot:7626 plinius-boot:7642 plinius-boot:8307 plinius-boot:8611
-#: plinius-boot:8967
+#: plinius-boot:8982
 msgid "Cancel"
 msgstr "Annulla"
 
@@ -1577,7 +1577,7 @@ msgstr "Lo sblocco non è stato completato"
 #: plinius-boot:5532 plinius-boot:5537 plinius-boot:5641 plinius-boot:5739
 #: plinius-boot:5788 plinius-boot:6499 plinius-boot:6513 plinius-boot:7358
 #: plinius-boot:7504 plinius-boot:7536 plinius-boot:7592 plinius-boot:7932
-#: plinius-boot:9026
+#: plinius-boot:9041
 msgid "Close"
 msgstr "Chiudi"
 
@@ -1727,7 +1727,7 @@ msgstr ""
 msgid "Original {name}"
 msgstr "{name} originale"
 
-#: plinius-boot:5668 plinius-boot:5835 plinius-boot:7072 plinius-boot:8857
+#: plinius-boot:5668 plinius-boot:5835 plinius-boot:7072
 msgid "Searching…"
 msgstr "Ricerca…"
 
@@ -3780,23 +3780,11 @@ msgstr "Controlla gli strumenti"
 msgid "About {name}"
 msgstr "Informazioni su {name}"
 
-#: plinius-boot:8755
-msgid "Is USB debugging on?"
-msgstr "Il debug USB è attivo?"
-
-#: plinius-boot:8755
-msgid "How to turn it on"
-msgstr "Come attivarlo"
-
-#: plinius-boot:8766
-msgid "Waiting for the phone…"
-msgstr "In attesa del telefono…"
-
-#: plinius-boot:8768
+#: plinius-boot:8761
 msgid "Connect the phone"
 msgstr "Collega il telefono"
 
-#: plinius-boot:8770
+#: plinius-boot:8763
 msgid ""
 "Connect the Volla Phone Plinius to this computer with a USB-C cable. The app "
 "finds it by itself."
@@ -3804,23 +3792,19 @@ msgstr ""
 "Collega il Volla Phone Plinius a questo computer con un cavo USB-C. L’app lo "
 "trova da sola."
 
-#: plinius-boot:8778 plinius-boot:8855
-msgid "Phones"
-msgstr "Telefoni"
-
-#: plinius-boot:8813
+#: plinius-boot:8802
 msgid "The app needs a few programs"
 msgstr "L’app ha bisogno di alcuni programmi"
 
-#: plinius-boot:8814
+#: plinius-boot:8803
 msgid "Please provide what is missing here, then check again."
 msgstr "Installa qui ciò che manca, poi controlla di nuovo."
 
-#: plinius-boot:8820
+#: plinius-boot:8809
 msgid "How to provide them"
 msgstr "Come installarli"
 
-#: plinius-boot:8822
+#: plinius-boot:8811
 msgid ""
 "The Flatpak brings these programs along, so it seems to be damaged. Please "
 "install it again."
@@ -3828,15 +3812,15 @@ msgstr ""
 "Il Flatpak include questi programmi, quindi sembra danneggiato. Installalo "
 "di nuovo."
 
-#: plinius-boot:8825
+#: plinius-boot:8814
 msgid "Run this in a terminal:"
 msgstr "Esegui questo in un terminale:"
 
-#: plinius-boot:8826
+#: plinius-boot:8815
 msgid "Command"
 msgstr "Comando"
 
-#: plinius-boot:8828
+#: plinius-boot:8817
 msgid ""
 "Install them with your system's package manager, or use the Flatpak of this "
 "app, which brings them along."
@@ -3844,19 +3828,47 @@ msgstr ""
 "Installali con il gestore di pacchetti del tuo sistema oppure usa il Flatpak "
 "di questa app, che li include."
 
-#: plinius-boot:8830
+#: plinius-boot:8819
 msgid "Check again"
 msgstr "Controlla di nuovo"
 
-#: plinius-boot:8858
-msgid "Connect a phone with a USB cable."
-msgstr "Collega un telefono con un cavo USB."
+#: plinius-boot:8843
+msgid "Is USB debugging on?"
+msgstr "Il debug USB è attivo?"
+
+#: plinius-boot:8843
+msgid "How to turn it on"
+msgstr "Come attivarlo"
+
+#: plinius-boot:8852
+msgid "Waiting for the phone…"
+msgstr "In attesa del telefono…"
+
+#: plinius-boot:8860
+msgid "A phone in the USB network"
+msgstr "Un telefono nella rete USB"
+
+#: plinius-boot:8861
+msgid "Log in with the user name and password of its system to continue."
+msgstr "Accedi con nome utente e password del suo sistema per continuare."
 
 #: plinius-boot:8865
 msgid "locked"
 msgstr "bloccato"
 
-#: plinius-boot:8908
+#: plinius-boot:8883
+msgid "Found"
+msgstr "Trovato"
+
+#: plinius-boot:8893
+msgid "Earlier phones and backups"
+msgstr "Telefoni precedenti e backup"
+
+#: plinius-boot:8894
+msgid "Their backups, also without a connection"
+msgstr "I loro backup, anche senza connessione"
+
+#: plinius-boot:8923
 #, python-brace-format
 msgid ""
 "A phone is connected, but this user may not open it over USB. Install the "
@@ -3865,7 +3877,7 @@ msgstr ""
 "Un telefono è collegato, ma questo utente non può aprirlo via USB. Installa "
 "il pacchetto {package}, poi ricollegalo."
 
-#: plinius-boot:8910
+#: plinius-boot:8925
 msgid ""
 "A phone is connected, but this user may not open it over USB. It needs udev "
 "rules for Android devices."
@@ -3873,27 +3885,27 @@ msgstr ""
 "Un telefono è collegato, ma questo utente non può aprirlo via USB. Servono "
 "regole udev per i dispositivi Android."
 
-#: plinius-boot:8929
+#: plinius-boot:8944
 msgid "User name"
 msgstr "Nome utente"
 
-#: plinius-boot:8931
+#: plinius-boot:8946
 msgid "Password"
 msgstr "Password"
 
-#: plinius-boot:8940
+#: plinius-boot:8955
 msgid "This user name is not valid."
 msgstr "Questo nome utente non è valido."
 
-#: plinius-boot:8953
+#: plinius-boot:8968
 msgid "Login failed. Check the user name and password."
 msgstr "Accesso non riuscito. Controlla il nome utente e la password."
 
-#: plinius-boot:8964
+#: plinius-boot:8979
 msgid "Log in to the phone"
 msgstr "Accedi al telefono"
 
-#: plinius-boot:8965
+#: plinius-boot:8980
 msgid ""
 "Use the user name and password of the system on the phone. The password is "
 "only kept while this app is running."
@@ -3901,36 +3913,36 @@ msgstr ""
 "Usa il nome utente e la password del sistema sul telefono. La password viene "
 "conservata solo finché questa app è in esecuzione."
 
-#: plinius-boot:8967
+#: plinius-boot:8982
 msgid "Log in"
 msgstr "Accedi"
 
-#: plinius-boot:8991
+#: plinius-boot:9006
 msgid "Storage location for backups"
 msgstr "Posizione di salvataggio dei backup"
 
-#: plinius-boot:9010
+#: plinius-boot:9025
 msgid "Inspect image file"
 msgstr "Esamina file immagine"
 
-#: plinius-boot:9022
+#: plinius-boot:9037
 #, python-brace-format
 msgid "Content: {kind}"
 msgstr "Contenuto: {kind}"
 
-#: plinius-boot:9023
+#: plinius-boot:9038
 #, python-brace-format
 msgid "File size: {size}"
 msgstr "Dimensione del file: {size}"
 
-#: plinius-boot:9025
+#: plinius-boot:9040
 msgid "The file is compressed with zstd."
 msgstr "Il file è compresso con zstd."
 
-#: plinius-boot:9034
+#: plinius-boot:9049
 msgid "All tools work."
 msgstr "Tutti gli strumenti funzionano."
 
-#: plinius-boot:9040
+#: plinius-boot:9055
 msgid "Back up and flash Volla and FuriLabs phones."
 msgstr "Backup e flash dei telefoni Volla e FuriLabs."

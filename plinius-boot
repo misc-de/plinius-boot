@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.30"
+VERSION = "0.31"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -8749,35 +8749,24 @@ class Window(Adw.ApplicationWindow):
 
     def build_devices(self):
         self.device_stack = Gtk.Stack()
-        # Step 1 of 3 as on the website: connect. The phone page that follows is step 2 (see InstallPage)
+        # Step 1: connect, always the start page, also once phones are known. The phone page that follows
+        # is step 2 (see InstallPage). What changes with the phones is drawn by update_phone_list
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24)
-        how = Adw.PreferencesGroup()
-        usb = Adw.ExpanderRow(title=_("Is USB debugging on?"), subtitle=_("How to turn it on"))
-        for n, text in enumerate(prepare_steps(), 1):
-            r = row(text)
-            r.add_prefix(Gtk.Label(label=str(n), width_chars=2, css_classes=["dim-label"]))
-            usb.add_row(r)
-        how.add(usb)
-        box.append(how)
+        self.connected_holder = Adw.Bin()
+        box.append(self.connected_holder)
         self.image_holder = Adw.Bin()
         box.append(self.image_holder)
-        searching = Gtk.Box(halign=Gtk.Align.CENTER, spacing=8)
-        searching.append(Adw.Spinner())
-        searching.append(Gtk.Label(label=_("Waiting for the phone…"), css_classes=["dim-label"]))
-        box.append(searching)
+        self.known_holder = Adw.Bin()
+        box.append(self.known_holder)
         status = Adw.StatusPage(icon_name="phone-symbolic", title=_("Connect the phone"), vexpand=True,
                                 description=GLib.markup_escape_text(_(
                                     "Connect the Volla Phone Plinius to this computer with a USB-C cable. The app "
                                     "finds it by itself.")))
         status.set_child(Adw.Clamp(maximum_size=560, child=box))
-        empty = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        empty.append(StepBar(CONNECT))
-        empty.append(status)
-        self.device_stack.add_named(empty, "empty")
-        self.device_page = Adw.PreferencesPage()
-        self.device_group = Adw.PreferencesGroup(title=_("Phones"))
-        self.device_page.add(self.device_group)
-        self.device_stack.add_named(self.device_page, "list")
+        start = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        start.append(StepBar(CONNECT))
+        start.append(status)
+        self.device_stack.add_named(start, "start")
         self.tools_page = Adw.PreferencesPage()
         self.device_stack.add_named(self.tools_page, "tools")
         self.tools_ok, self.guided = False, set()
@@ -8847,47 +8836,73 @@ class Window(Adw.ApplicationWindow):
                 names.setdefault(clean_text(serial), found)
         return sorted(names.items(), key=lambda item: (item[1], item[0]))
 
-    def update_phone_list(self):
-        """Connected phones first, then the known ones that are not connected. Returns the connected
-        ones and whether any known one is listed."""
-        devices = self.scanner.visible()
-        self.device_page.remove(self.device_group)
-        self.device_group = Adw.PreferencesGroup(title=_("Phones"))
-        if not devices:
-            searching = spinner_row(_("Searching…"))
-            searching.set_subtitle(_("Connect a phone with a USB cable."))
-            self.device_group.add(searching)
-        for d in devices:
-            parts = [d.mode_text()]
-            if d.serial:
-                parts.append(d.serial)
+    def waiting_box(self):
+        """No phone yet: how to make it show up, and that the app is waiting."""
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24)
+        how = Adw.PreferencesGroup()
+        usb = Adw.ExpanderRow(title=_("Is USB debugging on?"), subtitle=_("How to turn it on"))
+        for n, text in enumerate(prepare_steps(), 1):
+            r = row(text)
+            r.add_prefix(Gtk.Label(label=str(n), width_chars=2, css_classes=["dim-label"]))
+            usb.add_row(r)
+        how.add(usb)
+        box.append(how)
+        searching = Gtk.Box(halign=Gtk.Align.CENTER, spacing=8)
+        searching.append(Adw.Spinner())
+        searching.append(Gtk.Label(label=_("Waiting for the phone…"), css_classes=["dim-label"]))
+        box.append(searching)
+        return box
+
+    def phone_row(self, d):
+        """A connected phone and what to do with it. Without a login the app knows nothing about it yet,
+        so it does not pretend to: it says where it is and asks for the login."""
+        if d.login and not d.info:
+            r = row(_("A phone in the USB network"), _(
+                "Log in with the user name and password of its system to continue."))
+        else:
+            parts = [d.mode_text()] + ([d.serial] if d.serial else [])
             if d.mode == "fastboot" and d.access and d.access.vars.get("unlocked") == "no":
                 parts.append(_("locked"))
-            r = row(d.title(), " · ".join(parts))
-            r.add_prefix(Gtk.Image(icon_name="phone-symbolic", icon_size=Gtk.IconSize.LARGE))
-            if d.login:
-                b = Gtk.Button(label=_("Log in…"), valign=Gtk.Align.CENTER)
-                b.connect("clicked", lambda _b, d=d: self.login(d))
-                r.add_suffix(b)
-            if d.access:
-                r.add_suffix(Gtk.Image(icon_name="go-next-symbolic"))
-                r.set_activatable(True)
-                r.connect("activated", lambda _r, d=d: self.push(InstallPage(self, d)))
-            elif d.problem:
-                r.set_subtitle(d.problem)
-            self.device_group.add(r)
+            r = row(d.title(), d.problem if d.login or not d.access and d.problem else " · ".join(parts))
+        r.add_prefix(Gtk.Image(icon_name="phone-symbolic", icon_size=Gtk.IconSize.LARGE))
+        if d.login:
+            b = Gtk.Button(label=_("Log in…"), valign=Gtk.Align.CENTER, css_classes=["suggested-action"])
+            b.connect("clicked", lambda _b, d=d: self.login(d))
+            r.add_suffix(b)
+        elif d.access:
+            r.add_suffix(Gtk.Image(icon_name="go-next-symbolic"))
+            r.set_activatable(True)
+            r.connect("activated", lambda _r, d=d: self.push(InstallPage(self, d)))
+        return r
+
+    def update_phone_list(self):
+        """The connected phones, or how to connect one; below, folded, the known ones that are not
+        connected, for their backups. Returns the connected ones and whether any known one is listed."""
+        devices = self.scanner.visible()
+        if devices:
+            group = Adw.PreferencesGroup(title=_("Found"))
+            for d in devices:
+                group.add(self.phone_row(d))
+            self.connected_holder.set_child(group)
+        else:
+            self.connected_holder.set_child(self.waiting_box())
         connected = {d.serial for d in devices if d.serial}
         known = [(serial, name) for serial, name in self.known_phones() if serial not in connected]
-        for serial, name in known:
-            r = row(name, " · ".join((MODES["offline"], serial)), activatable=True)
-            icon = Gtk.Image(icon_name="phone-symbolic", icon_size=Gtk.IconSize.LARGE)
-            # Added, not set: css_classes would replace the class that makes the icon large
-            icon.add_css_class("dim-label")
-            r.add_prefix(icon)
-            r.add_suffix(Gtk.Image(icon_name="go-next-symbolic"))
-            r.connect("activated", lambda _r, s=serial, n=name: self.push(PhonePage(self, offline_device(s, n, self.config))))
-            self.device_group.add(r)
-        self.device_page.add(self.device_group)
+        if known:
+            group = Adw.PreferencesGroup()
+            earlier = Adw.ExpanderRow(title=_("Earlier phones and backups"), subtitle=_(
+                "Their backups, also without a connection"))
+            earlier.add_prefix(Gtk.Image(icon_name="drive-harddisk-symbolic"))
+            for serial, name in known:
+                r = row(name, " · ".join((MODES["offline"], serial)), activatable=True)
+                r.add_suffix(Gtk.Image(icon_name="go-next-symbolic"))
+                r.connect("activated", lambda _r, s=serial, n=name: self.push(
+                    PhonePage(self, offline_device(s, n, self.config))))
+                earlier.add_row(r)
+            group.add(earlier)
+            self.known_holder.set_child(group)
+        else:
+            self.known_holder.set_child(None)
         return devices, bool(known)
 
     def on_devices_changed(self):
@@ -8895,7 +8910,7 @@ class Window(Adw.ApplicationWindow):
         self.update_usb_banner()
         if not self.tools_ok:
             return False
-        self.device_stack.set_visible_child_name("list" if devices or known else "empty")
+        self.device_stack.set_visible_child_name("start")
         self.open_guide(devices)
         for callback in list(self.listeners.values()):
             callback(devices)

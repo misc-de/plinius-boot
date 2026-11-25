@@ -24,6 +24,11 @@
   <url type="homepage">https://github.com/misc-de/plinius-boot</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.31" date="2026-11-25">
+      <description>
+        <p>The start page is always the first step, Connect, also once the app knows phones. A connected phone that needs a login says so with one button instead of showing as an unknown phone, and earlier phones with their backups are folded away.</p>
+      </description>
+    </release>
     <release version="0.30" date="2026-11-25">
       <description>
         <p>Leaving the rescue system no longer writes Volla OS's init_boot onto a phone that runs Plinius or another Linux system inside, which stopped it from starting. The app writes back the init_boot it saw on the phone; if it never saw one, the rescue system stays and tells why.</p>
