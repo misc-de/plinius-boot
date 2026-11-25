@@ -24,6 +24,11 @@
   <url type="homepage">https://github.com/misc-de/plinius-boot</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.24" date="2026-11-25">
+      <description>
+        <p>Installing inside the phone asks for a backup of Volla OS in plain words: one status and one button, and the backup page shows only where it goes and how big it is.</p>
+      </description>
+    </release>
     <release version="0.23" date="2026-11-25">
       <description>
         <p>The last step asks where Plinius should go, on the memory card or inside the phone, and chooses nothing for you. Places on the card are described without partition numbers.</p>

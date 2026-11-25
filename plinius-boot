@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.23"
+VERSION = "0.24"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -5677,11 +5677,13 @@ class RescuePage(Adw.NavigationPage):
 
 class BackupCreatePage(Adw.NavigationPage):
     """Creating a backup of one phone: where it goes and which partitions. select: the partitions chosen at
-    first, by name, or WHOLE_PHONE; without it the usual groups (DEFAULT_GROUPS)."""
+    first, by name, or WHOLE_PHONE; without it the usual groups (DEFAULT_GROUPS). simple: the backup of
+    Volla OS in the guided installation, select fixed and in words for everybody: no partitions, no
+    rescue system, only where it goes, how big it is and the button."""
 
-    def __init__(self, win, device, select=None):
-        super().__init__(title=_("Create backup"))
-        self.win, self.device, self.select = win, device, select
+    def __init__(self, win, device, select=None, simple=False):
+        super().__init__(title=_("Back up Volla OS") if simple else _("Create backup"))
+        self.win, self.device, self.select, self.simple = win, device, select, simple
         self.parts = []
         self.searching = False
         self.banner = Adw.Banner(title=device.problem, use_markup=False, revealed=bool(device.problem))
@@ -5699,7 +5701,8 @@ class BackupCreatePage(Adw.NavigationPage):
             self.original_spinner = Adw.Spinner()
             self.original_row.add_prefix(self.original_spinner)
             group.add(self.original_row)
-            self.prefs.add(group)
+            if not simple:
+                self.prefs.add(group)
             self.searching = True
             in_thread(lambda: look_for_original(device, win.config, pending,
                                                 lambda text: GLib.idle_add(self.original_row.set_subtitle, text)),
@@ -5711,8 +5714,8 @@ class BackupCreatePage(Adw.NavigationPage):
         self.dir_row.add_suffix(change)
         where.add(self.dir_row)
         self.prefs.add(where)
-        self.loading = Adw.PreferencesGroup(title=_("Partitions"))
-        self.loading.add(spinner_row(_("Reading the partition list…")))
+        self.loading = Adw.PreferencesGroup(title="" if simple else _("Partitions"))
+        self.loading.add(spinner_row(_("One moment…") if simple else _("Reading the partition list…")))
         self.prefs.add(self.loading)
         self.list = PartitionList(self.prefs, self.update_summary)
 
@@ -5753,6 +5756,15 @@ class BackupCreatePage(Adw.NavigationPage):
             self.banner.set_revealed(True)
             return False
         self.parts = parts
+        if self.simple:
+            group = Adw.PreferencesGroup(title=_("What is backed up"))
+            r = row(_("Volla OS"), _("{size}; packed, the backup is mostly much smaller.").format(
+                size=size_text(sum(p.size for p in self.selection()))))
+            r.add_prefix(Gtk.Image(icon_name="phone-symbolic"))
+            group.add(r)
+            self.prefs.add(group)
+            self.update_summary()
+            return False
         items = []
         for p in parts:
             subtitle = [size_text(p.size)]
@@ -5771,6 +5783,8 @@ class BackupCreatePage(Adw.NavigationPage):
         return False
 
     def selection(self):
+        if self.simple:
+            return [p for p in self.parts if p.name in self.select]
         chosen = set(self.list.selected())
         return [p for p in self.parts if p.name in chosen]
 
@@ -5783,6 +5797,15 @@ class BackupCreatePage(Adw.NavigationPage):
         waiting = self.searching and any(p.name == self.pending["partition"] for p in parts)
         if waiting:
             text += " · " + _("Waiting for the original of {name}…").format(name=self.pending["partition"])
+        if self.simple:
+            text = _("{size} to back up").format(size=size_text(total)) if parts else ""
+            lost = self.pending and not self.searching and not self.original and \
+                any(p.name == self.pending["partition"] for p in parts)
+            if waiting:
+                text += " · " + _("Getting a part of Volla OS from the update server…")
+            elif lost:
+                text += " · " + _("A part of Volla OS is not on the update server, so this backup is no way back. "
+                                  "Advanced in the menu has more ways.")
         self.summary.set_label(text)
         self.backup_button.set_sensitive(bool(parts) and not waiting and self.device.key in self.win.scanner.devices)
 
@@ -8324,30 +8347,49 @@ class InstallPage(FollowingPage):
         size = max(PHONE_SYSTEM_DEFAULT, image.size)
         problem = phone_install_problem(d, config, image, size)
         if problem:
-            prefs.add(Adw.PreferencesGroup(title=_("Install on the phone itself"), description=problem))
+            prefs.add(Adw.PreferencesGroup(title=_("Inside the phone"), description=problem))
             return
         empty = INTERNAL_CHANGES if self.erased else ()
-        backup, missing = backup_group(self.win, d, phone_changes(pending_rescue(config, d.serial)["partition"][
-            len("init_boot"):]), _("Installing overwrites these partitions of Volla OS."), empty)
-        prefs.add(backup)
+        names = phone_changes(pending_rescue(config, d.serial)["partition"][len("init_boot"):])
+        missing = self.add_volla_backup(prefs, names, empty)
         group = Adw.PreferencesGroup(description=_("This takes up to an hour. Keep the phone connected."))
-        sure = Adw.SwitchRow(title=_("I have copied what I still need"),
-                             subtitle=_("All data of Volla OS on this phone will be erased."))
         self.go_button = button_row(_("Erase Volla OS and install"), "system-software-install-symbolic",
                                     lambda: self.run(lambda job: run_install_phone(
                                         job, d, config, image, size, pin_hash=self.pin_hash, empty=empty,
                                         language=self.language)))
         self.go_button.add_css_class("destructive-action")
-        self.go_button.allowed = False
+        # Unlocking erased the data a moment ago: there is nothing left to copy, only the backup counts
+        self.go_button.allowed = self.erased and not missing
+        if not self.erased:
+            sure = Adw.SwitchRow(title=_("I have copied what I still need"),
+                                 subtitle=_("All data of Volla OS on this phone will be erased."))
 
-        def toggled(s, _p):
-            self.go_button.allowed = s.get_active() and not missing
-            self.update_install()
+            def toggled(s, _p):
+                self.go_button.allowed = s.get_active() and not missing
+                self.update_install()
 
-        sure.connect("notify::active", toggled)
-        group.add(sure)
+            sure.connect("notify::active", toggled)
+            group.add(sure)
         group.add(self.go_button)
         prefs.add(group)
+
+    def add_volla_backup(self, prefs, names, empty):
+        """The way back to Volla OS, in words for everybody: whether it is backed up, and one button. The
+        partitions are the same as on the Advanced pages (see backup_group), only not named here."""
+        d, win = self.device, self.win
+        missing = missing_backup(win.backups, d, names, empty)
+        group = Adw.PreferencesGroup(title=_("Back up Volla OS first"), description=_(
+            "This is your way back to Volla OS. The backup is kept on this computer."))
+        if missing:
+            group.add(check_row(_("Not backed up yet"), "", False))
+            group.add(button_row(_("Back up Volla OS…"), "document-save-symbolic",
+                                 lambda: win.push(BackupCreatePage(win, d, select=missing, simple=True)),
+                                 suggested=True,
+                                 sensitive=d.can_read))
+        else:
+            group.add(check_row(_("Volla OS is backed up"), _("On this computer"), True))
+        prefs.add(group)
+        return missing
 
     def choice_text(self, card, choice):
         """Where on the card, in words for everybody: no partition numbers, only what is kept and lost."""

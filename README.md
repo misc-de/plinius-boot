@@ -36,7 +36,11 @@ bar shows its progress under its step, and ticks it when it is done before the c
    the phone is ready before the image, and goes on by itself once the image is checked.
 4. **Install:** first the question where Plinius should go, with nothing chosen: **on the memory card**
    (recommended, Volla OS stays) or **inside the phone** (instead of Volla OS). The button waits for the
-   answer. Below it the image and the language, with **Change** for another image file or language. Where it
+   answer. Below it the image and the language, with **Change** for another image file or language. Inside
+   the phone, the page first asks for a backup of Volla OS on this computer, as the way back: one status, one
+   button, and a page with only the storage location and the size. Which partitions that is (the boot
+   partitions of the slot, `userdata` unless unlocking just erased it, `init_boot` with its original) is said
+   on the Advanced pages only. Where it
    goes on the card is chosen by the app, the safest way first, and said without partition numbers:
    - **A card with a boot menu** (set up by the Volla Boot Manager or by this app): unused partitions, or
      free space for a new place, both shown as "into the free space", where nothing is lost. If neither is
