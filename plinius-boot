@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.24"
+VERSION = "0.25"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -2706,9 +2706,14 @@ class Job:
         self.proc = None
         # Notes for the end of the operation, e.g. from take_vendor
         self.notes = []
+        # The step last written to the details: each new one goes there with the time
+        self.last_step = None
         page.job = self
 
     def report(self, done, total, text):
+        if text and text != self.last_step:
+            self.last_step = text
+            self.log(f"{time.strftime('%H:%M:%S')}  {text}")
         GLib.idle_add(self.page.progress, done, total, text)
 
     def log(self, text):

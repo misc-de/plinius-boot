@@ -24,6 +24,11 @@
   <url type="homepage">https://github.com/misc-de/plinius-boot</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.25" date="2026-11-25">
+      <description>
+        <p>The details of an installation are no longer empty: every step is listed there with its time.</p>
+      </description>
+    </release>
     <release version="0.24" date="2026-11-25">
       <description>
         <p>Installing inside the phone asks for a backup of Volla OS in plain words: one status and one button, and the backup page shows only where it goes and how big it is.</p>

@@ -910,4 +910,29 @@ check("a download that fails says why and can start again", source.download_erro
 app.in_thread, app.download_image, app.metered, app.SystemImage, app.alert = real
 app.card_image_problem = real_card_problem
 
+# The details of an operation: each new step once, with the time
+class Page:
+    def __init__(self):
+        self.lines, self.job = [], None
+
+    def progress(self, done, total, text):
+        return False
+
+    def add_line(self, text):
+        self.lines.append(text)
+        return False
+
+
+real_idle = app.GLib.idle_add
+app.GLib.idle_add = lambda function, *args: function(*args)
+page = Page()
+job = app.Job(page)
+for done, text in ((0, "Setting up the memory card"), (1, "Setting up the memory card"), (2, "Writing Plinius"),
+                   (3, "Writing Plinius"), (4, "")):
+    job.report(done, 4, text)
+app.GLib.idle_add = real_idle
+check("each new step goes into the details once, with the time",
+      [line.split("  ", 1)[1] for line in page.lines] == ["Setting up the memory card", "Writing Plinius"]
+      and all(re.fullmatch(r"\d\d:\d\d:\d\d", line.split("  ", 1)[0]) for line in page.lines))
+
 print("All guide checks passed")
