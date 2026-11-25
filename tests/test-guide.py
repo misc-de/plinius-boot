@@ -878,6 +878,24 @@ source.image.path = "/home/user/own.img"
 check("an image of one's own by its file name", source.title() == "own.img")
 
 
+# Pausing: what came so far stays as .part, and the next start goes on from there
+paused = app.ImageSource(None)
+paused.show_offer(offer, None)
+check("nothing paused without a part", not paused.paused() and paused.part_size() == 0)
+with open(os.path.join(app.IMAGES, offer["name"]) + ".part", "wb") as f:
+    f.write(b"x" * 3)
+check("a stopped download is paused, with how much is here", paused.paused() and paused.part_size() == 3)
+stopped = []
+paused.job = types.SimpleNamespace(cancel=lambda: stopped.append(True))
+check("a running download is not paused", not paused.paused())
+paused.pause()
+check("pausing stops the running download", stopped == [True])
+paused.job = None
+paused.want()
+check("deciding goes on with a paused download", downloads[-1] == offer["name"] and paused.image)
+os.remove(os.path.join(app.IMAGES, offer["name"]) + ".part")
+
+
 def failing(job, info):
     raise RuntimeError("connection lost")
 

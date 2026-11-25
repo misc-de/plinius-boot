@@ -29,8 +29,9 @@ bar shows its progress under its step, and ticks it when it is done before the c
    "OEM unlocking" is still off, the app restarts the phone into Volla OS, shows the two taps there, and
    after "Continue" takes it back to the bootloader.
 3. **Download:** into `~/.local/share/plinius-boot/images`, over a metered connection only on a click; an
-   image downloaded before is only checked. A download that stops goes on where it stopped, a damaged one is
-   deleted. The folder keeps two images, the new one and the one before it; older ones and unfinished
+   image downloaded before is only checked. **Pause** keeps what came so far as `.part`, and **Resume** goes
+   on from there, as does a download that stopped by itself or with the app; a damaged one is deleted.
+   Pausing and resuming also work during step 2, below what the page shows there. The folder keeps two images, the new one and the one before it; older ones and unfinished
    downloads of them leave. If nothing is published, an image file is chosen instead. The step shows only if
    the phone is ready before the image, and goes on by itself once the image is checked.
 4. **Install:** a summary with one button: the image, where it goes, the language. **Change** opens the

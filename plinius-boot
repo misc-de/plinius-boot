@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.21"
+VERSION = "0.22"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -7718,9 +7718,23 @@ class ImageSource:
 
         in_thread(lambda: download_image(job, self.offer), done)
 
-    def cancel(self):
+    def pause(self):
+        """Stops the download; what came so far stays as .part, and start_download goes on from there."""
         if self.job:
             self.job.cancel()
+
+    def part_size(self):
+        """How much of the offered image is here from a download that stopped, 0 if none."""
+        if not self.offer:
+            return 0
+        try:
+            return os.path.getsize(os.path.join(IMAGES, self.offer["name"]) + ".part")
+        except OSError:
+            return 0
+
+    def paused(self):
+        """A download stopped part way, by the user or by the app closing, and not going on yet."""
+        return not (self.job or self.image or self.checking) and self.part_size() > 0
 
     def download_progress(self, done, total):
         self.downloaded = (done, total)
@@ -7795,9 +7809,9 @@ def image_row(source, owner, change=False, pending=False):
         r.add_prefix(Adw.Spinner())
         bar = Gtk.ProgressBar(valign=Gtk.Align.CENTER, width_request=120)
         r.add_suffix(bar)
-        cancel = Gtk.Button(label=_("Cancel"), valign=Gtk.Align.CENTER)
-        cancel.connect("clicked", lambda _b: source.cancel())
-        r.add_suffix(cancel)
+        pause = Gtk.Button(label=_("Pause"), valign=Gtk.Align.CENTER)
+        pause.connect("clicked", lambda _b: source.pause())
+        r.add_suffix(pause)
         owner.download_row, owner.download_bar = r, bar
         show_image_progress(source, owner)
         return r
@@ -7810,6 +7824,15 @@ def image_row(source, owner, change=False, pending=False):
         return r
     if source.looking:
         return spinner_row(_("Looking for the newest version…"))
+    if source.paused() and not source.download_error:
+        r = row(source.title(), _("Paused: {done} of {total}").format(
+            done=size_text(source.part_size()), total=size_text(source.offer["size"])))
+        r.add_prefix(Gtk.Image(icon_name="media-playback-pause-symbolic"))
+        if not pending:
+            resume = Gtk.Button(label=_("Resume"), valign=Gtk.Align.CENTER, css_classes=["suggested-action"])
+            resume.connect("clicked", lambda _b: source.start_download())
+            r.add_suffix(resume)
+        return r
     if source.offer and pending and not source.download_error:
         r = row(source.title(), _("{size}, downloaded when you check the phone").format(
             size=size_text(source.offer["size"])))
@@ -7877,6 +7900,7 @@ class InstallPage(FollowingPage):
         # OEM unlocking was off: the phone went to Volla OS to turn it on, and waits there for Continue
         self.need_oem = False
         self.download_bar = self.download_row = self.go_button = self.pin_note = None
+        self.current = CHECK
         self.source.listeners[self] = self
         self.render()
 
@@ -7891,13 +7915,17 @@ class InstallPage(FollowingPage):
         self.show_download_detail()
 
     def show_steps(self, current):
+        self.current = current
         self.steps.set_step(current, self.finished, (DOWNLOAD,) if self.source.image else ())
         self.show_download_detail()
 
     def show_download_detail(self):
         """While the phone is checked, the download shows how far it is under its step."""
         done, total = self.source.downloaded
-        self.steps.set_detail(DOWNLOAD, f"{done * 100 // total} %" if self.source.job and total else "")
+        if self.source.job and total:
+            self.steps.set_detail(DOWNLOAD, f"{done * 100 // total} %")
+        else:
+            self.steps.set_detail(DOWNLOAD, _("paused") if self.started and self.source.paused() else "")
 
     # What the page shows
 
@@ -7936,7 +7964,8 @@ class InstallPage(FollowingPage):
             self.started = True
         if not self.started:
             self.add_check(prefs)
-        elif d.rescue:
+            return
+        if d.rescue:
             self.load_layout(prefs)
             if d.layout is not None:
                 self.after_layout(prefs)
@@ -7944,6 +7973,11 @@ class InstallPage(FollowingPage):
             self.in_bootloader(prefs)
         else:
             self.in_system(prefs)
+        # Meanwhile the download: to pause or resume it without waiting for its own step
+        if self.current == CHECK and (self.source.job or self.source.paused()):
+            group = Adw.PreferencesGroup(title=_("Download"))
+            group.add(image_row(self.source, self))
+            prefs.add(group)
 
     # Step 2: check
 

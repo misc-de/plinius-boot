@@ -24,6 +24,11 @@
   <url type="homepage">https://github.com/misc-de/plinius-boot</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.22" date="2026-11-25">
+      <description>
+        <p>The download can be paused and resumed; it goes on where it stopped, and shows how much is there already.</p>
+      </description>
+    </release>
     <release version="0.21" date="2026-11-25">
       <description>
         <p>The download is a step of its own: Connect, Check, Download, Install. It runs while the phone is checked, and the bar shows how far it is.</p>
