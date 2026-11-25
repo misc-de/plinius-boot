@@ -831,16 +831,29 @@ if {name: boot_entry(name) for name in read()[1]} != entries_before:
 ok("the partition table, super, nvdata, mrdump and the boot entries on the card stay as they were")
 
 # Leaving a later rescue system must bring back this init_boot, not the one vbmeta describes for Volla OS
-expected = app.own_system_expected(access, config, device.serial, "_b")
+inside = app.read_phone_system(device, config)
+if inside["kind"] != "plinius":
+    fail(f"what the rescue system finds inside the phone after installing: {inside}")
+expected = app.known_init_boot(config, device.serial, "b", inside["kind"])
 if not expected or not app.matches_hash(phone_files["init_boot"], expected):
     fail(f"the original of the new system: {expected}")
 found = app.find_original(device.serial, "init_boot", expected)
 if not found or found[0] != phone_files["init_boot"]:
     fail("the init_boot of the new system was not kept")
+# A kernel update changes boot_b: still the same system, still its own init_boot
 sh("head -c 4096 /dev/urandom | dd of=/dev/disk/by-partlabel/boot_b bs=4096 conv=notrunc 2>/dev/null; sync; echo 3 > /proc/sys/vm/drop_caches")
-if app.own_system_expected(access, config, device.serial, "_b") is not None:
-    fail("after Volla OS came back, the new system's init_boot would be written")
-ok("a later rescue system goes back to this init_boot, and to Volla's again once a backup of it was restored")
+if app.read_phone_system(device, config)["kind"] != "plinius" or \
+        app.known_init_boot(config, device.serial, "b", "plinius") != expected:
+    fail("after a kernel update the app no longer knows the system it installed")
+# A backup of Volla OS restored: userdata holds Android's folders again, and Volla's init_boot is right
+sh("mkfs.ext4 -F -q /dev/disk/by-partlabel/userdata && mkdir -p /run/check && "
+   "mount -t ext4 /dev/disk/by-partlabel/userdata /run/check && mkdir /run/check/data /run/check/media "
+   "/run/check/misc && umount /run/check")
+inside = app.read_phone_system(device, config)
+if inside["kind"] != "android" or app.known_init_boot(config, device.serial, "b", "android") is not None:
+    fail(f"after Volla OS came back: {inside}")
+ok("a later rescue system goes back to this init_boot, also after a kernel update, and to Volla's once a backup "
+   "of it was restored")
 
 # An image with plinius-crypt: the phone is to ask once at its first start, the request says "fresh"
 crypt_image, _crypt_files = phone_image("phone-crypt", crypt=True)

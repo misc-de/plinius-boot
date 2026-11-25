@@ -977,8 +977,10 @@ check("Ubuntu Touch by its folders", app.phone_system(phone_script(tree("user-da
 check("Volla OS by Android's folders, named by vbmeta", app.phone_system(phone_script(tree("data", "media", "misc")),
                                                                          volla) == {"kind": "android", "name": "Volla OS 3.0"})
 check("empty data: Android starts anew", app.phone_system(phone_script(tree()), []) == {"kind": "android", "name": "Android"})
-check("encrypted and not of this app: unknown", app.phone_system(phone_script(head=b"LUKS\xba\xbe" + b"\0" * 10), volla)
-      == {"kind": "unknown", "name": ""})
+check("encrypted and not of this app: a Linux system, never Android",
+      app.phone_system(phone_script(head=b"LUKS\xba\xbe" + b"\0" * 10), volla) == {"kind": "linux", "name": ""})
+check("installed by this app once, Volla OS restored since: Android",
+      app.phone_system(phone_script(tree("data", "media", "misc")), volla, own=True)["kind"] == "android")
 check("encrypted, of this app: Plinius", app.phone_system(phone_script(head=b"LUKS\xba\xbe" + b"\0" * 10), volla,
                                                           own=True) == {"kind": "plinius", "name": "Plinius"})
 check("unreadable: unknown", app.phone_system(phone_script(), volla) == {"kind": "unknown", "name": ""})
@@ -990,5 +992,80 @@ check("a card with a boot menu: not set up anew here",
 check("a card with systems but no boot menu: not set up anew here",
       app.wizard_card_choices({"settings": None, "parts": [{"system": {"name": "Arch"}}]}, [fresh]) == [])
 check("a blank card may be set up", app.wizard_card_choices({"settings": None, "parts": [{}]}, [fresh]) == [fresh])
+
+# The init_boot to write back when leaving the rescue system: never Volla OS's for another system
+seen = {"slot": "b", "time": 200, "init_boot": [8, "sha256", "", "seen"]}
+installed = {"init_boot": [8, "sha256", "", "installed"], "time": 100}
+cfg = {"init_boot_seen": {"S1": seen}, "phone_system": {"S1": installed}}
+check("what the app saw last counts", app.known_init_boot(cfg, "S1", "b", "plinius")[3] == "seen")
+check("an install after that counts instead", app.known_init_boot(
+    {"init_boot_seen": {"S1": seen}, "phone_system": {"S1": dict(installed, time=300)}}, "S1", "b", "plinius")[3] == "installed")
+check("an install from before the time stamps is the older one", app.known_init_boot(
+    {"init_boot_seen": {"S1": seen}, "phone_system": {"S1": {"init_boot": installed["init_boot"]}}}, "S1", "b",
+    "plinius")[3] == "seen")
+check("seen in the other slot does not count", app.known_init_boot(cfg, "S1", "a", "linux") is None)
+check("the installed one only for a system of this app", app.known_init_boot({"phone_system": {"S1": installed}},
+                                                                             "S1", "b", "ubuntu") is None)
+check("Android needs none of them", app.known_init_boot(cfg, "S1", "b", "android") is None)
+
+
+class RescueAccess:
+    def __init__(self):
+        self.vars = {}
+
+
+def rescue_device(serial="S1"):
+    return types.SimpleNamespace(rescue=True, serial=serial, access=RescueAccess(), info={"slot": "b"},
+                                 load_parts=lambda: [types.SimpleNamespace(name="vbmeta_b", head=b"vbmeta")])
+
+
+real_read, real_avb, real_save = app.read_phone_system, app.avb_hashes, app.save_config
+app.avb_hashes = lambda head: {"init_boot": [8, "sha256", "", "volla"]}
+app.save_config = lambda config: None
+
+
+def expected_for(kind, config):
+    app.read_phone_system = lambda device, config=None, android=(): {"kind": kind, "name": "Arch Linux ARM"}
+    config = dict(config, rescue_in={"S1": {"partition": "init_boot_b"}})
+    return app.expected_original(rescue_device(), config, config["rescue_in"]["S1"])[1][3]
+
+
+check("Volla OS inside: the init_boot its vbmeta names", expected_for("android", {}) == "volla")
+check("Plinius inside, kernel updated since: its own init_boot, not Volla OS's", expected_for("plinius", cfg) == "seen")
+check("unreadable and nothing known: as before, by vbmeta", expected_for("unknown", {}) == "volla")
+try:
+    expected_for("linux", {})
+    check("another Linux the app never saw: the rescue system stays", False)
+except app.Failed as e:
+    check("another Linux the app never saw: the rescue system stays", "never saw" in str(e))
+app.read_phone_system, app.avb_hashes = real_read, real_avb
+
+
+# Before restarting into the bootloader the app keeps the init_boot of a running Linux system
+class LinuxAccess:
+    root = "sudo "
+
+    def run_root(self, script, timeout=60):
+        return (0, "16\n", "") if script.startswith("blockdev --getsize64 /dev/disk/by-partlabel/init_boot_b") \
+            else (1, "", "unexpected")
+
+    def reader(self, path, size):
+        assert path == "/dev/disk/by-partlabel/init_boot_b" and size == 16
+        return subprocess.Popen(["printf", "ANDROID!12345678"], stdout=subprocess.PIPE)
+
+
+linux = types.SimpleNamespace(mode="ssh", rescue=False, serial="S9", info={"slot": "b"}, access=LinuxAccess())
+cfg = {}
+descriptor = app.remember_init_boot(linux, cfg)
+check("the init_boot of the running system is kept with its checksum",
+      descriptor == [16, "sha256", "", hashlib.sha256(b"ANDROID!12345678").hexdigest()]
+      and cfg["init_boot_seen"]["S9"]["slot"] == "b" and cfg["init_boot_seen"]["S9"]["init_boot"] == descriptor
+      and any(source == "running-system" for source, _path in app.candidates("S9", "init_boot")))
+check("Android and the rescue system need nothing", app.remember_init_boot(
+    types.SimpleNamespace(linux.__dict__ | {"mode": "adb"}), {}) is None and app.remember_init_boot(
+    types.SimpleNamespace(linux.__dict__ | {"rescue": True}), {}) is None)
+check("without root nothing is read", app.remember_init_boot(
+    types.SimpleNamespace(linux.__dict__ | {"access": types.SimpleNamespace(root=None)}), {}) is None)
+app.save_config = real_save
 
 print("All guide checks passed")

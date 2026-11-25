@@ -68,6 +68,14 @@ goes through the directory as stored, and Linux lists a directory with a hash in
 app reads the directory from the partition itself (`entry_order`). Then the original `init_boot` goes back and
 the phone starts. Instead of Volla OS it is the way described under 7. below.
 
+Which `init_boot` is the original depends on what is inside the phone (`expected_original`): `vbmeta` keeps
+describing Volla OS whatever was installed later, so its checksum only counts for Android. For anything else
+the app takes the `init_boot` it saw itself: read from the running system before it restarted that into the
+bootloader (`remember_init_boot`, kept with `running-system` in its name), or the one it wrote when it put
+Plinius inside the phone, whichever is newer. Kernel updates change `boot`, so that is no sign of whose
+system it is. If the app never saw the `init_boot` of the system inside, the rescue system stays, and the
+right one is written back from a file under Advanced.
+
 Not tried on a real phone yet: setting up a card from the shop, which only the bootloader of a Plinius can
 confirm; installing into free space; the whole way through in one go.
 

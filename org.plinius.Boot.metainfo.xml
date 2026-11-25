@@ -24,6 +24,11 @@
   <url type="homepage">https://github.com/misc-de/plinius-boot</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.30" date="2026-11-25">
+      <description>
+        <p>Leaving the rescue system no longer writes Volla OS's init_boot onto a phone that runs Plinius or another Linux system inside, which stopped it from starting. The app writes back the init_boot it saw on the phone; if it never saw one, the rescue system stays and tells why.</p>
+      </description>
+    </release>
     <release version="0.29" date="2026-11-25">
       <description>
         <p>The check button names what is still open: Check the memory card, once the phone and its bootloader are known.</p>

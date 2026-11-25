@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.29"
+VERSION = "0.30"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -1269,7 +1269,8 @@ rmdir "$m"
 def phone_system(out, android, own=False):
     """What runs in the phone itself, from PHONE_SYSTEM_SCRIPT: {"kind": "plinius", "ubuntu", "linux",
     "android" or "unknown", "name": its name or ""}. android: android_systems of the phone, which name the
-    Android build; own: the boot partition is still the one of a system this app installed."""
+    Android build; own: this app installed a system in the phone (config "phone_system"). Kernel updates
+    change its boot partition, so that is no sign; a backup of Volla OS restored since shows as Android."""
     kv, has = {}, set()
     for line in out.splitlines():
         key, eq, value = line.partition("=")
@@ -1281,11 +1282,12 @@ def phone_system(out, android, own=False):
         else:
             kv[key] = value
     linux = kv.get("PRETTY_NAME") or kv.get("NAME") or ""
-    if own:
+    if own and ("rootfs.img" in has or kv.get("fs") == "luks"):
         return {"kind": "plinius", "name": linux or "Plinius"}
     if kv.get("channel") or "ubuntu.img" in has or {"user-data", "system-data"} & has:
         return {"kind": "ubuntu", "name": "Ubuntu Touch"}
-    if "rootfs.img" in has:
+    # Android encrypts per file, never the whole partition: LUKS is a Linux system, whose name is inside
+    if "rootfs.img" in has or kv.get("fs") == "luks":
         return {"kind": "linux", "name": linux}
     # Without a system of its own in userdata the phone starts Android from super, with its data or anew
     if {"app", "data", "media", "misc"} & has or kv.get("fs") in ("ext4", "f2fs") and not has:
@@ -1295,10 +1297,10 @@ def phone_system(out, android, own=False):
 
 def read_phone_system(device, config=None, android=()):
     """phone_system of a phone in the rescue system; unknown if it cannot be read."""
-    access, slot = device.access, device.info.get("slot")
+    access = device.access
+    own = bool(config and isinstance(config.get("phone_system", {}).get(device.serial), dict))
     try:
         run_checked(access, "plinius-partlinks", 120, _("Reading the partition table"))
-        own = bool(config and slot in ("a", "b") and own_system_expected(access, config, device.serial, "_" + slot))
         rc, out, _err = access.run_root(PHONE_SYSTEM_SCRIPT, 300)
     except (Failed, OSError, ValueError):
         return {"kind": "unknown", "name": ""}
@@ -4085,16 +4087,46 @@ def phone_install_problem(device, config, image, system_size):
     return image.phone_problem()
 
 
-def own_system_expected(access, config, serial, suffix):
-    """The init_boot to write back if the phone runs a system this app installed, or None. Its vbmeta still
-    describes Volla OS, so it is no help there; the boot partition tells whether that system is still in
-    place, or whether a backup of Volla OS was restored in the meantime."""
-    entry = config.get("phone_system", {}).get(serial)
-    if not isinstance(entry, dict):
+def known_init_boot(config, serial, slot, kind):
+    """Hash descriptor of the init_boot of the system inside the phone as this app last saw it, or None:
+    read from the running system before it restarted into the bootloader (config "init_boot_seen", see
+    remember_init_boot), or written by this app when it installed Plinius there (config "phone_system").
+    The newer one counts; the latter only for a system of this app (kind "plinius")."""
+    found = []
+    seen = config.get("init_boot_seen", {}).get(serial)
+    if isinstance(seen, dict) and seen.get("slot") == slot and kind in ("plinius", "linux", "ubuntu", "unknown"):
+        found.append((seen.get("time", 0), seen.get("init_boot")))
+    own = config.get("phone_system", {}).get(serial)
+    if isinstance(own, dict) and kind == "plinius":
+        found.append((own.get("time", 0), own.get("init_boot")))
+    found = [(time_, d) for time_, d in found if isinstance(d, list) and len(d) == 4]
+    return max(found, key=lambda f: f[0])[1] if found else None
+
+
+def remember_init_boot(device, config):
+    """Before a running Linux system of the phone restarts into the bootloader, where the rescue system may
+    take its init_boot: that init_boot as it is now, kept with its checksum, so that leaving the rescue
+    system writes exactly this back (see expected_original). Volla OS needs nothing: its vbmeta names its
+    init_boot. Quietly nothing without root or a known slot."""
+    access, serial, slot = device.access, device.serial, device.info.get("slot")
+    if device.mode != "ssh" or device.rescue or not serial or slot not in ("a", "b") or \
+            getattr(access, "root", None) is None:
         return None
-    if access.checksum(phone_partition("boot" + suffix), int(entry.get("boot_size", 0))) != entry.get("boot_sha"):
+    path = phone_partition("init_boot_" + slot)
+    try:
+        size = int(run_checked(access, f"blockdev --getsize64 {path}", 60, _("Reading the partition table")).strip())
+        proc = access.reader(path, size)
+        data = proc.stdout.read(size + 1)
+        proc.wait()
+    except (Failed, OSError, ValueError):
         return None
-    return entry.get("init_boot")
+    if len(data) != size or data[:8] != b"ANDROID!":
+        return None
+    keep_candidate(serial, "init_boot", "running-system", data)
+    descriptor = [size, "sha256", "", hashlib.sha256(data).hexdigest()]
+    config.setdefault("init_boot_seen", {})[serial] = {"slot": slot, "time": int(time.time()), "init_boot": descriptor}
+    save_config(config)
+    return descriptor
 
 
 def send_phone_file(job, access, read, path, size, done, total, text):
@@ -4193,7 +4225,8 @@ def run_install_phone(job, device, config, image, system_size, restart=True, pin
     keep_candidate(serial, "init_boot", "installed-system", boot["init_boot"])
     config.setdefault("phone_system", {})[serial] = {
         "boot_size": len(boot["boot"]), "boot_sha": hashlib.sha256(boot["boot"]).hexdigest(),
-        "init_boot": [len(boot["init_boot"]), "sha256", "", hashlib.sha256(boot["init_boot"]).hexdigest()]}
+        "init_boot": [len(boot["init_boot"]), "sha256", "", hashlib.sha256(boot["init_boot"]).hexdigest()],
+        "time": int(time.time())}
     del config["rescue_in"][serial]
     config.get("format_userdata", {}).pop(serial, None)
     save_config(config)
@@ -5394,12 +5427,22 @@ def expected_original(device, config, pending):
     from fastboot. Returns (partition name without slot, descriptor)."""
     name = re.sub(r"_[ab]$", "", pending["partition"])
     if device.rescue:
-        vbmeta = "vbmeta" + pending["partition"][len(name):]
-        head = next((p.head for p in device.load_parts() if p.name == vbmeta), b"")
-        expected = own_system_expected(device.access, config, device.serial, pending["partition"][len(name):]) \
-            or avb_hashes(head).get(name)
+        suffix = pending["partition"][len(name):]
+        inside = read_phone_system(device, config)
+        # vbmeta describes Volla OS whatever was installed later: its checksum only fits Android. Anything
+        # else needs its own init_boot as this app saw it; Volla OS's would stop it from starting
+        expected = known_init_boot(config, device.serial, suffix[1:], inside["kind"])
+        if not expected and inside["kind"] in ("android", "unknown"):
+            vbmeta = "vbmeta" + suffix
+            head = next((p.head for p in device.load_parts() if p.name == vbmeta), b"")
+            expected = avb_hashes(head).get(name)
+            if not expected:
+                raise Failed(_("The phone's {vbmeta} holds no checksum for {name}.").format(vbmeta=vbmeta, name=name))
         if not expected:
-            raise Failed(_("The phone's {vbmeta} holds no checksum for {name}.").format(vbmeta=vbmeta, name=name))
+            raise Failed(_("Inside the phone is {system}, not Volla OS, and the app never saw its {name}: writing "
+                           "the one of Volla OS back would stop it from starting. The rescue system stays. Write "
+                           "the right {name} back from a file under Advanced, Rescue system.").format(
+                system=inside["name"] or _("the current system"), name=name))
         if pending.get("expected") != expected:
             pending["expected"] = expected
             save_config(config)
@@ -7266,7 +7309,8 @@ class ChangePage(FollowingPage):
         prefs.add(group)
 
     def restart_bootloader(self):
-        in_thread(lambda: self.device.access.reboot("bootloader"), lambda *_a: False)
+        d, config = self.device, self.win.config
+        in_thread(lambda: (remember_init_boot(d, config), d.access.reboot("bootloader")), lambda *_a: False)
         self.win.toast(_("The phone is restarting"))
 
     def add_start(self, prefs):
@@ -8193,7 +8237,8 @@ class InstallPage(FollowingPage):
         if d.access and (d.mode == "adb" or d.access.root is not None):
             self.add_status(prefs, _("Restarting into the bootloader"))
             # It is gone from USB for a moment and comes back in the bootloader (see FollowingPage)
-            self.automatic("bootloader", lambda step: d.access.reboot("bootloader"))
+            self.automatic("bootloader", lambda step: (remember_init_boot(d, self.win.config),
+                                                       d.access.reboot("bootloader")))
         else:
             prefs.add(steps_group(_("Start the bootloader"), _(
                 "The system on the phone does not let the app restart it. Please start the bootloader by hand."),
