@@ -506,7 +506,8 @@ served["range"] = False
 app.download_image(app.Job(Quiet()), info, str(folder))
 check("a server without ranges sends it all again", open(path, "rb").read() == payload)
 os.remove(path)
-served["data"] = payload[:-1] + b"x"
+# Always another last byte: payload is random, so a fixed one could be the same
+served["data"] = payload[:-1] + bytes([payload[-1] ^ 0xFF])
 try:
     app.download_image(app.Job(Quiet()), info, str(folder))
     check("a damaged download is refused", False)
@@ -844,14 +845,32 @@ app.metered = lambda: True
 source, listener = app.ImageSource(None), Listener()
 source.listeners["page"] = listener
 source.show_offer(offer, None)
-check("over a metered line the download waits for a click", not downloads and not source.looking
+check("at the start the newest image is only named", not downloads and not source.looking
       and listener.changes == 1 and source.title() == "Plinius 2026.11.25")
+source.want()
+check("over a metered line the download waits for a click, also after deciding", not downloads)
 app.metered = lambda: False
 source = app.ImageSource(None)
 source.listeners["page"] = listener
 source.show_offer(offer, None)
-check("otherwise the newest image is downloaded at once and checked", downloads == [offer["name"]]
+check("nothing is downloaded before the user decides", not downloads and not source.image)
+source.want()
+check("deciding downloads the newest image, then checks it", downloads == [offer["name"]]
       and checked == [os.path.join(app.IMAGES, offer["name"])] and source.image and not source.job)
+source.want()
+check("a second decision downloads nothing again", downloads == [offer["name"]])
+early = app.ImageSource(None)
+early.want()
+early.show_offer(offer, None)
+check("deciding before the newest image is known downloads it once it is", downloads == [offer["name"]] * 2)
+os.makedirs(app.IMAGES, exist_ok=True)
+with open(os.path.join(app.IMAGES, offer["name"]), "wb") as f:
+    f.write(b"x" * offer["size"])
+here_already = app.ImageSource(None)
+here_already.show_offer(offer, None)
+check("an image downloaded before is checked without asking", downloads == [offer["name"]] * 3
+      and here_already.image)
+os.remove(os.path.join(app.IMAGES, offer["name"]))
 check("the image from the server is named by its version", source.title() == "Plinius 2026.11.25")
 source.download_progress(3, 7)
 check("progress reaches the pages without drawing them anew", source.downloaded == (3, 7) and listener.progress == 1)

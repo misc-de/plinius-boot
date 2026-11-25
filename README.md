@@ -19,14 +19,15 @@ The app goes in the same three steps as the website, shown as a bar at the top: 
 One button per step; what is not needed right away is folded away.
 
 1. **Connect:** the start page asks for the cable; how to turn on the developer options, "OEM unlocking"
-   and "USB debugging" is folded under it. Meanwhile the newest image from
-   `https://plinius.cais.de/images/latest.json` (name, https link on the same server, size, SHA-256) is
-   already downloading into `~/.local/share/plinius-boot/images`, not over a metered connection, where it
-   waits for a click. A download that stops goes on where it stopped, a damaged one is deleted. The folder
-   keeps two images, the new one and the one before it; older ones and unfinished downloads of them leave.
-   If nothing is published, an image file is chosen instead. A phone that turns up opens step 2 by itself.
-2. **Check:** what is known about the phone so far, then one click, and the app goes on by itself while the
-   phone restarts: into the bootloader, unlocking it if it is still locked (this erases the phone's data and
+   and "USB debugging" is folded under it. It names the newest image from
+   `https://plinius.cais.de/images/latest.json` (name, https link on the same server, size, SHA-256), but
+   downloads nothing yet. A phone that turns up opens step 2 by itself.
+2. **Check:** what is known about the phone so far, then one click. That click decides: only now the image
+   is downloaded into `~/.local/share/plinius-boot/images`, while the phone is being checked (over a metered
+   connection only on a click in step 3; an image downloaded before is only checked). A download that stops
+   goes on where it stopped, a damaged one is deleted. The folder keeps two images, the new one and the one
+   before it; older ones and unfinished downloads of them leave. If nothing is published, or with "Other
+   file…", an image file is chosen instead. The app goes on by itself while the phone restarts: into the bootloader, unlocking it if it is still locked (this erases the phone's data and
    waits for a click and Volume up on the phone), into the rescue system, which reads the memory card. If
    "OEM unlocking" is still off, the app restarts the phone into Volla OS, shows the two taps there, and
    after "Continue" takes it back to the bootloader.

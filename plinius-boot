@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.19"
+VERSION = "0.20"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -7645,15 +7645,17 @@ class DownloadProgress:
 
 class ImageSource:
     """The image of Plinius for the guided installation, one for the whole app: the newest one on the
-    server, downloaded in the background from the start of the app on (not over a metered connection),
-    or a file the user chose. Pages that show it register in listeners and get image_changed() and
-    image_progress()."""
+    server, or a file the user chose. The newest one is only looked up at the start; it is downloaded
+    once the user decides to install (want), not over a metered connection, and is only checked if it is
+    here already. Pages that show it register in listeners and get image_changed() and image_progress()."""
 
     def __init__(self, win):
         self.win = win
         self.image, self.problems, self.checking = None, {}, False
         self.offer, self.offer_error, self.looking = None, "", True
         self.job, self.downloaded, self.download_error = None, (0, 0), ""
+        # The user decided to install before the newest image was known: download it once it is
+        self.wanted = False
         self.listeners = {}
 
     def changed(self):
@@ -7668,7 +7670,7 @@ class ImageSource:
         if offer and not self.image and not self.job:
             path = os.path.join(IMAGES, offer["name"])
             complete = os.path.isfile(path) and os.path.getsize(path) == offer["size"]
-            if complete or not metered():
+            if complete or self.wanted and not metered():
                 self.start_download()
                 return False
         if not offer and not self.image:
@@ -7678,6 +7680,12 @@ class ImageSource:
                 return False
         self.changed()
         return False
+
+    def want(self):
+        """The user decided to install: now the newest image is downloaded, unless there is one already."""
+        self.wanted = True
+        if self.offer and not (self.image or self.job or self.checking) and not metered():
+            self.start_download()
 
     def start_download(self):
         self.job = job = Job(DownloadProgress(self))
@@ -7761,9 +7769,10 @@ def metered():
         return False
 
 
-def image_row(source, owner, change=False):
+def image_row(source, owner, change=False, pending=False):
     """One row for where the image stands: looking, downloading (with a bar), checking, ready, or what
-    to do. The owner gets image_progress() calls for the bar (see show_image_progress)."""
+    to do. pending: before the user decided to install, the newest image is only named, not offered for
+    download. The owner gets image_progress() calls for the bar (see show_image_progress)."""
     owner.download_bar = owner.download_row = None
     if source.checking:
         return spinner_row(_("Checking the image… A compressed one takes a few minutes."))
@@ -7787,6 +7796,15 @@ def image_row(source, owner, change=False):
         return r
     if source.looking:
         return spinner_row(_("Looking for the newest version…"))
+    if source.offer and pending and not source.download_error:
+        r = row(source.title(), _("{size}, downloaded when you check the phone").format(
+            size=size_text(source.offer["size"])))
+        r.add_prefix(Gtk.Image(icon_name="folder-download-symbolic"))
+        if change:
+            other = Gtk.Button(label=_("Other file…"), valign=Gtk.Align.CENTER)
+            other.connect("clicked", lambda _b: source.choose_file())
+            r.add_suffix(other)
+        return r
     if source.offer:
         r = row(source.title(), _("The download did not finish: {error}").format(error=source.download_error)
                 if source.download_error else _("{size} to download, from {host}").format(
@@ -7919,7 +7937,7 @@ class InstallPage(FollowingPage):
             group.add(check_row(_("Bootloader unlocked") if unlocked else _("Bootloader"),
                                 "" if unlocked else _("Checked next"), True if unlocked else None))
         group.add(check_row(_("Memory card"), _("Checked next"), None))
-        group.add(image_row(self.source, self))
+        group.add(image_row(self.source, self, change=True, pending=True))
         prefs.add(group)
         go = Adw.PreferencesGroup()
         go.add(button_row(_("Check the phone"), "system-search-symbolic", self.start, suggested=True))
@@ -7927,6 +7945,7 @@ class InstallPage(FollowingPage):
 
     def start(self):
         self.started = True
+        self.source.want()
         self.render()
 
     def add_status(self, prefs, title):
@@ -8382,7 +8401,7 @@ class Window(Adw.ApplicationWindow):
             STEP_CSS_LOADED = True
         self.config = load_config()
         self.listeners = {}
-        # The image of Plinius is fetched from the start: by the time the phone is ready it is mostly there
+        # The newest image of Plinius is looked up from the start, and downloaded once the user decides
         self.images = ImageSource(self)
         self.download_bar = self.download_row = None
         self.toasts = Adw.ToastOverlay()
@@ -8482,9 +8501,9 @@ class Window(Adw.ApplicationWindow):
         return box
 
     def image_changed(self):
-        """The image on the start page: mostly it is ready, or nearly, when the phone is."""
+        """The image on the start page: which one, nothing is downloaded yet."""
         group = Adw.PreferencesGroup()
-        group.add(image_row(self.images, self))
+        group.add(image_row(self.images, self, pending=True))
         self.image_holder.set_child(group)
 
     def image_progress(self):
