@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.17"
+VERSION = "0.18"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -4683,6 +4683,7 @@ def download_image(job, info, folder=IMAGES):
     part, total = path + ".part", info["size"]
     if os.path.isfile(path) and os.path.getsize(path) == total:
         if file_sha256(job, path, total, _("Checking the image that was downloaded earlier")) == info["sha256"]:
+            prune_images(path, folder)
             return path
         os.remove(path)
     hasher, have = hashlib.sha256(), 0
@@ -4712,7 +4713,40 @@ def download_image(job, info, folder=IMAGES):
         os.remove(part)
         raise Failed(_("The downloaded image is damaged: its checksum does not match. It was deleted, try again."))
     os.rename(part, path)
+    prune_images(path, folder)
     return path
+
+
+KEEP_IMAGES = 2
+
+
+def prune_images(newest, folder=IMAGES, keep=KEEP_IMAGES):
+    """Keeps keep images in folder: newest, which was just downloaded and checked, and the ones
+    downloaded last before it (a new image a day would fill the disk otherwise). Unfinished downloads
+    of other images go too: the server no longer offers them. Only the app's own folder is touched,
+    never an image chosen as a file."""
+    try:
+        names = os.listdir(folder)
+    except OSError:
+        return
+    others = []
+    for name in names:
+        full = os.path.join(folder, name)
+        if full == newest or not os.path.isfile(full) or os.path.islink(full):
+            continue
+        if IMAGE_NAME_RE.fullmatch(name):
+            others.append(full)
+        elif name.endswith(".part") and IMAGE_NAME_RE.fullmatch(name[:-5]):
+            try:
+                os.remove(full)
+            except OSError:
+                pass
+    others.sort(key=os.path.getmtime, reverse=True)
+    for old in others[max(keep - 1, 0):]:
+        try:
+            os.remove(old)
+        except OSError:
+            pass
 
 
 def downloaded_images(folder=IMAGES):

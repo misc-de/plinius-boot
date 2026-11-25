@@ -24,6 +24,11 @@
   <url type="homepage">https://github.com/misc-de/plinius-boot</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.18" date="2026-11-25">
+      <description>
+        <p>The app keeps two downloaded images, the newest and the one before it. Older ones and unfinished downloads of images the server no longer offers are deleted, so a new image every day does not fill the disk.</p>
+      </description>
+    </release>
     <release version="0.17" date="2026-11-24">
       <description>
         <p>Also without Flatpak: every release has an archive with the app and its rescue system. Unpacked, the app starts right in its folder, or install.sh installs it for your user.</p>

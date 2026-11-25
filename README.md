@@ -21,7 +21,9 @@ three things and then does the rest:
 
 1. **Plinius:** the newest image from `https://plinius.cais.de/images/latest.json` (name, https link on the
    same server, size, SHA-256), downloaded into `~/.local/share/plinius-boot/images`. A download that stops
-   goes on where it stopped, a damaged one is deleted. If nothing is published, an image file is chosen instead.
+   goes on where it stopped, a damaged one is deleted. The folder keeps two images, the new one and the one
+   before it; older ones and unfinished downloads of them leave. If nothing is published, an image file is
+   chosen instead.
 2. **Where:** on the memory card (the default), or on the phone itself in place of Volla OS.
 3. **PIN** for the lock screen, 4 to 12 digits. Only its SHA-512 crypt hash goes to the phone, into
    `/etc/shadow` of the system that was just written, for the user `plinius`. Images without `-P` have that

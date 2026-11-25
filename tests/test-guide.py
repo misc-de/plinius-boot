@@ -513,6 +513,27 @@ try:
 except app.Failed:
     check("a damaged download is refused and deleted", not os.listdir(folder))
 check("only complete images count", app.downloaded_images(str(folder)) == [])
+
+# A new image a day: the folder keeps the new one and the one before it, nothing the app did not download
+served["data"], served["range"] = payload, True
+for n, name in enumerate(["plinius-old1.img.zst", "plinius-old2.img.zst", "plinius-old3.img.zst"]):
+    (folder / name).write_bytes(b"old")
+    os.utime(folder / name, (1_000_000 + n, 1_000_000 + n))
+(folder / "plinius-gone.img.zst.part").write_bytes(b"half")
+(folder / "notes.txt").write_text("mine")
+(tmp / "elsewhere.img").write_bytes(b"chosen")
+(folder / "linked.img").symlink_to(tmp / "elsewhere.img")
+path = app.download_image(app.Job(Quiet()), info, str(folder))
+check("after a download two images are kept: the new one and the newest before it",
+      sorted(os.listdir(folder)) == ["linked.img", "notes.txt", "plinius-1.img.zst", "plinius-old3.img.zst"])
+check("what the app did not download stays", (tmp / "elsewhere.img").read_bytes() == b"chosen")
+(folder / "plinius-old0.img.zst").write_bytes(b"old")
+os.utime(folder / "plinius-old0.img.zst", (900_000, 900_000))
+app.download_image(app.Job(Quiet()), info, str(folder))
+check("also when the image was there already", not (folder / "plinius-old0.img.zst").exists()
+      and (folder / "plinius-old3.img.zst").exists() and os.path.exists(path))
+app.prune_images(str(folder / "plinius-1.img.zst"), str(tmp / "no-such-folder"))
+check("a missing folder is no error", True)
 app.urllib.request.urlopen = real_urlopen
 
 # The drivers of Volla OS: vendor and vendor_dlkm from super of the phone into the written system. super here is a
