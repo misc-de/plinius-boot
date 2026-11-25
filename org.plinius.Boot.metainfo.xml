@@ -24,6 +24,11 @@
   <url type="homepage">https://github.com/misc-de/plinius-boot</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.28" date="2026-11-25">
+      <description>
+        <p>The check step says plainly that it waits for a click on Check the phone.</p>
+      </description>
+    </release>
     <release version="0.27" date="2026-11-25">
       <description>
         <p>The app recognizes what is inside the phone: Volla OS, Ubuntu Touch, Plinius or another Linux system, or something unknown, and names it instead of always saying Volla OS.</p>

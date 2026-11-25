@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.27"
+VERSION = "0.28"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -8101,17 +8101,18 @@ class InstallPage(FollowingPage):
         """What is known about the phone so far; the rest shows once it runs the rescue system."""
         d = self.device
         group = Adw.PreferencesGroup(title=_("Check the phone"), description=_(
-            "The phone restarts a few times for this. Nothing is erased without asking you first."))
+            "Click “Check the phone” below. The phone restarts a few times for this; nothing is erased without "
+            "asking you first."))
         plinius, unlocked = is_plinius(d), bootloader_open(d)
         group.add(check_row(_("Volla Phone Plinius") if plinius else _("Phone model"),
-                            "" if plinius else _("Checked next"), True if plinius else None))
+                            "" if plinius else _("Checked after the click below"), True if plinius else None))
         if unlocked is False:
             group.add(check_row(_("The bootloader is locked"), _(
                 "Unlocking it erases all data on the phone. Copy what you still need first."), False))
         else:
             group.add(check_row(_("Bootloader unlocked") if unlocked else _("Bootloader"),
-                                "" if unlocked else _("Checked next"), True if unlocked else None))
-        group.add(check_row(_("Memory card"), _("Checked next"), None))
+                                "" if unlocked else _("Checked after the click below"), True if unlocked else None))
+        group.add(check_row(_("Memory card"), _("Checked after the click below"), None))
         prefs.add(group)
         go = Adw.PreferencesGroup()
         go.add(button_row(_("Check the phone"), "system-search-symbolic", self.start, suggested=True))
