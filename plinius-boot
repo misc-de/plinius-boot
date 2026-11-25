@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.31"
+VERSION = "0.32"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -2470,6 +2470,10 @@ def write_original(device, config, original, step):
     partition, (data, _source) = pending["partition"], original
     if not matches_hash(data, pending.get("expected")):
         raise Failed(_("The original does not match the checksum the phone expects."))
+    # The rescue system itself is never an original, wherever it came from
+    if any(mark in data for mark in RESCUE_MARKS):
+        raise Failed(_("The image to write back is this app's rescue system, not the original. Nothing was "
+                       "written."))
     if device.mode == "fastboot":
         access = device.access
     else:
@@ -4107,20 +4111,25 @@ def remember_init_boot(device, config):
     """Before a running Linux system of the phone restarts into the bootloader, where the rescue system may
     take its init_boot: that init_boot as it is now, kept with its checksum, so that leaving the rescue
     system writes exactly this back (see expected_original). Volla OS needs nothing: its vbmeta names its
-    init_boot. Quietly nothing without root or a known slot."""
+    init_boot. Quietly nothing without root or a known slot, and nothing where init_boot is not the running
+    system's: while this app's rescue system sits there, for a system started from the memory card, which
+    does not use it, and for an image that is this app's rescue system."""
     access, serial, slot = device.access, device.serial, device.info.get("slot")
     if device.mode != "ssh" or device.rescue or not serial or slot not in ("a", "b") or \
-            getattr(access, "root", None) is None:
+            getattr(access, "root", None) is None or pending_rescue(config, serial):
         return None
     path = phone_partition("init_boot_" + slot)
     try:
+        cmdline = run_checked(access, "cat /proc/cmdline", 30, _("Reading the partition table"))
+        if re.search(r"(^|\s)systempart=/dev/mmcblk", cmdline):
+            return None
         size = int(run_checked(access, f"blockdev --getsize64 {path}", 60, _("Reading the partition table")).strip())
         proc = access.reader(path, size)
         data = proc.stdout.read(size + 1)
         proc.wait()
     except (Failed, OSError, ValueError):
         return None
-    if len(data) != size or data[:8] != b"ANDROID!":
+    if len(data) != size or data[:8] != b"ANDROID!" or any(mark in data for mark in RESCUE_MARKS):
         return None
     keep_candidate(serial, "init_boot", "running-system", data)
     descriptor = [size, "sha256", "", hashlib.sha256(data).hexdigest()]

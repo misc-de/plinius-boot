@@ -1045,13 +1045,18 @@ app.read_phone_system, app.avb_hashes = real_read, real_avb
 class LinuxAccess:
     root = "sudo "
 
+    cmdline = "console=tty0 bootopt=64S3,32N2,64N2\n"
+    image = "ANDROID!12345678"
+
     def run_root(self, script, timeout=60):
-        return (0, "16\n", "") if script.startswith("blockdev --getsize64 /dev/disk/by-partlabel/init_boot_b") \
+        if script == "cat /proc/cmdline":
+            return 0, self.cmdline, ""
+        return (0, f"{len(self.image)}\n", "") if script.startswith("blockdev --getsize64 /dev/disk/by-partlabel/init_boot_b") \
             else (1, "", "unexpected")
 
     def reader(self, path, size):
-        assert path == "/dev/disk/by-partlabel/init_boot_b" and size == 16
-        return subprocess.Popen(["printf", "ANDROID!12345678"], stdout=subprocess.PIPE)
+        assert path == "/dev/disk/by-partlabel/init_boot_b" and size == len(self.image)
+        return subprocess.Popen(["printf", "%s", self.image], stdout=subprocess.PIPE)
 
 
 linux = types.SimpleNamespace(mode="ssh", rescue=False, serial="S9", info={"slot": "b"}, access=LinuxAccess())
@@ -1066,6 +1071,24 @@ check("Android and the rescue system need nothing", app.remember_init_boot(
     types.SimpleNamespace(linux.__dict__ | {"rescue": True}), {}) is None)
 check("without root nothing is read", app.remember_init_boot(
     types.SimpleNamespace(linux.__dict__ | {"access": types.SimpleNamespace(root=None)}), {}) is None)
+check("nothing while the rescue system sits in init_boot",
+      app.remember_init_boot(linux, {"rescue_in": {"S9": {"partition": "init_boot_b"}}}) is None)
+card = LinuxAccess()
+card.cmdline = "bootopt=64S3,32N2,64N2 systempart=/dev/mmcblk0p2 datapart=/dev/mmcblk0p3\n"
+check("nothing from a system started from the memory card, which does not use init_boot",
+      app.remember_init_boot(types.SimpleNamespace(linux.__dict__ | {"access": card}), {}) is None)
+marked = LinuxAccess()
+marked.image = "ANDROID!" + app.RESCUE_MARK.decode() + "1234"
+check("the rescue system is never kept as the running system's init_boot",
+      app.remember_init_boot(types.SimpleNamespace(linux.__dict__ | {"access": marked}), {}) is None)
+rescue_image = b"ANDROID!" + app.RESCUE_MARK
+pending = {"rescue_in": {"S9": {"partition": "init_boot_b",
+                                "expected": [len(rescue_image), "sha256", "", hashlib.sha256(rescue_image).hexdigest()]}}}
+try:
+    app.write_original(types.SimpleNamespace(serial="S9", mode="fastboot"), pending, (rescue_image, "x"), lambda t: None)
+    check("the rescue system is never written back as the original", False)
+except app.Failed as e:
+    check("the rescue system is never written back as the original", "rescue system" in str(e))
 app.save_config = real_save
 
 print("All guide checks passed")

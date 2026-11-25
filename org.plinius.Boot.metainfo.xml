@@ -24,6 +24,11 @@
   <url type="homepage">https://github.com/misc-de/plinius-boot</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.32" date="2026-11-25">
+      <description>
+        <p>The app no longer takes its own rescue system for the original init_boot: not while the rescue system sits there, not from a system started from the memory card, and never when writing back.</p>
+      </description>
+    </release>
     <release version="0.31" date="2026-11-25">
       <description>
         <p>The start page is always the first step, Connect, also once the app knows phones. A connected phone that needs a login says so with one button instead of showing as an unknown phone, and earlier phones with their backups are folded away.</p>
