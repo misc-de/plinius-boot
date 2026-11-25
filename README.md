@@ -15,23 +15,25 @@ reaches the phone over the USB network and mounts nothing, which makes a backup 
 
 ## Installing Plinius
 
-The app goes in the same three steps as the website, shown as a bar at the top: **Connect, Check, Install**.
-One button per step; what is not needed right away is folded away.
+The app goes in four steps, shown as a bar at the top: **Connect, Check, Download, Install**. One button
+per step; what is not needed right away is folded away. The download runs while the phone is checked: the
+bar shows its progress under its step, and ticks it when it is done before the check.
 
 1. **Connect:** the start page asks for the cable; how to turn on the developer options, "OEM unlocking"
    and "USB debugging" is folded under it. It names the newest image from
    `https://plinius.cais.de/images/latest.json` (name, https link on the same server, size, SHA-256), but
    downloads nothing yet. A phone that turns up opens step 2 by itself.
 2. **Check:** what is known about the phone so far, then one click. That click decides: only now the image
-   is downloaded into `~/.local/share/plinius-boot/images`, while the phone is being checked (over a metered
-   connection only on a click in step 3; an image downloaded before is only checked). A download that stops
-   goes on where it stopped, a damaged one is deleted. The folder keeps two images, the new one and the one
-   before it; older ones and unfinished downloads of them leave. If nothing is published, or with "Other
-   file…", an image file is chosen instead. The app goes on by itself while the phone restarts: into the bootloader, unlocking it if it is still locked (this erases the phone's data and
+   starts downloading (step 3). The app goes on by itself while the phone restarts: into the bootloader, unlocking it if it is still locked (this erases the phone's data and
    waits for a click and Volume up on the phone), into the rescue system, which reads the memory card. If
    "OEM unlocking" is still off, the app restarts the phone into Volla OS, shows the two taps there, and
    after "Continue" takes it back to the bootloader.
-3. **Install:** a summary with one button: the image, where it goes, the language. **Change** opens the
+3. **Download:** into `~/.local/share/plinius-boot/images`, over a metered connection only on a click; an
+   image downloaded before is only checked. A download that stops goes on where it stopped, a damaged one is
+   deleted. The folder keeps two images, the new one and the one before it; older ones and unfinished
+   downloads of them leave. If nothing is published, an image file is chosen instead. The step shows only if
+   the phone is ready before the image, and goes on by itself once the image is checked.
+4. **Install:** a summary with one button: the image, where it goes, the language. **Change** opens the
    choices: another image file, on the phone itself in place of Volla OS, another place on the card, the
    language. Where it goes on the card is chosen by the app, the safest way first:
    - **A card with a boot menu** (set up by the Volla Boot Manager or by this app): unused partitions, or

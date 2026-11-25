@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.20"
+VERSION = "0.21"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -7578,8 +7578,10 @@ STEP_CSS = """
 .step-name.current { color: inherit; font-weight: bold; }
 """
 
-# The three steps of the guided installation, as on the website: the start page is the first one
-STEPS = (_("Connect"), _("Check"), _("Install"))
+# The steps of the guided installation: the start page is the first one. The download runs while the
+# phone is checked, so its step may be done before the one in front of it
+STEPS = (_("Connect"), _("Check"), _("Download"), _("Install"))
+CONNECT, CHECK, DOWNLOAD, INSTALL = range(len(STEPS))
 
 
 def load_step_css():
@@ -7592,12 +7594,16 @@ def load_step_css():
 STEP_CSS_LOADED = False
 
 
-class StepBar(Gtk.Grid):
-    """① Connect — ② Check — ③ Install: the current step in the accent color, the ones before it ticked."""
+class StepBar(Adw.Bin):
+    """① Connect — ② Check — ③ Download — ④ Install: the current step in the accent color, the ones before
+    it ticked, and the download also when it is done early. Under a name a detail such as the progress."""
 
     def __init__(self, current=0):
-        super().__init__(halign=Gtk.Align.CENTER, row_spacing=6, margin_top=12, margin_bottom=12)
-        self.dots, self.lines, self.names = [], [], []
+        super().__init__()
+        grid = Gtk.Grid(row_spacing=6)
+        self.set_child(Adw.Clamp(maximum_size=560, margin_top=12, margin_bottom=12, margin_start=12, margin_end=12,
+                                 child=grid))
+        self.dots, self.lines, self.names, self.details = [], [], [], []
         for n, name in enumerate(STEPS):
             dot = Gtk.Stack(halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
             dot.add_named(Gtk.Label(label=str(n + 1)), "number")
@@ -7605,27 +7611,35 @@ class StepBar(Gtk.Grid):
             dot.add_css_class("step-dot")
             label = Gtk.Label(label=name, justify=Gtk.Justification.CENTER)
             label.add_css_class("step-name")
-            self.attach(dot, 2 * n, 0, 1, 1)
-            self.attach(label, 2 * n, 1, 1, 1)
+            detail = Gtk.Label(visible=False)
+            detail.add_css_class("step-name")
+            grid.attach(dot, 2 * n, 0, 1, 1)
+            grid.attach(label, 2 * n, 1, 1, 1)
+            grid.attach(detail, 2 * n, 2, 1, 1)
             self.dots.append(dot)
             self.names.append(label)
+            self.details.append(detail)
             if n:
-                line = Gtk.Box(valign=Gtk.Align.CENTER, width_request=64, margin_start=4, margin_end=4)
+                line = Gtk.Box(valign=Gtk.Align.CENTER, hexpand=True, width_request=12, margin_start=4, margin_end=4)
                 line.add_css_class("step-line")
-                self.attach(line, 2 * n - 1, 0, 1, 1)
+                grid.attach(line, 2 * n - 1, 0, 1, 1)
                 self.lines.append(line)
         self.set_step(current)
 
-    def set_step(self, current, finished=False):
-        """current is 0, 1 or 2; finished ticks all three."""
+    def set_step(self, current, finished=False, done_too=()):
+        """current is one of CONNECT to INSTALL; finished ticks all, done_too ticks steps after current."""
         for n, (dot, label) in enumerate(zip(self.dots, self.names)):
-            done = n < current or finished
+            done = n < current or finished or n in done_too
             dot.set_visible_child_name("done" if done else "number")
             for widget in (dot, label):
                 for css, on in (("done", done), ("current", n == current and not finished)):
                     (widget.add_css_class if on else widget.remove_css_class)(css)
         for n, line in enumerate(self.lines, 1):
             (line.add_css_class if n <= current or finished else line.remove_css_class)("done")
+
+    def set_detail(self, step, text):
+        self.details[step].set_label(text)
+        self.details[step].set_visible(bool(text))
 
 
 class DownloadProgress:
@@ -7831,9 +7845,10 @@ def show_image_progress(source, owner):
 
 
 class InstallPage(FollowingPage):
-    """Plinius on the phone in the three steps of the website. Connect is the start page; here: Check
-    (into the bootloader, unlock if needed, start the rescue system and read the memory card), then
-    Install (a summary with one button, details behind Change). It follows the phone through its
+    """Plinius on the phone in four steps (STEPS). Connect is the start page; here: Check (into the
+    bootloader, unlock if needed, start the rescue system and read the memory card), Download (started
+    by Check and running meanwhile; shown only if the phone is ready first), then Install (a summary
+    with one button, details behind Change). It follows the phone through its
     restarts (see FollowingPage) and does each automatic step once. Unlocking and erasing something
     wait for a click."""
 
@@ -7849,7 +7864,7 @@ class InstallPage(FollowingPage):
         self.insert_action_group("install", actions)
         self.header.pack_end(Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu,
                                             tooltip_text=_("Systems, boot menu, backups and the rescue system")))
-        self.steps = StepBar(1)
+        self.steps = StepBar(CHECK)
         self.toolbar.add_top_bar(self.steps)
         self.target, self.pin, self.pin_again, self.pin_hash = "card", "", "", None
         self.language = default_language()
@@ -7873,13 +7888,23 @@ class InstallPage(FollowingPage):
 
     def image_progress(self):
         show_image_progress(self.source, self)
+        self.show_download_detail()
+
+    def show_steps(self, current):
+        self.steps.set_step(current, self.finished, (DOWNLOAD,) if self.source.image else ())
+        self.show_download_detail()
+
+    def show_download_detail(self):
+        """While the phone is checked, the download shows how far it is under its step."""
+        done, total = self.source.downloaded
+        self.steps.set_detail(DOWNLOAD, f"{done * 100 // total} %" if self.source.job and total else "")
 
     # What the page shows
 
     def render(self):
         d, prefs = self.device, self.new_prefs()
         self.go_button = self.pin_note = None
-        self.steps.set_step(2 if self.working or self.finished else 1, self.finished)
+        self.show_steps(INSTALL if self.working or self.finished else CHECK)
         if self.finished:
             prefs.add(Adw.PreferencesGroup(title=_("Plinius is installed"), description=_(
                 "You can disconnect the phone.")))
@@ -7937,7 +7962,6 @@ class InstallPage(FollowingPage):
             group.add(check_row(_("Bootloader unlocked") if unlocked else _("Bootloader"),
                                 "" if unlocked else _("Checked next"), True if unlocked else None))
         group.add(check_row(_("Memory card"), _("Checked next"), None))
-        group.add(image_row(self.source, self, change=True, pending=True))
         prefs.add(group)
         go = Adw.PreferencesGroup()
         go.add(button_row(_("Check the phone"), "system-search-symbolic", self.start, suggested=True))
@@ -8088,14 +8112,17 @@ class InstallPage(FollowingPage):
         """Nothing about the systems: only the plan for Plinius (see after_layout)."""
 
     def after_layout(self, prefs):
-        self.steps.set_step(2)
         image, card = self.source.image, self.device.layout and self.device.layout["card"]
         if not image:
-            group = Adw.PreferencesGroup(title=_("Install Plinius"), description=_(
-                "The phone is ready. Plinius is not here yet:"))
+            self.show_steps(DOWNLOAD)
+            group = Adw.PreferencesGroup(title=_("Download Plinius"), description=_(
+                "The phone is ready. Once Plinius is downloaded and checked, it goes on by itself."))
             group.add(image_row(self.source, self))
+            if self.source.offer:
+                group.add(button_row(_("Choose an image file…"), "document-open-symbolic", self.source.choose_file))
             prefs.add(group)
             return
+        self.show_steps(INSTALL)
         if self.target == "card" and self.source.problems.get("card"):
             self.target = "phone"
         choices = card_choices(card, image) if card and self.target == "card" else []
@@ -8482,7 +8509,7 @@ class Window(Adw.ApplicationWindow):
                                     "finds it by itself.")))
         status.set_child(Adw.Clamp(maximum_size=560, child=box))
         empty = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        empty.append(StepBar(0))
+        empty.append(StepBar(CONNECT))
         empty.append(status)
         self.device_stack.add_named(empty, "empty")
         self.device_page = Adw.PreferencesPage()
