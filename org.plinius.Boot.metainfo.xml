@@ -24,6 +24,11 @@
   <url type="homepage">https://github.com/misc-de/plinius-boot</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.29" date="2026-11-25">
+      <description>
+        <p>The check button names what is still open: Check the memory card, once the phone and its bootloader are known.</p>
+      </description>
+    </release>
     <release version="0.28" date="2026-11-25">
       <description>
         <p>The check step says plainly that it waits for a click on Check the phone.</p>
