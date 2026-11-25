@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: plinius-boot\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-25 15:48+0100\n"
+"POT-Creation-Date: 2026-11-25 15:53+0100\n"
 "PO-Revision-Date: 2026-10-28 11:10+0100\n"
 "Last-Translator: plinius-boot\n"
 "Language-Team: none\n"
@@ -56,7 +56,7 @@ msgid "Your files, apps and settings. Very large and often encrypted."
 msgstr "Je bestanden, apps en instellingen. Zeer groot en vaak versleuteld."
 
 #: plinius-boot:299 plinius-boot:6209 plinius-boot:6211 plinius-boot:6573
-#: plinius-boot:6745 plinius-boot:6797 plinius-boot:6835 plinius-boot:7998
+#: plinius-boot:6745 plinius-boot:6797 plinius-boot:6835 plinius-boot:7999
 msgid "Memory card"
 msgstr "Geheugenkaart"
 
@@ -266,11 +266,11 @@ msgstr "Kan de partitielijst niet lezen."
 msgid "The phone was disconnected."
 msgstr "De verbinding met de telefoon is verbroken."
 
-#: plinius-boot:1505 plinius-boot:7996
+#: plinius-boot:1505 plinius-boot:7997
 msgid "Bootloader"
 msgstr "Bootloader"
 
-#: plinius-boot:1561 plinius-boot:2555 plinius-boot:8618
+#: plinius-boot:1561 plinius-boot:2555 plinius-boot:8626
 msgid "Unknown phone"
 msgstr "Onbekende telefoon"
 
@@ -366,7 +366,7 @@ msgstr "{name} uit de back-up van {date}"
 msgid "fastboot could not start the rescue system: {error}"
 msgstr "fastboot kon het reddingssysteem niet starten: {error}"
 
-#: plinius-boot:2030 plinius-boot:8130
+#: plinius-boot:2030 plinius-boot:8131
 msgid "Confirm on the phone: press Volume up to unlock."
 msgstr "Bevestig op de telefoon: druk op volume omhoog om te ontgrendelen."
 
@@ -770,7 +770,7 @@ msgstr "De naam van een partitie is ongeldig."
 
 #: plinius-boot:3314 plinius-boot:3805 plinius-boot:6230 plinius-boot:6262
 #: plinius-boot:6266 plinius-boot:6310 plinius-boot:6549 plinius-boot:7221
-#: plinius-boot:8362
+#: plinius-boot:8365
 msgid "Unnamed system"
 msgstr "Systeem zonder naam"
 
@@ -1431,8 +1431,8 @@ msgstr "Details"
 #: plinius-boot:5674 plinius-boot:5805 plinius-boot:5819 plinius-boot:6048
 #: plinius-boot:6069 plinius-boot:6386 plinius-boot:6416 plinius-boot:6439
 #: plinius-boot:7282 plinius-boot:7304 plinius-boot:7389 plinius-boot:7445
-#: plinius-boot:7467 plinius-boot:7483 plinius-boot:8137 plinius-boot:8383
-#: plinius-boot:8739
+#: plinius-boot:7467 plinius-boot:7483 plinius-boot:8138 plinius-boot:8391
+#: plinius-boot:8747
 msgid "Cancel"
 msgstr "Annuleren"
 
@@ -1498,7 +1498,7 @@ msgstr "Verbinding"
 msgid "Restart"
 msgstr "Herstarten"
 
-#: plinius-boot:5359 plinius-boot:6965 plinius-boot:8108
+#: plinius-boot:5359 plinius-boot:6965 plinius-boot:8109
 msgid "Unlock the bootloader"
 msgstr "Bootloader ontgrendelen"
 
@@ -1533,11 +1533,11 @@ msgstr "Ontgrendelen is niet voltooid"
 #: plinius-boot:5397 plinius-boot:5402 plinius-boot:5506 plinius-boot:5604
 #: plinius-boot:5653 plinius-boot:6341 plinius-boot:6355 plinius-boot:7199
 #: plinius-boot:7345 plinius-boot:7377 plinius-boot:7433 plinius-boot:7773
-#: plinius-boot:8798
+#: plinius-boot:8806
 msgid "Close"
 msgstr "Sluiten"
 
-#: plinius-boot:5400 plinius-boot:7996
+#: plinius-boot:5400 plinius-boot:7997
 msgid "Bootloader unlocked"
 msgstr "Bootloader ontgrendeld"
 
@@ -1548,11 +1548,11 @@ msgstr ""
 "De gegevenspartitie is geformatteerd. Het reddingssysteem kan nu worden "
 "gestart."
 
-#: plinius-boot:5408 plinius-boot:8134
+#: plinius-boot:5408 plinius-boot:8135
 msgid "Unlock the bootloader?"
 msgstr "Bootloader ontgrendelen?"
 
-#: plinius-boot:5409 plinius-boot:8135
+#: plinius-boot:5409 plinius-boot:8136
 msgid ""
 "This erases all personal data on the phone: apps, photos, messages and "
 "accounts. It cannot be undone. The phone then asks once more; press Volume "
@@ -1563,7 +1563,7 @@ msgstr ""
 "telefoon vraagt daarna nog een keer om bevestiging; druk daar op volume "
 "omhoog om te ontgrendelen."
 
-#: plinius-boot:5411 plinius-boot:8137
+#: plinius-boot:5411 plinius-boot:8138
 msgid "Unlock and erase"
 msgstr "Ontgrendelen en wissen"
 
@@ -1684,7 +1684,7 @@ msgstr ""
 msgid "Original {name}"
 msgstr "Originele {name}"
 
-#: plinius-boot:5533 plinius-boot:5698 plinius-boot:6914 plinius-boot:8629
+#: plinius-boot:5533 plinius-boot:5698 plinius-boot:6914 plinius-boot:8637
 msgid "Searching…"
 msgstr "Zoeken…"
 
@@ -1855,7 +1855,7 @@ msgstr ""
 "De geselecteerde partities bevatten {total}, maar in {dir} is slechts {free} "
 "vrij. Back-ups worden gecomprimeerd en zijn vaak veel kleiner. Toch doorgaan?"
 
-#: plinius-boot:5819 plinius-boot:8065 plinius-boot:8437
+#: plinius-boot:5819 plinius-boot:8066 plinius-boot:8445
 msgid "Continue"
 msgstr "Doorgaan"
 
@@ -1871,7 +1871,7 @@ msgstr "Back-up gemaakt"
 msgid "Show folder"
 msgstr "Map tonen"
 
-#: plinius-boot:5855 plinius-boot:7518 plinius-boot:8182 plinius-boot:8432
+#: plinius-boot:5855 plinius-boot:7518 plinius-boot:8226 plinius-boot:8440
 msgid "Done"
 msgstr "Klaar"
 
@@ -1884,7 +1884,7 @@ msgid "Nothing was saved."
 msgstr "Er is niets opgeslagen."
 
 #: plinius-boot:5858 plinius-boot:5863 plinius-boot:6017 plinius-boot:6098
-#: plinius-boot:7522 plinius-boot:7525 plinius-boot:8441 plinius-boot:8445
+#: plinius-boot:7522 plinius-boot:7525 plinius-boot:8449 plinius-boot:8453
 msgid "Back"
 msgstr "Terug"
 
@@ -2155,7 +2155,7 @@ msgstr ""
 "Open Instellingen → Over de telefoon en tik zeven keer op “Buildnummer” tot "
 "de ontwikkelaarsopties zijn ingeschakeld."
 
-#: plinius-boot:6181 plinius-boot:8064
+#: plinius-boot:6181 plinius-boot:8065
 msgid "Open Settings → System → Developer options and turn on “OEM unlocking”."
 msgstr ""
 "Open Instellingen → Systeem → Ontwikkelaarsopties en schakel “OEM-"
@@ -2613,7 +2613,7 @@ msgstr "De hulpmiddelen werken"
 msgid "This is a Volla Phone Plinius"
 msgstr "Dit is een Volla Phone Plinius"
 
-#: plinius-boot:6923 plinius-boot:7950
+#: plinius-boot:6923 plinius-boot:7951
 msgid "This is not a Volla Phone Plinius"
 msgstr "Dit is geen Volla Phone Plinius"
 
@@ -2633,7 +2633,7 @@ msgstr ""
 msgid "The bootloader is unlocked"
 msgstr "De bootloader is ontgrendeld"
 
-#: plinius-boot:6928 plinius-boot:7160 plinius-boot:7993
+#: plinius-boot:6928 plinius-boot:7160 plinius-boot:7994
 msgid "The bootloader is locked"
 msgstr "De bootloader is vergrendeld"
 
@@ -2641,7 +2641,7 @@ msgstr "De bootloader is vergrendeld"
 msgid "Whether the bootloader is unlocked is not known yet"
 msgstr "Nog niet bekend of de bootloader is ontgrendeld"
 
-#: plinius-boot:6934 plinius-boot:7956 plinius-boot:8641
+#: plinius-boot:6934 plinius-boot:7957 plinius-boot:8649
 msgid "Log in…"
 msgstr "Aanmelden…"
 
@@ -2673,7 +2673,7 @@ msgstr ""
 "bootloader zelf wel."
 
 #: plinius-boot:6991 plinius-boot:7102 plinius-boot:7135 plinius-boot:7141
-#: plinius-boot:8073
+#: plinius-boot:8074
 msgid "Start the bootloader"
 msgstr "Bootloader starten"
 
@@ -2901,7 +2901,7 @@ msgstr ""
 "Plekken op de telefoon zelf en een systeem in plaats van Volla OS "
 "overschrijven deze partities."
 
-#: plinius-boot:7324 plinius-boot:8325
+#: plinius-boot:7324 plinius-boot:8327
 msgid "Install on the phone itself"
 msgstr "Op de telefoon zelf installeren"
 
@@ -2923,7 +2923,7 @@ msgstr "De rest van de opslag is voor je gegevens."
 msgid "I have a backup and accept the loss"
 msgstr "Ik heb een back-up en accepteer het verlies"
 
-#: plinius-boot:7360 plinius-boot:7419 plinius-boot:8333
+#: plinius-boot:7360 plinius-boot:7419 plinius-boot:8335
 msgid "All data of Volla OS on this phone will be erased."
 msgstr "Alle gegevens van Volla OS op deze telefoon worden gewist."
 
@@ -3105,7 +3105,7 @@ msgstr "Bewaard in {dir}"
 msgid "Finished swap, kept in {dir}"
 msgstr "Voltooide wissel, bewaard in {dir}"
 
-#: plinius-boot:7520 plinius-boot:8439
+#: plinius-boot:7520 plinius-boot:8447
 msgid "Cancelled"
 msgstr "Geannuleerd"
 
@@ -3134,7 +3134,7 @@ msgstr ""
 msgid "When you are done"
 msgstr "Als je klaar bent"
 
-#: plinius-boot:7553 plinius-boot:8063
+#: plinius-boot:7553 plinius-boot:8064
 msgid ""
 "On the phone, open Settings → About phone and tap “Build number” seven times."
 msgstr ""
@@ -3165,7 +3165,7 @@ msgstr "Verbinden"
 msgid "Check"
 msgstr "Controleren"
 
-#: plinius-boot:7583 plinius-boot:7850 plinius-boot:7978
+#: plinius-boot:7583 plinius-boot:7850 plinius-boot:7979
 msgid "Download"
 msgstr "Downloaden"
 
@@ -3178,7 +3178,7 @@ msgstr "Image van Plinius"
 msgid "Plinius {version}"
 msgstr "Plinius {version}"
 
-#: plinius-boot:7790
+#: plinius-boot:7790 plinius-boot:8225
 msgid "Plinius"
 msgstr "Plinius"
 
@@ -3227,7 +3227,7 @@ msgstr "De download is niet voltooid: {error}"
 msgid "{size} to download, from {host}"
 msgstr "{size} te downloaden, van {host}"
 
-#: plinius-boot:7850 plinius-boot:8013
+#: plinius-boot:7850 plinius-boot:8014
 msgid "Try again"
 msgstr "Opnieuw proberen"
 
@@ -3248,7 +3248,7 @@ msgstr "Bestand kiezen…"
 msgid "{done} of {total}"
 msgstr "{done} van {total}"
 
-#: plinius-boot:7879 plinius-boot:8314
+#: plinius-boot:7879 plinius-boot:8315
 msgid "Install Plinius"
 msgstr "Plinius installeren"
 
@@ -3260,23 +3260,23 @@ msgstr "Geavanceerd…"
 msgid "Systems, boot menu, backups and the rescue system"
 msgstr "Systemen, opstartmenu, back-ups en het reddingssysteem"
 
-#: plinius-boot:7928
+#: plinius-boot:7929
 msgid "paused"
 msgstr "gepauzeerd"
 
-#: plinius-boot:7937 plinius-boot:8432
+#: plinius-boot:7938 plinius-boot:8440
 msgid "Plinius is installed"
 msgstr "Plinius is geïnstalleerd"
 
-#: plinius-boot:7938
+#: plinius-boot:7939
 msgid "You can disconnect the phone."
 msgstr "Je kunt de telefoon loskoppelen."
 
-#: plinius-boot:7942
+#: plinius-boot:7943
 msgid "Installing… The progress is on the page in front."
 msgstr "Bezig met installeren… De voortgang staat op de pagina ervoor."
 
-#: plinius-boot:7951
+#: plinius-boot:7952
 msgid ""
 "Plinius is made for the Volla Phone Plinius and Plinius Plus only. Backups "
 "of this phone are under Advanced, in the menu at the top right."
@@ -3284,15 +3284,15 @@ msgstr ""
 "Plinius is alleen gemaakt voor de Volla Phone Plinius en Plinius Plus. Back-"
 "ups van deze telefoon staan onder Geavanceerd, in het menu rechtsboven."
 
-#: plinius-boot:7960
+#: plinius-boot:7961
 msgid "The phone cannot be used yet"
 msgstr "De telefoon kan nog niet worden gebruikt"
 
-#: plinius-boot:7987 plinius-boot:8001
+#: plinius-boot:7988 plinius-boot:8002
 msgid "Check the phone"
 msgstr "Telefoon controleren"
 
-#: plinius-boot:7988
+#: plinius-boot:7989
 msgid ""
 "The phone restarts a few times for this. Nothing is erased without asking "
 "you first."
@@ -3300,34 +3300,34 @@ msgstr ""
 "De telefoon start hiervoor een paar keer opnieuw op. Er wordt niets gewist "
 "zonder het je eerst te vragen."
 
-#: plinius-boot:7990
+#: plinius-boot:7991
 msgid "Volla Phone Plinius"
 msgstr "Volla Phone Plinius"
 
-#: plinius-boot:7990
+#: plinius-boot:7991
 msgid "Phone model"
 msgstr "Telefoonmodel"
 
-#: plinius-boot:7991 plinius-boot:7997 plinius-boot:7998
+#: plinius-boot:7992 plinius-boot:7998 plinius-boot:7999
 msgid "Checked next"
 msgstr "Wordt hierna gecontroleerd"
 
-#: plinius-boot:7994
+#: plinius-boot:7995
 msgid ""
 "Unlocking it erases all data on the phone. Copy what you still need first."
 msgstr ""
 "Ontgrendelen wist alle gegevens op de telefoon. Kopieer eerst wat je nog "
 "nodig hebt."
 
-#: plinius-boot:8015
+#: plinius-boot:8016
 msgid "One moment…"
 msgstr "Een ogenblik…"
 
-#: plinius-boot:8061
+#: plinius-boot:8062
 msgid "Turn on OEM unlocking"
 msgstr "OEM-ontgrendeling inschakelen"
 
-#: plinius-boot:8062
+#: plinius-boot:8063
 msgid ""
 "On the phone, then continue here. The phone restarts into the bootloader by "
 "itself."
@@ -3335,11 +3335,11 @@ msgstr ""
 "Op de telefoon, ga daarna hier verder. De telefoon start vanzelf opnieuw op "
 "in de bootloader."
 
-#: plinius-boot:8069
+#: plinius-boot:8070
 msgid "Restarting into the bootloader"
 msgstr "Herstarten in de bootloader"
 
-#: plinius-boot:8074
+#: plinius-boot:8075
 msgid ""
 "The system on the phone does not let the app restart it. Please start the "
 "bootloader by hand."
@@ -3347,23 +3347,23 @@ msgstr ""
 "Het systeem op de telefoon laat de app hem niet herstarten. Start de "
 "bootloader met de hand."
 
-#: plinius-boot:8089
+#: plinius-boot:8090
 msgid "The bootloader does not answer as expected"
 msgstr "De bootloader antwoordt niet zoals verwacht"
 
-#: plinius-boot:8090
+#: plinius-boot:8091
 msgid "Restart the phone into the bootloader and connect it again."
 msgstr "Herstart de telefoon in de bootloader en sluit hem opnieuw aan."
 
-#: plinius-boot:8092
+#: plinius-boot:8093
 msgid "Starting the rescue system"
 msgstr "Reddingssysteem starten"
 
-#: plinius-boot:8103
+#: plinius-boot:8104
 msgid "OEM unlocking is still off"
 msgstr "OEM-ontgrendeling staat nog uit"
 
-#: plinius-boot:8104
+#: plinius-boot:8105
 msgid ""
 "It is turned on in Volla OS. The phone restarts into it, then this page "
 "shows what to do."
@@ -3371,11 +3371,11 @@ msgstr ""
 "Die wordt in Volla OS ingeschakeld. De telefoon start daarin opnieuw op, "
 "daarna toont deze pagina wat je moet doen."
 
-#: plinius-boot:8105
+#: plinius-boot:8106
 msgid "Restart into Volla OS"
 msgstr "Opnieuw opstarten in Volla OS"
 
-#: plinius-boot:8109
+#: plinius-boot:8110
 msgid ""
 "Plinius needs it. Unlocking erases all data on the phone: apps, photos, "
 "messages and accounts."
@@ -3383,15 +3383,15 @@ msgstr ""
 "Plinius heeft dit nodig. Ontgrendelen wist alle gegevens op de telefoon: "
 "apps, foto’s, berichten en accounts."
 
-#: plinius-boot:8113
+#: plinius-boot:8114
 msgid "Unlock and erase…"
 msgstr "Ontgrendelen en wissen…"
 
-#: plinius-boot:8152
+#: plinius-boot:8153
 msgid "Download Plinius"
 msgstr "Plinius downloaden"
 
-#: plinius-boot:8153
+#: plinius-boot:8154
 msgid ""
 "The phone is ready. Once Plinius is downloaded and checked, it goes on by "
 "itself."
@@ -3399,61 +3399,75 @@ msgstr ""
 "De telefoon is klaar. Zodra Plinius is gedownload en gecontroleerd, gaat het "
 "vanzelf verder."
 
-#: plinius-boot:8156
+#: plinius-boot:8157
 msgid "Choose an image file…"
 msgstr "Imagebestand kiezen…"
 
-#: plinius-boot:8181
-msgid "Ready to install"
-msgstr "Klaar om te installeren"
+#: plinius-boot:8178
+msgid "Where should Plinius go?"
+msgstr "Waar moet Plinius komen?"
 
-#: plinius-boot:8182
-msgid "Change"
-msgstr "Wijzigen"
-
-#: plinius-boot:8197 plinius-boot:8217
-msgid "On the phone itself"
-msgstr "Op de telefoon zelf"
-
-#: plinius-boot:8197
-msgid "Replaces Volla OS: all its apps and data are erased."
-msgstr "Vervangt Volla OS: al zijn apps en gegevens worden gewist."
-
-#: plinius-boot:8204 plinius-boot:8256
-msgid "Language"
-msgstr "Taal"
-
-#: plinius-boot:8214
+#: plinius-boot:8179
 msgid "On the memory card"
 msgstr "Op de geheugenkaart"
 
-#: plinius-boot:8215
-msgid ""
-"Recommended. Volla OS stays on the phone, and a menu at each start lets you "
-"choose."
-msgstr ""
-"Aanbevolen. Volla OS blijft op de telefoon en bij elke start laat een menu "
-"je kiezen."
+#: plinius-boot:8180
+msgid "Recommended. Volla OS stays, and at each start a menu lets you choose."
+msgstr "Aanbevolen. Volla OS blijft en bij elke start laat een menu je kiezen."
 
-#: plinius-boot:8218
+#: plinius-boot:8181
+msgid "Inside the phone"
+msgstr "In de telefoon zelf"
+
+#: plinius-boot:8182
 msgid ""
-"Replaces Volla OS: all its apps and data are erased. Plinius then starts "
+"Instead of Volla OS: all its apps and data are erased. Plinius then starts "
 "without a memory card, and faster."
 msgstr ""
-"Vervangt Volla OS: al zijn apps en gegevens worden gewist. Plinius start dan "
-"zonder geheugenkaart, en sneller."
+"In plaats van Volla OS: al zijn apps en gegevens worden gewist. Plinius "
+"start dan zonder geheugenkaart, en sneller."
 
-#: plinius-boot:8256
+#: plinius-boot:8192
+msgid "Look again"
+msgstr "Opnieuw kijken"
+
+#: plinius-boot:8217
+#, python-brace-format
+msgid ""
+"No memory card found. Put one of {size} or more into the phone, then look "
+"again."
+msgstr ""
+"Geen geheugenkaart gevonden. Plaats er een van {size} of meer in de telefoon "
+"en zoek opnieuw."
+
+#: plinius-boot:8220
+#, python-brace-format
+msgid ""
+"The memory card is too small: Plinius needs {need} or more, this one has "
+"{size}."
+msgstr ""
+"De geheugenkaart is te klein: Plinius heeft {need} of meer nodig, deze heeft "
+"{size}."
+
+#: plinius-boot:8226
+msgid "Change"
+msgstr "Wijzigen"
+
+#: plinius-boot:8237 plinius-boot:8273
+msgid "Language"
+msgstr "Taal"
+
+#: plinius-boot:8273
 msgid "The keyboard follows it. Settings on the phone change both later."
 msgstr ""
 "Het toetsenbord volgt die. Via Instellingen op de telefoon wijzig je beide "
 "later."
 
-#: plinius-boot:8267 plinius-boot:8269
+#: plinius-boot:8284 plinius-boot:8286
 msgid "PIN"
 msgstr "Pincode"
 
-#: plinius-boot:8268
+#: plinius-boot:8285
 msgid ""
 "Plinius asks for it on the lock screen. Choose 4 to 12 digits and keep it in "
 "mind."
@@ -3461,76 +3475,44 @@ msgstr ""
 "Plinius vraagt erom op het vergrendelscherm. Kies 4 tot 12 cijfers en "
 "onthoud de code goed."
 
-#: plinius-boot:8269
+#: plinius-boot:8286
 msgid "Repeat PIN"
 msgstr "Pincode herhalen"
 
-#: plinius-boot:8296
-msgid "Install on the phone itself instead"
-msgstr "In plaats daarvan op de telefoon zelf installeren"
-
-#: plinius-boot:8298
-msgid "Look again"
-msgstr "Opnieuw kijken"
-
-#: plinius-boot:8300
-msgid "No memory card found"
-msgstr "Geen geheugenkaart gevonden"
-
-#: plinius-boot:8301
-#, python-brace-format
-msgid ""
-"Put a memory card of {size} or more into the phone and look again. Or "
-"install Plinius on the phone itself."
-msgstr ""
-"Plaats een geheugenkaart van {size} of meer in de telefoon en kijk opnieuw. "
-"Of installeer Plinius op de telefoon zelf."
-
-#: plinius-boot:8304
-msgid "The memory card is too small"
-msgstr "De geheugenkaart is te klein"
-
-#: plinius-boot:8305
-#, python-brace-format
-msgid "Plinius needs a memory card of {need} or more; this one has {size}."
-msgstr ""
-"Plinius heeft een geheugenkaart van {need} of meer nodig; deze heeft {size}."
-
-#: plinius-boot:8313 plinius-boot:8331
+#: plinius-boot:8313 plinius-boot:8333
 msgid "This takes up to an hour. Keep the phone connected."
 msgstr "Dit duurt tot een uur. Houd de telefoon aangesloten."
 
 #: plinius-boot:8314
+msgid "Choose above where Plinius should go."
+msgstr "Kies hierboven waar Plinius moet komen."
+
+#: plinius-boot:8315
 msgid "Erase and install Plinius"
 msgstr "Wissen en Plinius installeren"
 
-#: plinius-boot:8329
+#: plinius-boot:8331
 msgid "Installing overwrites these partitions of Volla OS."
 msgstr "De installatie overschrijft deze partities van Volla OS."
 
-#: plinius-boot:8332
+#: plinius-boot:8334
 msgid "I have copied what I still need"
 msgstr "Ik heb gekopieerd wat ik nog nodig heb"
 
-#: plinius-boot:8334
+#: plinius-boot:8336
 msgid "Erase Volla OS and install"
 msgstr "Volla OS wissen en installeren"
 
-#: plinius-boot:8354
-msgid "Into unused partitions"
-msgstr "In ongebruikte partities"
-
-#: plinius-boot:8354
-#, python-brace-format
-msgid "Partitions {system} and {data}, {size}. Nothing on the card is erased."
-msgstr ""
-"Partities {system} en {data}, {size}. Er wordt niets op de kaart gewist."
-
-#: plinius-boot:8358
+#: plinius-boot:8357 plinius-boot:8360
 msgid "Into the free space"
 msgstr "In de vrije ruimte"
 
-#: plinius-boot:8358
+#: plinius-boot:8357
+#, python-brace-format
+msgid "{size} on the card are unused. Nothing on the card is erased."
+msgstr "{size} op de kaart is ongebruikt. Op de kaart wordt niets gewist."
+
+#: plinius-boot:8360
 #, python-brace-format
 msgid ""
 "{system} for Plinius and {data} for your files. Nothing on the card is "
@@ -3539,42 +3521,48 @@ msgstr ""
 "{system} voor Plinius en {data} voor je bestanden. Er wordt niets op de "
 "kaart gewist."
 
-#: plinius-boot:8363
-#, python-brace-format
-msgid "Instead of {title}"
-msgstr "In plaats van {title}"
-
-#: plinius-boot:8364
+#: plinius-boot:8369
 #, python-brace-format
 msgid "{title} and its files on the card are erased."
 msgstr "{title} en zijn bestanden op de kaart worden gewist."
 
-#: plinius-boot:8366
+#: plinius-boot:8370
+#, python-brace-format
+msgid "The personal files of {title} are there as well and are erased too."
+msgstr ""
+"Daar staan ook de persoonlijke bestanden van {title}; die worden ook gewist."
+
+#: plinius-boot:8372
+#, python-brace-format
+msgid "Instead of {title}"
+msgstr "In plaats van {title}"
+
+#: plinius-boot:8374
 msgid "Erase the memory card and set it up anew"
 msgstr "Geheugenkaart wissen en opnieuw inrichten"
 
-#: plinius-boot:8367
+#: plinius-boot:8375
 #, python-brace-format
 msgid ""
-"{system} for Plinius and about {data} for your files. Everything on the card "
-"is erased."
+"Everything on the card is erased. {system} for Plinius and about {data} for "
+"your files."
 msgstr ""
-"{system} voor Plinius en ongeveer {data} voor je bestanden. Alles op de "
-"kaart wordt gewist."
+"Alles op de kaart wordt gewist. {system} voor Plinius en ongeveer {data} "
+"voor je bestanden."
 
-#: plinius-boot:8383
+#: plinius-boot:8391
 msgid "Erase and install?"
 msgstr "Wissen en installeren?"
 
-#: plinius-boot:8383
+#: plinius-boot:8391
 msgid "Erase and install"
 msgstr "Wissen en installeren"
 
-#: plinius-boot:8395
+#: plinius-boot:8403
 msgid "Installing Plinius"
 msgstr "Plinius installeren"
 
-#: plinius-boot:8425
+#: plinius-boot:8433
 msgid ""
 "The phone is starting Plinius. The first start takes a few minutes; unlock "
 "it with your PIN. With a memory card in the phone, choose VollaOS in its "
@@ -3584,7 +3572,7 @@ msgstr ""
 "ontgrendel hem met je pincode. Met een geheugenkaart in de telefoon kies je "
 "VollaOS in het opstartmenu: dat item start nu Plinius."
 
-#: plinius-boot:8429
+#: plinius-boot:8437
 msgid ""
 "The phone is starting. At every start a menu shows for five seconds, then it "
 "starts Plinius by itself; choose VollaOS there for Volla OS. The first start "
@@ -3594,11 +3582,11 @@ msgstr ""
 "daarna start Plinius vanzelf; kies daar VollaOS voor Volla OS. De eerste "
 "start van Plinius duurt een paar minuten; ontgrendel hem met je pincode."
 
-#: plinius-boot:8434
+#: plinius-boot:8442
 msgid "Almost done"
 msgstr "Bijna klaar"
 
-#: plinius-boot:8435
+#: plinius-boot:8443
 msgid ""
 "Plinius is installed, but the phone still holds the rescue system: the "
 "original it replaced was not found on the update server. Choose it on the "
@@ -3608,7 +3596,7 @@ msgstr ""
 "het origineel dat het verving, is niet gevonden op de updateserver. Kies het "
 "op de volgende pagina als bestand."
 
-#: plinius-boot:8440
+#: plinius-boot:8448
 msgid ""
 "The boot menu still shows what it showed before. Start again when you are "
 "ready."
@@ -3616,11 +3604,11 @@ msgstr ""
 "Het opstartmenu toont nog wat het eerst toonde. Begin opnieuw als je klaar "
 "bent."
 
-#: plinius-boot:8443
+#: plinius-boot:8451
 msgid "Plinius was not installed"
 msgstr "Plinius is niet geïnstalleerd"
 
-#: plinius-boot:8444
+#: plinius-boot:8452
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -3631,40 +3619,40 @@ msgstr ""
 "\n"
 "De telefoon heeft nog het reddingssysteem, dus je kunt het opnieuw proberen."
 
-#: plinius-boot:8479
+#: plinius-boot:8487
 msgid "Inspect image file…"
 msgstr "Imagebestand onderzoeken…"
 
-#: plinius-boot:8480
+#: plinius-boot:8488
 msgid "Search again"
 msgstr "Opnieuw zoeken"
 
-#: plinius-boot:8481
+#: plinius-boot:8489
 msgid "Check the tools"
 msgstr "Hulpmiddelen controleren"
 
-#: plinius-boot:8482
+#: plinius-boot:8490
 #, python-brace-format
 msgid "About {name}"
 msgstr "Over {name}"
 
-#: plinius-boot:8527
+#: plinius-boot:8535
 msgid "Is USB debugging on?"
 msgstr "Staat USB-foutopsporing aan?"
 
-#: plinius-boot:8527
+#: plinius-boot:8535
 msgid "How to turn it on"
 msgstr "Zo zet je het aan"
 
-#: plinius-boot:8538
+#: plinius-boot:8546
 msgid "Waiting for the phone…"
 msgstr "Wachten op de telefoon…"
 
-#: plinius-boot:8540
+#: plinius-boot:8548
 msgid "Connect the phone"
 msgstr "Verbind de telefoon"
 
-#: plinius-boot:8542
+#: plinius-boot:8550
 msgid ""
 "Connect the Volla Phone Plinius to this computer with a USB-C cable. The app "
 "finds it by itself."
@@ -3672,23 +3660,23 @@ msgstr ""
 "Verbind de Volla Phone Plinius met een USB-C-kabel met deze computer. De app "
 "vindt hem vanzelf."
 
-#: plinius-boot:8550 plinius-boot:8627
+#: plinius-boot:8558 plinius-boot:8635
 msgid "Phones"
 msgstr "Telefoons"
 
-#: plinius-boot:8585
+#: plinius-boot:8593
 msgid "The app needs a few programs"
 msgstr "De app heeft een paar programma’s nodig"
 
-#: plinius-boot:8586
+#: plinius-boot:8594
 msgid "Please provide what is missing here, then check again."
 msgstr "Installeer hier wat ontbreekt en controleer daarna opnieuw."
 
-#: plinius-boot:8592
+#: plinius-boot:8600
 msgid "How to provide them"
 msgstr "Zo installeer je ze"
 
-#: plinius-boot:8594
+#: plinius-boot:8602
 msgid ""
 "The Flatpak brings these programs along, so it seems to be damaged. Please "
 "install it again."
@@ -3696,15 +3684,15 @@ msgstr ""
 "De Flatpak brengt deze programma’s mee, dus die lijkt beschadigd. Installeer "
 "hem opnieuw."
 
-#: plinius-boot:8597
+#: plinius-boot:8605
 msgid "Run this in a terminal:"
 msgstr "Voer dit uit in een terminal:"
 
-#: plinius-boot:8598
+#: plinius-boot:8606
 msgid "Command"
 msgstr "Opdracht"
 
-#: plinius-boot:8600
+#: plinius-boot:8608
 msgid ""
 "Install them with your system's package manager, or use the Flatpak of this "
 "app, which brings them along."
@@ -3712,19 +3700,19 @@ msgstr ""
 "Installeer ze met de pakketbeheerder van je systeem of gebruik de Flatpak "
 "van deze app, die ze meebrengt."
 
-#: plinius-boot:8602
+#: plinius-boot:8610
 msgid "Check again"
 msgstr "Opnieuw controleren"
 
-#: plinius-boot:8630
+#: plinius-boot:8638
 msgid "Connect a phone with a USB cable."
 msgstr "Sluit een telefoon aan met een USB-kabel."
 
-#: plinius-boot:8637
+#: plinius-boot:8645
 msgid "locked"
 msgstr "vergrendeld"
 
-#: plinius-boot:8680
+#: plinius-boot:8688
 #, python-brace-format
 msgid ""
 "A phone is connected, but this user may not open it over USB. Install the "
@@ -3733,7 +3721,7 @@ msgstr ""
 "Er is een telefoon verbonden, maar deze gebruiker mag hem niet via USB "
 "openen. Installeer het pakket {package} en verbind hem daarna opnieuw."
 
-#: plinius-boot:8682
+#: plinius-boot:8690
 msgid ""
 "A phone is connected, but this user may not open it over USB. It needs udev "
 "rules for Android devices."
@@ -3741,27 +3729,27 @@ msgstr ""
 "Er is een telefoon verbonden, maar deze gebruiker mag hem niet via USB "
 "openen. Daarvoor zijn udev-regels voor Android-apparaten nodig."
 
-#: plinius-boot:8701
+#: plinius-boot:8709
 msgid "User name"
 msgstr "Gebruikersnaam"
 
-#: plinius-boot:8703
+#: plinius-boot:8711
 msgid "Password"
 msgstr "Wachtwoord"
 
-#: plinius-boot:8712
+#: plinius-boot:8720
 msgid "This user name is not valid."
 msgstr "Deze gebruikersnaam is ongeldig."
 
-#: plinius-boot:8725
+#: plinius-boot:8733
 msgid "Login failed. Check the user name and password."
 msgstr "Aanmelden mislukt. Controleer de gebruikersnaam en het wachtwoord."
 
-#: plinius-boot:8736
+#: plinius-boot:8744
 msgid "Log in to the phone"
 msgstr "Aanmelden op de telefoon"
 
-#: plinius-boot:8737
+#: plinius-boot:8745
 msgid ""
 "Use the user name and password of the system on the phone. The password is "
 "only kept while this app is running."
@@ -3769,36 +3757,36 @@ msgstr ""
 "Gebruik de gebruikersnaam en het wachtwoord van het systeem op de telefoon. "
 "Het wachtwoord wordt alleen bewaard zolang deze app draait."
 
-#: plinius-boot:8739
+#: plinius-boot:8747
 msgid "Log in"
 msgstr "Aanmelden"
 
-#: plinius-boot:8763
+#: plinius-boot:8771
 msgid "Storage location for backups"
 msgstr "Opslaglocatie voor back-ups"
 
-#: plinius-boot:8782
+#: plinius-boot:8790
 msgid "Inspect image file"
 msgstr "Imagebestand onderzoeken"
 
-#: plinius-boot:8794
+#: plinius-boot:8802
 #, python-brace-format
 msgid "Content: {kind}"
 msgstr "Inhoud: {kind}"
 
-#: plinius-boot:8795
+#: plinius-boot:8803
 #, python-brace-format
 msgid "File size: {size}"
 msgstr "Bestandsgrootte: {size}"
 
-#: plinius-boot:8797
+#: plinius-boot:8805
 msgid "The file is compressed with zstd."
 msgstr "Het bestand is gecomprimeerd met zstd."
 
-#: plinius-boot:8806
+#: plinius-boot:8814
 msgid "All tools work."
 msgstr "Alle hulpmiddelen werken."
 
-#: plinius-boot:8812
+#: plinius-boot:8820
 msgid "Back up and flash Volla and FuriLabs phones."
 msgstr "Volla- en FuriLabs-telefoons back-uppen en flashen."

@@ -34,12 +34,14 @@ bar shows its progress under its step, and ticks it when it is done before the c
    Pausing and resuming also work during step 2, below what the page shows there. The folder keeps two images, the new one and the one before it; older ones and unfinished
    downloads of them leave. If nothing is published, an image file is chosen instead. The step shows only if
    the phone is ready before the image, and goes on by itself once the image is checked.
-4. **Install:** a summary with one button: the image, where it goes, the language. **Change** opens the
-   choices: another image file, on the phone itself in place of Volla OS, another place on the card, the
-   language. Where it goes on the card is chosen by the app, the safest way first:
+4. **Install:** first the question where Plinius should go, with nothing chosen: **on the memory card**
+   (recommended, Volla OS stays) or **inside the phone** (instead of Volla OS). The button waits for the
+   answer. Below it the image and the language, with **Change** for another image file or language. Where it
+   goes on the card is chosen by the app, the safest way first, and said without partition numbers:
    - **A card with a boot menu** (set up by the Volla Boot Manager or by this app): unused partitions, or
-     free space for a new place, where nothing is lost. If neither is there, the choices open by themselves:
-     instead of one of its systems, or the card set up anew, both with one more confirmation.
+     free space for a new place, both shown as "into the free space", where nothing is lost. If neither is
+     there, the ways there are show below the card: instead of one of its systems (naming the personal files
+     of other systems that are lost with it), or the card set up anew, both with one more confirmation.
    - **A card without a boot menu**, as it comes from the shop: set up the way the Volla Boot Manager does it
      (`Android-Boot-Manager/App`, `DroidBootFlow.kt`), so all of it is erased: a new GPT, `abm_settings`
      (type 8301, a 41st of the card, 512 MiB to 4 GiB) with `db/db.conf` (`timeout 5`) and

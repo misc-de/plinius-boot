@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.22"
+VERSION = "0.23"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -7889,7 +7889,8 @@ class InstallPage(FollowingPage):
                                             tooltip_text=_("Systems, boot menu, backups and the rescue system")))
         self.steps = StepBar(CHECK)
         self.toolbar.add_top_bar(self.steps)
-        self.target, self.pin, self.pin_again, self.pin_hash = "card", "", "", None
+        # Card or phone: asked in the last step, nothing chosen before
+        self.target, self.pin, self.pin_again, self.pin_hash = None, "", "", None
         self.language = default_language()
         self.started, self.working, self.finished = False, False, False
         # Automatic steps already done, and the one running now with its last message
@@ -8157,18 +8158,12 @@ class InstallPage(FollowingPage):
             prefs.add(group)
             return
         self.show_steps(INSTALL)
-        if self.target == "card" and self.source.problems.get("card"):
-            self.target = "phone"
-        choices = card_choices(card, image) if card and self.target == "card" else []
-        if self.target == "card" and not choices:
-            self.add_card_problem(prefs, card)
-            return
-        if self.target == "card" and self.choice not in choices:
+        choices = card_choices(card, image) if card and not self.source.problems.get("card") else []
+        if self.choice not in choices:
             safe = [c for c in choices if c["kind"] in ("free", "add")]
-            self.choice = (safe or choices)[0]
-            # Nothing on the card is spared: let the user see the ways there are
-            self.editing = self.editing or not safe and len(choices) > 1
-        self.add_summary(prefs, card, choices)
+            self.choice = (safe or choices or [None])[0]
+        self.add_where(prefs, card, choices)
+        self.add_summary(prefs)
         if self.needs_pin():
             self.add_pin_group(prefs)
         if self.target == "phone":
@@ -8177,29 +8172,67 @@ class InstallPage(FollowingPage):
             self.add_card_go(prefs, card)
         self.update_install()
 
-    def add_summary(self, prefs, card, choices):
-        group = Adw.PreferencesGroup(title=_("Ready to install"))
+    def add_where(self, prefs, card, choices):
+        """The question of this step: on the memory card or inside the phone. Nothing is chosen for the
+        user; on the card the app picks the place, and shows the others only when one has to be lost."""
+        group = Adw.PreferencesGroup(title=_("Where should Plinius go?"))
+        card_row, card_check = radio_row(_("On the memory card"), _(
+            "Recommended. Volla OS stays, and at each start a menu lets you choose."), active=self.target == "card")
+        phone_row, phone_check = radio_row(_("Inside the phone"), _(
+            "Instead of Volla OS: all its apps and data are erased. Plinius then starts without a memory card, and "
+            "faster."), group=card_check, active=self.target == "phone")
+        # Neither is active at first: a hidden third button of the same group holds that state
+        none = Gtk.CheckButton(active=self.target is None)
+        none.set_group(card_check)
+        problem = self.card_problem(card, choices)
+        if problem:
+            card_row.set_subtitle(problem)
+            card_check.set_sensitive(False)
+            card_row.set_activatable(False)
+            again = Gtk.Button(label=_("Look again"), valign=Gtk.Align.CENTER)
+            again.connect("clicked", lambda _b: self.look_again())
+            card_row.add_suffix(again)
+        if self.source.problems.get("phone"):
+            phone_row.set_subtitle(self.source.problems["phone"])
+            phone_row.set_sensitive(False)
+        for check, target in ((card_check, "card"), (phone_check, "phone")):
+            check.connect("toggled", lambda c, t=target: c.get_active() and self.set_target(t))
+        group.add(card_row)
+        if self.target == "card" and choices:
+            if len(choices) > 1:
+                self.add_choice_rows(group, card, choices)
+            else:
+                r = row(*self.choice_text(card, self.choice))
+                r.set_margin_start(24)
+                group.add(r)
+        group.add(phone_row)
+        prefs.add(group)
+
+    def card_problem(self, card, choices):
+        """Why Plinius cannot go onto the card, in words for everybody; "" if it can."""
+        image = self.source.image
+        if self.source.problems.get("card"):
+            return self.source.problems["card"]
+        if not card:
+            return _("No memory card found. Put one of {size} or more into the phone, then look again.").format(
+                size=card_size_hint(card_need(image)))
+        if not choices:
+            return _("The memory card is too small: Plinius needs {need} or more, this one has {size}.").format(
+                need=card_size_hint(card_need(image)), size=size_text(card["size"]))
+        return ""
+
+    def add_summary(self, prefs):
+        group = Adw.PreferencesGroup(title=_("Plinius"))
         change = Gtk.Button(label=_("Done") if self.editing else _("Change"), valign=Gtk.Align.CENTER,
                             css_classes=["flat"])
         change.connect("clicked", lambda _b: self.toggle_editing())
         group.set_header_suffix(change)
         if self.editing:
             group.add(image_row(self.source, self, change=True))
-            self.add_target_rows(group)
-            if self.target == "card" and len(choices) > 1:
-                self.add_choice_rows(group, card, choices)
             group.add(self.language_row())
         else:
             r = row(self.source.title(), size_text(self.source.image.size))
             r.add_prefix(Gtk.Image(icon_name="system-software-install-symbolic"))
-            group.add(r)
-            if self.target == "phone":
-                r = row(_("On the phone itself"), _("Replaces Volla OS: all its apps and data are erased."))
-            else:
-                r = row(*self.choice_text(card, self.choice))
-            r.add_prefix(Gtk.Image(icon_name="phone-symbolic" if self.target == "phone" else "media-flash-symbolic"))
-            if self.target == "phone" or self.choice["kind"] not in ("free", "add"):
-                r.add_suffix(Gtk.Image(icon_name="dialog-warning-symbolic", css_classes=["warning"]))
             group.add(r)
             r = row(_("Language"), self.language_name())
             r.add_prefix(Gtk.Image(icon_name="preferences-desktop-locale-symbolic"))
@@ -8209,21 +8242,6 @@ class InstallPage(FollowingPage):
     def toggle_editing(self):
         self.editing = not self.editing
         self.render()
-
-    def add_target_rows(self, group):
-        card, card_check = radio_row(_("On the memory card"), _(
-            "Recommended. Volla OS stays on the phone, and a menu at each start lets you choose."),
-            active=self.target == "card")
-        phone, phone_check = radio_row(_("On the phone itself"), _(
-            "Replaces Volla OS: all its apps and data are erased. Plinius then starts without a memory card, "
-            "and faster."), group=card_check, active=self.target == "phone")
-        for r, check, target in ((card, card_check, "card"), (phone, phone_check, "phone")):
-            problem = self.source.problems.get(target)
-            if problem:
-                r.set_subtitle(problem)
-                r.set_sensitive(False)
-            check.connect("toggled", lambda c, t=target: c.get_active() and self.set_target(t))
-            group.add(r)
 
     def set_target(self, target):
         if target != self.target:
@@ -8239,8 +8257,7 @@ class InstallPage(FollowingPage):
             first = first or check
             check.connect("toggled", lambda c, ch=choice: c.get_active() and self.set_choice(ch))
             if choice["kind"] not in ("free", "add"):
-                r.add_suffix(Gtk.Image(icon_name="dialog-warning-symbolic", css_classes=["warning"],
-                                       tooltip_text="\n".join(choice.get("warnings") or ())))
+                r.add_suffix(Gtk.Image(icon_name="dialog-warning-symbolic", css_classes=["warning"]))
             group.add(r)
 
     def set_choice(self, choice):
@@ -8291,29 +8308,14 @@ class InstallPage(FollowingPage):
         if self.go_button:
             self.go_button.set_sensitive(self.pin_ready() and getattr(self.go_button, "allowed", True))
 
-    def add_card_problem(self, prefs, card):
-        image = self.source.image
-        other = button_row(_("Install on the phone itself instead"), "phone-symbolic", lambda: self.set_target("phone"),
-                           sensitive=not self.source.problems.get("phone"))
-        again = button_row(_("Look again"), "view-refresh-symbolic", self.look_again, suggested=True)
-        if not card:
-            group = Adw.PreferencesGroup(title=_("No memory card found"), description=_(
-                "Put a memory card of {size} or more into the phone and look again. Or install Plinius on the phone "
-                "itself.").format(size=card_size_hint(card_need(image))))
-        else:
-            group = Adw.PreferencesGroup(title=_("The memory card is too small"), description=_(
-                "Plinius needs a memory card of {need} or more; this one has {size}.").format(
-                need=card_size_hint(card_need(image)), size=size_text(card["size"])))
-        group.add(again)
-        group.add(other)
-        prefs.add(group)
-
     def add_card_go(self, prefs, card):
-        safe = self.choice["kind"] in ("free", "add")
-        group = Adw.PreferencesGroup(description=_("This takes up to an hour. Keep the phone connected."))
+        safe = self.target != "card" or self.choice["kind"] in ("free", "add")
+        group = Adw.PreferencesGroup(description=_("This takes up to an hour. Keep the phone connected.")
+                                     if self.target else _("Choose above where Plinius should go."))
         self.go_button = button_row(_("Install Plinius") if safe else _("Erase and install Plinius"),
                                     "system-software-install-symbolic", lambda: self.confirm_card(card))
         self.go_button.add_css_class("suggested-action" if safe else "destructive-action")
+        self.go_button.allowed = self.target == "card"
         group.add(self.go_button)
         prefs.add(group)
 
@@ -8348,23 +8350,29 @@ class InstallPage(FollowingPage):
         prefs.add(group)
 
     def choice_text(self, card, choice):
+        """Where on the card, in words for everybody: no partition numbers, only what is kept and lost."""
         kind = choice["kind"]
         if kind == "free":
             p = choice["place"]
-            return _("Into unused partitions"), _("Partitions {system} and {data}, {size}. Nothing on the card is "
-                                                  "erased.").format(system=p["system"]["number"], data=p["data"]["number"],
-                                                                    size=size_text(p["system"]["size"] + p["data"]["size"]))
+            return _("Into the free space"), _("{size} on the card are unused. Nothing on the card is erased.").format(
+                size=size_text(p["system"]["size"] + p["data"]["size"]))
         if kind == "add":
             return _("Into the free space"), _("{system} for Plinius and {data} for your files. Nothing on the card is "
                                                "erased.").format(system=size_text(choice["system"]),
                                                                  data=size_text(choice["data"]))
         if kind == "replace":
-            title = choice["place"]["title"] or _("Unnamed system")
-            return _("Instead of {title}").format(title=title), " ".join(
-                [_("{title} and its files on the card are erased.").format(title=title)] + choice["warnings"])
+            place = choice["place"]
+            title = place["title"] or _("Unnamed system")
+            users = home_users(card)
+            others = sorted({t for part in (place["system"], place["data"]) for t in users.get(part["number"], ())
+                             if t != title})
+            text = [_("{title} and its files on the card are erased.").format(title=title)]
+            text += [_("The personal files of {title} are there as well and are erased too.").format(title=t)
+                     for t in others]
+            return _("Instead of {title}").format(title=title), " ".join(text)
         data = card["size"] - choice["settings"] - choice["system"]
         return _("Erase the memory card and set it up anew"), _(
-            "{system} for Plinius and about {data} for your files. Everything on the card is erased.").format(
+            "Everything on the card is erased. {system} for Plinius and about {data} for your files.").format(
             system=size_text(choice["system"]), data=size_text(data))
 
     def confirm_card(self, card):
