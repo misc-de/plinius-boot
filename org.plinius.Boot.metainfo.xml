@@ -24,6 +24,11 @@
   <url type="homepage">https://github.com/misc-de/plinius-boot</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.26" date="2026-11-25">
+      <description>
+        <p>No more warning about an unfinished update of Volla OS when the drivers copied from it are exactly the ones Plinius was tested with.</p>
+      </description>
+    </release>
     <release version="0.25" date="2026-11-25">
       <description>
         <p>The details of an installation are no longer empty: every step is listed there with its time.</p>

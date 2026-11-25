@@ -650,8 +650,11 @@ notes, phone = take({"vendor_dlkm": pins["vendor_dlkm"]}, slot="b")
 check("missing in its slot: the other slot's", notes == [] and (android / "vendor_dlkm.img").read_bytes() == want_dlkm)
 lp_super(super_file, [slot_a + [("vendor_a-cow", [(8, 0, sector(0))])]], body)
 notes, _phone = take(pins)
-check("an update Volla OS has not merged: copied, with a note", len(notes) == 1 and "not finished an update" in notes[0]
-      and (android / "vendor.img").read_bytes() == want_vendor)
+check("an update Volla OS has not merged, but the drivers are the tested ones: no note",
+      notes == [] and (android / "vendor.img").read_bytes() == want_vendor)
+notes, _phone = take(dict(pins, vendor=(len(want_vendor), "0" * 64)))
+check("an update Volla OS has not merged and the drivers differ: one note that says so",
+      len(notes) == 1 and "not finished an update" in notes[0] and (android / "vendor.img").read_bytes() == want_vendor)
 lp_super(super_file, [[("system_a", [(8, 0, sector(0))])]], body)
 notes, phone = take(pins)
 check("not on the phone: a note for each, nothing copied, nothing stops",

@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.25"
+VERSION = "0.26"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -4630,10 +4630,6 @@ def take_vendor(job, device, source, pins, loop=False):
                    "not work.").format(name=name))
     if not plan:
         return notes
-    if unfinished:
-        note(_("Volla OS on this phone has not finished an update, so its drivers may be copied as they were before "
-               "it. If some of the hardware does not work: bring Volla OS back from the backup, start it once until "
-               "the update is done and install Plinius again."))
     try:
         out = run_checked(access, vendor_script(source, loop, plan), 3600, _("Copying the drivers of Volla OS"))
     except Failed as err:
@@ -4641,11 +4637,18 @@ def take_vendor(job, device, source, pins, loop=False):
                "partitions as it starts.").format(error=err))
         return notes
     got = dict(line.split() for line in out.splitlines() if len(line.split()) == 2)
-    for name in plan:
-        if got.get(name) != pins[name][1]:
-            note(_("{name} of Volla OS on this phone is not the one Plinius was tested with. It was taken all the "
-                   "same. If some of the hardware does not work: bring Volla OS back from the backup, update it to "
-                   "its newest version and install Plinius again.").format(name=name))
+    differ = [name for name in plan if got.get(name) != pins[name][1]]
+    # An update Volla OS has not merged only matters if the copy differs: the checksum says what was taken
+    if differ and unfinished:
+        note(_("Volla OS on this phone has not finished an update, so its drivers may be copied as they were before "
+               "it. If some of the hardware does not work: bring Volla OS back from the backup, start it once until "
+               "the update is done and install Plinius again."))
+    elif unfinished:
+        job.log(_("Volla OS has not finished an update, but its drivers are the ones Plinius was tested with."))
+    for name in differ if not unfinished else ():
+        note(_("{name} of Volla OS on this phone is not the one Plinius was tested with. It was taken all the "
+               "same. If some of the hardware does not work: bring Volla OS back from the backup, update it to "
+               "its newest version and install Plinius again.").format(name=name))
     return notes
 
 
