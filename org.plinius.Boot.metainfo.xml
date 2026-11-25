@@ -24,6 +24,12 @@
   <url type="homepage">https://github.com/misc-de/plinius-boot</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.27" date="2026-11-25">
+      <description>
+        <p>The app recognizes what is inside the phone: Volla OS, Ubuntu Touch, Plinius or another Linux system, or something unknown, and names it instead of always saying Volla OS.</p>
+        <p>A memory card that already holds a boot menu or systems is never erased by the guided installation. Without free space nothing is chosen for you: you pick which system Plinius replaces.</p>
+      </description>
+    </release>
     <release version="0.26" date="2026-11-25">
       <description>
         <p>No more warning about an unfinished update of Volla OS when the drivers copied from it are exactly the ones Plinius was tested with.</p>

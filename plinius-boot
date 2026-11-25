@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.26"
+VERSION = "0.27"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -1231,10 +1231,85 @@ def parse_card(out):
             "largest_free": max((s for _start, s in free), default=0) * SECTOR}
 
 
-def read_layout(device):
+# Runs in the rescue system after plinius-partlinks, as root, and changes nothing: what the phone's own
+# storage holds. vbmeta keeps saying Volla OS whatever was installed later, so the app looks into userdata,
+# mounted read-only (ext4 without journal replay, or f2fs as Android has it): a rootfs.img there is a Linux
+# system (one of this app, or another port), with its os-release read from it the same way; user-data and
+# system-data are Ubuntu Touch; app, data, media and misc are Android. Output: key=value lines.
+PHONE_SYSTEM_SCRIPT = r"""
+d=/dev/disk/by-partlabel/userdata
+[ -b "$d" ] || exit 0
+if [ "$(dd if="$d" bs=4 count=1 2>/dev/null)" = LUKS ]; then echo fs=luks; exit 0; fi
+m=$(mktemp -d /tmp/plinius-phone.XXXXXX) || exit 1
+if mount -t ext4 -o ro,noload "$d" "$m" 2>/dev/null; then echo fs=ext4
+elif mount -t f2fs -o ro "$d" "$m" 2>/dev/null; then echo fs=f2fs
+else rmdir "$m"; echo fs=unknown; exit 0; fi
+for x in rootfs.img ubuntu.img user-data system-data android-data app data media misc; do
+	[ -e "$m/$x" ] && echo "has=$x"
+done
+if [ -f "$m/rootfs.img" ] && i=$(mktemp -d /tmp/plinius-rootfs.XXXXXX); then
+	if mount -t ext4 -o ro,noload,loop "$m/rootfs.img" "$i" 2>/dev/null; then
+		for f in etc/os-release usr/lib/os-release; do
+			t=$i/$f
+			l=$(readlink "$t") && case $l in /*) t=$i$l ;; esac
+			[ -f "$t" ] || continue
+			grep -E '^(NAME|PRETTY_NAME)=' "$t"
+			break
+		done
+		[ -f "$i/etc/system-image/channel.ini" ] && echo channel=yes
+		umount "$i"
+	fi
+	rmdir "$i"
+fi
+umount "$m"
+rmdir "$m"
+"""
+
+
+def phone_system(out, android, own=False):
+    """What runs in the phone itself, from PHONE_SYSTEM_SCRIPT: {"kind": "plinius", "ubuntu", "linux",
+    "android" or "unknown", "name": its name or ""}. android: android_systems of the phone, which name the
+    Android build; own: the boot partition is still the one of a system this app installed."""
+    kv, has = {}, set()
+    for line in out.splitlines():
+        key, eq, value = line.partition("=")
+        if not eq:
+            continue
+        value = clean_text(value.strip().strip('"'))
+        if key == "has":
+            has.add(value)
+        else:
+            kv[key] = value
+    linux = kv.get("PRETTY_NAME") or kv.get("NAME") or ""
+    if own:
+        return {"kind": "plinius", "name": linux or "Plinius"}
+    if kv.get("channel") or "ubuntu.img" in has or {"user-data", "system-data"} & has:
+        return {"kind": "ubuntu", "name": "Ubuntu Touch"}
+    if "rootfs.img" in has:
+        return {"kind": "linux", "name": linux}
+    # Without a system of its own in userdata the phone starts Android from super, with its data or anew
+    if {"app", "data", "media", "misc"} & has or kv.get("fs") in ("ext4", "f2fs") and not has:
+        return {"kind": "android", "name": android[0]["name"] if android else "Android"}
+    return {"kind": "unknown", "name": ""}
+
+
+def read_phone_system(device, config=None, android=()):
+    """phone_system of a phone in the rescue system; unknown if it cannot be read."""
+    access, slot = device.access, device.info.get("slot")
+    try:
+        run_checked(access, "plinius-partlinks", 120, _("Reading the partition table"))
+        own = bool(config and slot in ("a", "b") and own_system_expected(access, config, device.serial, "_" + slot))
+        rc, out, _err = access.run_root(PHONE_SYSTEM_SCRIPT, 300)
+    except (Failed, OSError, ValueError):
+        return {"kind": "unknown", "name": ""}
+    return phone_system(out if rc == 0 else "", list(android), own)
+
+
+def read_layout(device, config=None):
     """What is installed where, as far as this connection can tell. Only reads. "complete" is False if
-    only the rescue system or an administrator login could tell more."""
-    layout = {"android": [], "storage": [], "card": None, "complete": False}
+    only the rescue system or an administrator login could tell more. "phone": what runs in the phone
+    itself (see phone_system), known in the rescue system only."""
+    layout = {"android": [], "storage": [], "card": None, "complete": False, "phone": None}
     if not device.access:
         return layout
     parts = []
@@ -1246,6 +1321,8 @@ def read_layout(device):
     if device.can_read:
         layout["card"] = device.access.card()
         layout["complete"] = True
+    if device.rescue and device.can_read:
+        layout["phone"] = read_phone_system(device, config, layout["android"])
     return layout
 
 
@@ -4833,6 +4910,13 @@ def card_choices(card, image):
     return choices
 
 
+def wizard_card_choices(card, choices):
+    """The ways onto the card the guided installation offers: setting up anew, which erases everything, only
+    for a card without a boot menu and without systems. Otherwise that is left to the Advanced pages."""
+    has_systems = card["settings"] or any(p.get("system") and not p.get("internal") for p in card["parts"])
+    return [c for c in choices if c["kind"] != "fresh" or not has_systems]
+
+
 def card_contents(card):
     """What is on a card now, for the warning before it is set up anew."""
     systems = [p["system"]["name"] for p in card["parts"] if p.get("system") and not p.get("internal")]
@@ -5685,12 +5769,12 @@ class RescuePage(Adw.NavigationPage):
 
 class BackupCreatePage(Adw.NavigationPage):
     """Creating a backup of one phone: where it goes and which partitions. select: the partitions chosen at
-    first, by name, or WHOLE_PHONE; without it the usual groups (DEFAULT_GROUPS). simple: the backup of
-    Volla OS in the guided installation, select fixed and in words for everybody: no partitions, no
-    rescue system, only where it goes, how big it is and the button."""
+    first, by name, or WHOLE_PHONE; without it the usual groups (DEFAULT_GROUPS). simple: the title for the
+    backup in the guided installation, select fixed and in words for everybody: no partitions, no rescue
+    system, only where it goes, how big it is and the button."""
 
     def __init__(self, win, device, select=None, simple=False):
-        super().__init__(title=_("Back up Volla OS") if simple else _("Create backup"))
+        super().__init__(title=simple if simple else _("Create backup"))
         self.win, self.device, self.select, self.simple = win, device, select, simple
         self.parts = []
         self.searching = False
@@ -5766,7 +5850,7 @@ class BackupCreatePage(Adw.NavigationPage):
         self.parts = parts
         if self.simple:
             group = Adw.PreferencesGroup(title=_("What is backed up"))
-            r = row(_("Volla OS"), _("{size}; packed, the backup is mostly much smaller.").format(
+            r = row(_("Everything Plinius overwrites"), _("{size}; packed, the backup is mostly much smaller.").format(
                 size=size_text(sum(p.size for p in self.selection()))))
             r.add_prefix(Gtk.Image(icon_name="phone-symbolic"))
             group.add(r)
@@ -5810,10 +5894,10 @@ class BackupCreatePage(Adw.NavigationPage):
             lost = self.pending and not self.searching and not self.original and \
                 any(p.name == self.pending["partition"] for p in parts)
             if waiting:
-                text += " · " + _("Getting a part of Volla OS from the update server…")
+                text += " · " + _("Getting the last part from the update server…")
             elif lost:
-                text += " · " + _("A part of Volla OS is not on the update server, so this backup is no way back. "
-                                  "Advanced in the menu has more ways.")
+                text += " · " + _("A part is not on the update server, so this backup is no way back. Advanced in "
+                                  "the menu has more ways.")
         self.summary.set_label(text)
         self.backup_button.set_sensitive(bool(parts) and not waiting and self.device.key in self.win.scanner.devices)
 
@@ -6549,7 +6633,7 @@ class FollowingPage(Adw.NavigationPage):
             self.after_layout(prefs)
             return False
 
-        in_thread(lambda: read_layout(d), done)
+        in_thread(lambda: read_layout(d, self.win.config), done)
 
     def after_layout(self, prefs):
         """Groups that belong below the overview."""
@@ -8189,10 +8273,12 @@ class InstallPage(FollowingPage):
             prefs.add(group)
             return
         self.show_steps(INSTALL)
-        choices = card_choices(card, image) if card and not self.source.problems.get("card") else []
+        choices = wizard_card_choices(card, card_choices(card, image)) \
+            if card and not self.source.problems.get("card") else []
         if self.choice not in choices:
+            # Only a way where nothing is lost is chosen for the user; anything else they choose themselves
             safe = [c for c in choices if c["kind"] in ("free", "add")]
-            self.choice = (safe or choices or [None])[0]
+            self.choice = safe[0] if safe else None
         self.add_where(prefs, card, choices)
         self.add_summary(prefs)
         if self.needs_pin():
@@ -8203,15 +8289,27 @@ class InstallPage(FollowingPage):
             self.add_card_go(prefs, card)
         self.update_install()
 
+    def inside(self):
+        """The system inside the phone for the texts: {"name": ..., "Name": ...}, the latter for the start of
+        a sentence. Its own name if the rescue system could tell (see phone_system), else "the current system"."""
+        found = (self.device.layout or {}).get("phone") or {}
+        name = found.get("name") if found.get("kind") != "unknown" else ""
+        if name:
+            return {"name": name, "Name": name}
+        return {"name": _("the current system"), "Name": _("The current system")}
+
     def add_where(self, prefs, card, choices):
         """The question of this step: on the memory card or inside the phone. Nothing is chosen for the
-        user; on the card the app picks the place, and shows the others only when one has to be lost."""
+        user; on the card the app picks a place where nothing is lost. Without one, the user chooses what
+        is replaced, and setting the card up anew is not offered here if it holds systems."""
+        names = self.inside()
         group = Adw.PreferencesGroup(title=_("Where should Plinius go?"))
         card_row, card_check = radio_row(_("On the memory card"), _(
-            "Recommended. Volla OS stays, and at each start a menu lets you choose."), active=self.target == "card")
+            "Recommended. {Name} stays inside the phone, and at each start a menu lets you choose.").format(**names),
+            active=self.target == "card")
         phone_row, phone_check = radio_row(_("Inside the phone"), _(
-            "Instead of Volla OS: all its apps and data are erased. Plinius then starts without a memory card, and "
-            "faster."), group=card_check, active=self.target == "phone")
+            "Replaces {name}: everything on it is erased. Plinius then starts without a memory card, and "
+            "faster.").format(**names), group=card_check, active=self.target == "phone")
         # Neither is active at first: a hidden third button of the same group holds that state
         none = Gtk.CheckButton(active=self.target is None)
         none.set_group(card_check)
@@ -8230,7 +8328,13 @@ class InstallPage(FollowingPage):
             check.connect("toggled", lambda c, t=target: c.get_active() and self.set_target(t))
         group.add(card_row)
         if self.target == "card" and choices:
-            if len(choices) > 1:
+            safe = [c for c in choices if c["kind"] in ("free", "add")]
+            if not safe:
+                r = row(_("There is no free space on the card. Choose what Plinius should replace:"))
+                r.add_prefix(Gtk.Image(icon_name="dialog-warning-symbolic", css_classes=["warning"]))
+                r.set_margin_start(24)
+                group.add(r)
+            if len(choices) > 1 or not safe:
                 self.add_choice_rows(group, card, choices)
             else:
                 r = row(*self.choice_text(card, self.choice))
@@ -8247,9 +8351,12 @@ class InstallPage(FollowingPage):
         if not card:
             return _("No memory card found. Put one of {size} or more into the phone, then look again.").format(
                 size=card_size_hint(card_need(image)))
-        if not choices:
+        if not choices and card["size"] < card_need(image):
             return _("The memory card is too small: Plinius needs {need} or more, this one has {size}.").format(
                 need=card_size_hint(card_need(image)), size=size_text(card["size"]))
+        if not choices:
+            return _("There is no free space on the card, and none of its systems can be replaced. Setting it up "
+                     "anew would erase everything on it; that is under Advanced in the menu.")
         return ""
 
     def add_summary(self, prefs):
@@ -8281,6 +8388,9 @@ class InstallPage(FollowingPage):
 
     def add_choice_rows(self, group, card, choices):
         first = None
+        if self.choice is None:
+            # Nothing chosen yet: a hidden button of the group holds that state
+            first = Gtk.CheckButton(active=True)
         for choice in choices:
             title, text = self.choice_text(card, choice)
             r, check = radio_row(title, text, group=first, active=choice == self.choice)
@@ -8340,13 +8450,18 @@ class InstallPage(FollowingPage):
             self.go_button.set_sensitive(self.pin_ready() and getattr(self.go_button, "allowed", True))
 
     def add_card_go(self, prefs, card):
-        safe = self.target != "card" or self.choice["kind"] in ("free", "add")
-        group = Adw.PreferencesGroup(description=_("This takes up to an hour. Keep the phone connected.")
-                                     if self.target else _("Choose above where Plinius should go."))
+        safe = self.target != "card" or not self.choice or self.choice["kind"] in ("free", "add")
+        if not self.target:
+            text = _("Choose above where Plinius should go.")
+        elif not self.choice:
+            text = _("Choose above what Plinius should replace.")
+        else:
+            text = _("This takes up to an hour. Keep the phone connected.")
+        group = Adw.PreferencesGroup(description=text)
         self.go_button = button_row(_("Install Plinius") if safe else _("Erase and install Plinius"),
                                     "system-software-install-symbolic", lambda: self.confirm_card(card))
         self.go_button.add_css_class("suggested-action" if safe else "destructive-action")
-        self.go_button.allowed = self.target == "card"
+        self.go_button.allowed = self.target == "card" and self.choice is not None
         group.add(self.go_button)
         prefs.add(group)
 
@@ -8357,11 +8472,12 @@ class InstallPage(FollowingPage):
         if problem:
             prefs.add(Adw.PreferencesGroup(title=_("Inside the phone"), description=problem))
             return
+        inside = self.inside()
         empty = INTERNAL_CHANGES if self.erased else ()
         names = phone_changes(pending_rescue(config, d.serial)["partition"][len("init_boot"):])
         missing = self.add_volla_backup(prefs, names, empty)
         group = Adw.PreferencesGroup(description=_("This takes up to an hour. Keep the phone connected."))
-        self.go_button = button_row(_("Erase Volla OS and install"), "system-software-install-symbolic",
+        self.go_button = button_row(_("Erase {name} and install").format(**inside), "system-software-install-symbolic",
                                     lambda: self.run(lambda job: run_install_phone(
                                         job, d, config, image, size, pin_hash=self.pin_hash, empty=empty,
                                         language=self.language)))
@@ -8370,7 +8486,7 @@ class InstallPage(FollowingPage):
         self.go_button.allowed = self.erased and not missing
         if not self.erased:
             sure = Adw.SwitchRow(title=_("I have copied what I still need"),
-                                 subtitle=_("All data of Volla OS on this phone will be erased."))
+                                 subtitle=_("{Name} is erased with all its data.").format(**inside))
 
             def toggled(s, _p):
                 self.go_button.allowed = s.get_active() and not missing
@@ -8384,18 +8500,18 @@ class InstallPage(FollowingPage):
     def add_volla_backup(self, prefs, names, empty):
         """The way back to Volla OS, in words for everybody: whether it is backed up, and one button. The
         partitions are the same as on the Advanced pages (see backup_group), only not named here."""
-        d, win = self.device, self.win
+        d, win, inside = self.device, self.win, self.inside()
         missing = missing_backup(win.backups, d, names, empty)
-        group = Adw.PreferencesGroup(title=_("Back up Volla OS first"), description=_(
-            "This is your way back to Volla OS. The backup is kept on this computer."))
+        group = Adw.PreferencesGroup(title=_("Back up {name} first").format(**inside), description=_(
+            "That is the way back. The backup is kept on this computer."))
         if missing:
             group.add(check_row(_("Not backed up yet"), "", False))
-            group.add(button_row(_("Back up Volla OS…"), "document-save-symbolic",
-                                 lambda: win.push(BackupCreatePage(win, d, select=missing, simple=True)),
-                                 suggested=True,
-                                 sensitive=d.can_read))
+            title = _("Back up {name}").format(**inside)
+            group.add(button_row(title + "…", "document-save-symbolic",
+                                 lambda: win.push(BackupCreatePage(win, d, select=missing, simple=title)),
+                                 suggested=True, sensitive=d.can_read))
         else:
-            group.add(check_row(_("Volla OS is backed up"), _("On this computer"), True))
+            group.add(check_row(_("{Name} is backed up").format(**inside), _("On this computer"), True))
         prefs.add(group)
         return missing
 
@@ -8447,7 +8563,7 @@ class InstallPage(FollowingPage):
 
     def run(self, work):
         """work(job) on an OperationPage; it returns False if the phone stays in the rescue system."""
-        d, win, target = self.device, self.win, self.target
+        d, win, target, names = self.device, self.win, self.target, self.inside()
         self.pin_hash = sha512_crypt(self.pin) if self.needs_pin() else None
         self.pin = self.pin_again = ""
         page = OperationPage(_("Installing Plinius"), "system-software-install-symbolic")
@@ -8485,8 +8601,8 @@ class InstallPage(FollowingPage):
                              "starts Plinius.")
                 else:
                     text = _("The phone is starting. At every start a menu shows for five seconds, then it starts "
-                             "Plinius by itself; choose VollaOS there for Volla OS. The first start of Plinius takes a "
-                             "few minutes; unlock it with your PIN.")
+                             "Plinius by itself. Its entry VollaOS starts what is inside the phone: {name}. The first "
+                             "start of Plinius takes a few minutes; unlock it with your PIN.").format(**names)
                 page.finish(True, _("Plinius is installed"), text, [(_("Done"), to_main, "suggested-action")])
             elif result == "original":
                 page.finish(False, _("Almost done"), _(

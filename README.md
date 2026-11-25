@@ -35,8 +35,12 @@ bar shows its progress under its step, and ticks it when it is done before the c
    downloads of them leave. If nothing is published, an image file is chosen instead. The step shows only if
    the phone is ready before the image, and goes on by itself once the image is checked.
 4. **Install:** first the question where Plinius should go, with nothing chosen: **on the memory card**
-   (recommended, Volla OS stays) or **inside the phone** (instead of Volla OS). The button waits for the
-   answer. Below it the image and the language, with **Change** for another image file or language. Inside
+   (recommended, the system inside the phone stays) or **inside the phone** (instead of that system). The
+   button waits for the answer. The texts name what is inside the phone: in the rescue system the app looks
+   into `userdata`, mounted read-only (`PHONE_SYSTEM_SCRIPT`), because `vbmeta` says Volla OS whatever was
+   installed later: a `rootfs.img` is a Linux system, named by its `os-release` (a system this app installed
+   is also known by its boot partition), `user-data`/`system-data` are Ubuntu Touch, Android's folders are
+   Volla OS as `vbmeta` names it, anything else is "the current system". Below it the image and the language, with **Change** for another image file or language. Inside
    the phone, the page first asks for a backup of Volla OS on this computer, as the way back: one status, one
    button, and a page with only the storage location and the size. Which partitions that is (the boot
    partitions of the slot, `userdata` unless unlocking just erased it, `init_boot` with its original) is said
@@ -44,8 +48,9 @@ bar shows its progress under its step, and ticks it when it is done before the c
    goes on the card is chosen by the app, the safest way first, and said without partition numbers:
    - **A card with a boot menu** (set up by the Volla Boot Manager or by this app): unused partitions, or
      free space for a new place, both shown as "into the free space", where nothing is lost. If neither is
-     there, the ways there are show below the card: instead of one of its systems (naming the personal files
-     of other systems that are lost with it), or the card set up anew, both with one more confirmation.
+     there, nothing is chosen: the user picks which system Plinius replaces (naming the personal files of
+     other systems that are lost with it), with one more confirmation. A card that holds a boot menu or
+     systems is never set up anew here; that is left to the Advanced pages.
    - **A card without a boot menu**, as it comes from the shop: set up the way the Volla Boot Manager does it
      (`Android-Boot-Manager/App`, `DroidBootFlow.kt`), so all of it is erased: a new GPT, `abm_settings`
      (type 8301, a 41st of the card, 512 MiB to 4 GiB) with `db/db.conf` (`timeout 5`) and

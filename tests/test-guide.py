@@ -938,4 +938,57 @@ check("each new step goes into the details once, with the time",
       [line.split("  ", 1)[1] for line in page.lines] == ["Setting up the memory card", "Writing Plinius"]
       and all(re.fullmatch(r"\d\d:\d\d:\d\d", line.split("  ", 1)[0]) for line in page.lines))
 
+# What runs inside the phone: PHONE_SYSTEM_SCRIPT in a local shell, mount replaced by copying a prepared tree
+def phone_script(tree=None, head=b""):
+    base = pathlib.Path(tempfile.mkdtemp(dir=tmp))
+    disk = base / "userdata"
+    disk.write_bytes(head or b"\0" * 16)
+    if tree is not None:
+        shutil.copytree(tree, str(disk) + ".tree")
+    fake = ("mount() { while [ $# -gt 2 ]; do shift; done; [ -d \"$1.tree\" ] || return 1; cp -r \"$1.tree/.\" \"$2\"; }\n"
+            "umount() { :; }\n")
+    script = app.PHONE_SYSTEM_SCRIPT.replace("/dev/disk/by-partlabel/userdata", str(disk)).replace('[ -b "$d" ]', '[ -e "$d" ]')
+    script = script.replace('rmdir "$m"', 'rm -rf "$m"').replace('rmdir "$i"', 'rm -rf "$i"')
+    r = subprocess.run(["sh"], input=fake + script, capture_output=True, text=True,
+                       env={"PATH": old_path, "TMPDIR": str(base)})
+    shutil.rmtree(base)
+    return r.stdout
+
+
+def tree(*paths, os_release=None):
+    root = pathlib.Path(tempfile.mkdtemp(dir=tmp))
+    for p in paths:
+        (root / p).mkdir(parents=True)
+    if os_release is not None:
+        (root / "rootfs.img").write_bytes(b"")
+        (root / "rootfs.img.tree" / "etc").mkdir(parents=True)
+        (root / "rootfs.img.tree" / "etc" / "os-release").write_text(os_release)
+    return root
+
+
+volla = [{"name": "Volla OS 3.0", "slot": "b"}]
+arch = phone_script(tree(os_release='NAME="Arch Linux ARM"\nPRETTY_NAME="Arch Linux ARM"\nID=archarm\n'))
+check("a Linux system in rootfs.img by its os-release", app.phone_system(arch, volla)
+      == {"kind": "linux", "name": "Arch Linux ARM"})
+check("one this app installed is Plinius, with its name", app.phone_system(arch, volla, own=True)
+      == {"kind": "plinius", "name": "Arch Linux ARM"})
+check("Ubuntu Touch by its folders", app.phone_system(phone_script(tree("user-data", "system-data")), volla)["kind"]
+      == "ubuntu")
+check("Volla OS by Android's folders, named by vbmeta", app.phone_system(phone_script(tree("data", "media", "misc")),
+                                                                         volla) == {"kind": "android", "name": "Volla OS 3.0"})
+check("empty data: Android starts anew", app.phone_system(phone_script(tree()), []) == {"kind": "android", "name": "Android"})
+check("encrypted and not of this app: unknown", app.phone_system(phone_script(head=b"LUKS\xba\xbe" + b"\0" * 10), volla)
+      == {"kind": "unknown", "name": ""})
+check("encrypted, of this app: Plinius", app.phone_system(phone_script(head=b"LUKS\xba\xbe" + b"\0" * 10), volla,
+                                                          own=True) == {"kind": "plinius", "name": "Plinius"})
+check("unreadable: unknown", app.phone_system(phone_script(), volla) == {"kind": "unknown", "name": ""})
+
+# The guided installation never offers to set up a card anew that holds a boot menu or systems
+fresh, add = {"kind": "fresh"}, {"kind": "add"}
+check("a card with a boot menu: not set up anew here",
+      app.wizard_card_choices({"settings": "mmcblk0p1", "parts": []}, [add, fresh]) == [add])
+check("a card with systems but no boot menu: not set up anew here",
+      app.wizard_card_choices({"settings": None, "parts": [{"system": {"name": "Arch"}}]}, [fresh]) == [])
+check("a blank card may be set up", app.wizard_card_choices({"settings": None, "parts": [{}]}, [fresh]) == [fresh])
+
 print("All guide checks passed")
