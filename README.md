@@ -15,30 +15,36 @@ reaches the phone over the USB network and mounts nothing, which makes a backup 
 
 ## Installing Plinius
 
-The start page says what to do on the phone first: turn on the developer options, there "OEM unlocking"
-and "USB debugging", and connect the cable. A phone that turns up opens the installation by itself. It asks
-three things and then does the rest:
+The app goes in the same three steps as the website, shown as a bar at the top: **Connect, Check, Install**.
+One button per step; what is not needed right away is folded away.
 
-1. **Plinius:** the newest image from `https://plinius.cais.de/images/latest.json` (name, https link on the
-   same server, size, SHA-256), downloaded into `~/.local/share/plinius-boot/images`. A download that stops
-   goes on where it stopped, a damaged one is deleted. The folder keeps two images, the new one and the one
-   before it; older ones and unfinished downloads of them leave. If nothing is published, an image file is
-   chosen instead.
-2. **Where:** on the memory card (the default), or on the phone itself in place of Volla OS.
-3. **PIN** for the lock screen, 4 to 12 digits. Only its SHA-512 crypt hash goes to the phone, into
+1. **Connect:** the start page asks for the cable; how to turn on the developer options, "OEM unlocking"
+   and "USB debugging" is folded under it. Meanwhile the newest image from
+   `https://plinius.cais.de/images/latest.json` (name, https link on the same server, size, SHA-256) is
+   already downloading into `~/.local/share/plinius-boot/images`, not over a metered connection, where it
+   waits for a click. A download that stops goes on where it stopped, a damaged one is deleted. The folder
+   keeps two images, the new one and the one before it; older ones and unfinished downloads of them leave.
+   If nothing is published, an image file is chosen instead. A phone that turns up opens step 2 by itself.
+2. **Check:** what is known about the phone so far, then one click, and the app goes on by itself while the
+   phone restarts: into the bootloader, unlocking it if it is still locked (this erases the phone's data and
+   waits for a click and Volume up on the phone), into the rescue system, which reads the memory card. If
+   "OEM unlocking" is still off, the app restarts the phone into Volla OS, shows the two taps there, and
+   after "Continue" takes it back to the bootloader.
+3. **Install:** a summary with one button: the image, where it goes, the language. **Change** opens the
+   choices: another image file, on the phone itself in place of Volla OS, another place on the card, the
+   language. Where it goes on the card is chosen by the app, the safest way first:
+   - **A card with a boot menu** (set up by the Volla Boot Manager or by this app): unused partitions, or
+     free space for a new place, where nothing is lost. If neither is there, the choices open by themselves:
+     instead of one of its systems, or the card set up anew, both with one more confirmation.
+   - **A card without a boot menu**, as it comes from the shop: set up the way the Volla Boot Manager does it
+     (`Android-Boot-Manager/App`, `DroidBootFlow.kt`), so all of it is erased: a new GPT, `abm_settings`
+     (type 8301, a 41st of the card, 512 MiB to 4 GiB) with `db/db.conf` (`timeout 5`) and
+     `db/entries/real.conf` for Volla OS, a system partition of up to 40 GiB and the rest for data.
+
+   Images that ask for the PIN at their first start need nothing more. For older ones the page asks for a
+   **PIN** for the lock screen, 4 to 12 digits. Only its SHA-512 crypt hash goes to the phone, into
    `/etc/shadow` of the system that was just written, for the user `plinius`. Images without `-P` have that
    password locked, and nobody would get past the lock screen.
-
-After "Install Plinius" the app goes on by itself while the phone restarts: into the bootloader, unlocking
-it if it is still locked (this erases the phone's data, and waits for a click and Volume up on the phone),
-into the rescue system. There it shows what will happen, and waits for one more click if anything is lost:
-
-- **A card with a boot menu** (set up by the Volla Boot Manager or by this app): unused partitions, or free
-  space for a new place, where nothing is lost. Otherwise instead of one of its systems, or the card set up anew.
-- **A card without a boot menu**, as it comes from the shop: set up the way the Volla Boot Manager does it
-  (`Android-Boot-Manager/App`, `DroidBootFlow.kt`), so all of it is erased: a new GPT, `abm_settings`
-  (type 8301, a 41st of the card, 512 MiB to 4 GiB) with `db/db.conf` (`timeout 5`) and `db/entries/real.conf`
-  for Volla OS, a system partition of up to 40 GiB and the rest for data.
 
 On the card Plinius starts with its own kernel and ramdisk from `/usr/share/plinius-boot` in the image, copied
 to `abm_settings/plinius/`, never with the kernel of another system. Its entry is written last, then
@@ -52,7 +58,7 @@ confirm; installing into free space; the whole way through in one go.
 
 ## Advanced: systems, boot menu and backups
 
-The button **Advanced** on the installation page leads to the phone's page from before. It leads through
+**Advanced…** in the menu of the installation page leads to the phone's page from before. It leads through
 the work step by step, in all its languages:
 
 1. **Tools:** at every start it runs adb, fastboot, ssh, ssh-keygen and ip. What is missing or broken is

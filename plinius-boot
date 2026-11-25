@@ -53,7 +53,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, Gio, GLib, Gtk, Pango  # noqa: E402
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango  # noqa: E402
 
 try:
     from compression import zstd
@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.18"
+VERSION = "0.19"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -7567,55 +7567,108 @@ def radio_row(title, subtitle, group=None, active=False):
     return r, check
 
 
-class DownloadProgress:
-    """The page a download Job reports to: it hands the numbers to the InstallPage, which draws them in
-    whatever row it shows at the time."""
+STEP_CSS = """
+.step-dot { min-width: 30px; min-height: 30px; border-radius: 999px; font-weight: bold;
+            background: alpha(currentColor, 0.1); color: alpha(currentColor, 0.55); }
+.step-dot.current { background: @accent_bg_color; color: @accent_fg_color; }
+.step-dot.done { background: @success_bg_color; color: @success_fg_color; }
+.step-line { min-height: 2px; background: alpha(currentColor, 0.15); }
+.step-line.done { background: @success_bg_color; }
+.step-name { font-size: smaller; color: alpha(currentColor, 0.55); }
+.step-name.current { color: inherit; font-weight: bold; }
+"""
 
-    def __init__(self, page):
-        self.page = page
+# The three steps of the guided installation, as on the website: the start page is the first one
+STEPS = (_("Connect"), _("Check"), _("Install"))
+
+
+def load_step_css():
+    provider = Gtk.CssProvider()
+    provider.load_from_string(STEP_CSS)
+    Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), provider,
+                                              Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+
+STEP_CSS_LOADED = False
+
+
+class StepBar(Gtk.Grid):
+    """① Connect — ② Check — ③ Install: the current step in the accent color, the ones before it ticked."""
+
+    def __init__(self, current=0):
+        super().__init__(halign=Gtk.Align.CENTER, row_spacing=6, margin_top=12, margin_bottom=12)
+        self.dots, self.lines, self.names = [], [], []
+        for n, name in enumerate(STEPS):
+            dot = Gtk.Stack(halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
+            dot.add_named(Gtk.Label(label=str(n + 1)), "number")
+            dot.add_named(Gtk.Image(icon_name="object-select-symbolic"), "done")
+            dot.add_css_class("step-dot")
+            label = Gtk.Label(label=name, justify=Gtk.Justification.CENTER)
+            label.add_css_class("step-name")
+            self.attach(dot, 2 * n, 0, 1, 1)
+            self.attach(label, 2 * n, 1, 1, 1)
+            self.dots.append(dot)
+            self.names.append(label)
+            if n:
+                line = Gtk.Box(valign=Gtk.Align.CENTER, width_request=64, margin_start=4, margin_end=4)
+                line.add_css_class("step-line")
+                self.attach(line, 2 * n - 1, 0, 1, 1)
+                self.lines.append(line)
+        self.set_step(current)
+
+    def set_step(self, current, finished=False):
+        """current is 0, 1 or 2; finished ticks all three."""
+        for n, (dot, label) in enumerate(zip(self.dots, self.names)):
+            done = n < current or finished
+            dot.set_visible_child_name("done" if done else "number")
+            for widget in (dot, label):
+                for css, on in (("done", done), ("current", n == current and not finished)):
+                    (widget.add_css_class if on else widget.remove_css_class)(css)
+        for n, line in enumerate(self.lines, 1):
+            (line.add_css_class if n <= current or finished else line.remove_css_class)("done")
+
+
+class DownloadProgress:
+    """The page a download Job reports to: it hands the numbers to the ImageSource, which passes them to
+    whatever rows show the download at the time."""
+
+    def __init__(self, source):
+        self.source = source
 
     def progress(self, done, total, text):
-        self.page.download_progress(done, total, text)
+        self.source.download_progress(done, total)
         return False
 
     def add_line(self, _text):
         return False
 
 
-class InstallPage(FollowingPage):
-    """Plinius on the phone in one go, for everybody: choose where and a PIN, then the app does the rest.
-    It follows the phone through its restarts (see FollowingPage) and does each automatic step once:
-    into the bootloader, start the rescue system, install, write the original back. Only unlocking and
-    erasing something wait for a click."""
+class ImageSource:
+    """The image of Plinius for the guided installation, one for the whole app: the newest one on the
+    server, downloaded in the background from the start of the app on (not over a metered connection),
+    or a file the user chose. Pages that show it register in listeners and get image_changed() and
+    image_progress()."""
 
-    STEPS = (_("Choose"), _("Prepare the phone"), _("Install"))
-
-    def __init__(self, win, device):
-        super().__init__(win, device, _("Install Plinius"))
-        advanced = Gtk.Button(label=_("Advanced"), tooltip_text=_("Systems, boot menu, backups and the rescue system"))
-        advanced.connect("clicked", lambda _b: self.win.push(PhonePage(self.win, self.device)))
-        self.header.pack_end(advanced)
+    def __init__(self, win):
+        self.win = win
         self.image, self.problems, self.checking = None, {}, False
         self.offer, self.offer_error, self.looking = None, "", True
-        self.download_job, self.downloaded = None, (0, 0)
-        self.target, self.pin, self.pin_again, self.pin_hash = "card", "", "", None
-        self.language = default_language()
-        self.started, self.working, self.finished = False, False, False
-        # Automatic steps already done, and the one running now with its last message
-        self.done, self.status, self.error = set(), "", ""
-        self.choice = None
-        # Unlocking the bootloader on this page erased userdata: there is nothing in it to back up then
-        self.erased = False
-        self.render()
-        in_thread(latest_image, self.show_offer)
+        self.job, self.downloaded, self.download_error = None, (0, 0), ""
+        self.listeners = {}
 
-    # The choices before anything happens
+    def changed(self):
+        for listener in list(self.listeners.values()):
+            listener.image_changed()
+
+    def look(self):
+        in_thread(latest_image, self.show_offer)
 
     def show_offer(self, offer, error):
         self.looking, self.offer, self.offer_error = False, offer, error or ""
-        if offer and not self.image:
+        if offer and not self.image and not self.job:
             path = os.path.join(IMAGES, offer["name"])
-            if os.path.isfile(path) and os.path.getsize(path) == offer["size"]:
+            complete = os.path.isfile(path) and os.path.getsize(path) == offer["size"]
+            if complete or not metered():
                 self.start_download()
                 return False
         if not offer and not self.image:
@@ -7623,39 +7676,36 @@ class InstallPage(FollowingPage):
             if earlier:
                 self.check_image(earlier[0])
                 return False
-        self.rerender()
+        self.changed()
         return False
 
-    def rerender(self):
-        if not self.started:
-            self.render()
-
     def start_download(self):
-        page = DownloadProgress(self)
-        self.download_job = job = Job(page)
-        self.downloaded = (0, self.offer["size"])
-        self.render()
+        self.job = job = Job(DownloadProgress(self))
+        self.downloaded, self.download_error = (0, self.offer["size"]), ""
+        self.changed()
 
         def done(path, error):
-            self.download_job = None
+            self.job = None
             if error:
                 if not job.cancelled:
-                    alert(self.win, _("The download did not finish"), error, [("close", _("Close"))])
-                self.render()
+                    self.download_error = error
+                self.changed()
             else:
                 self.check_image(path)
             return False
 
         in_thread(lambda: download_image(job, self.offer), done)
 
-    def download_progress(self, done, total, text):
-        self.downloaded = (done, total)
-        if getattr(self, "download_bar", None):
-            self.download_bar.set_fraction(done / total if total else 0)
-            self.download_row.set_title(text)
-            self.download_row.set_subtitle(_("{done} of {total}").format(done=size_text(done), total=size_text(total)))
+    def cancel(self):
+        if self.job:
+            self.job.cancel()
 
-    def choose_image(self):
+    def download_progress(self, done, total):
+        self.downloaded = (done, total)
+        for listener in list(self.listeners.values()):
+            listener.image_progress()
+
+    def choose_file(self):
         dialog = Gtk.FileDialog(title=_("Image of Plinius"))
 
         def chosen(dlg, result):
@@ -7672,7 +7722,7 @@ class InstallPage(FollowingPage):
         if self.image:
             self.image.close()
         image, self.image, self.checking = SystemImage(path), None, True
-        self.render()
+        self.changed()
 
         def work():
             image.check()
@@ -7687,179 +7737,131 @@ class InstallPage(FollowingPage):
                 alert(self.win, _("This image cannot be installed"), error or problems["card"], [("close", _("Close"))])
             else:
                 self.image, self.problems = image, problems
-            self.render()
+            self.changed()
             return False
 
         in_thread(work, done)
 
-    def add_image_group(self, prefs):
-        group = Adw.PreferencesGroup(title=_("Plinius"))
-        self.download_bar = None
-        if self.checking:
-            group.add(spinner_row(_("Checking the image… A compressed one takes a few minutes.")))
-        elif self.download_job:
-            self.download_row = row(_("Downloading Plinius"), "")
-            self.download_row.add_prefix(Adw.Spinner())
-            self.download_bar = Gtk.ProgressBar(valign=Gtk.Align.CENTER, width_request=120)
-            self.download_row.add_suffix(self.download_bar)
-            cancel = Gtk.Button(label=_("Cancel"), valign=Gtk.Align.CENTER)
-            cancel.connect("clicked", lambda _b: self.download_job and self.download_job.cancel())
-            self.download_row.add_suffix(cancel)
-            group.add(self.download_row)
-            self.download_progress(*self.downloaded, _("Downloading Plinius"))
-        elif self.image:
-            r = row(self.image.name, " · ".join((os.path.basename(self.image.path), size_text(self.image.size),
-                                                 _("checked"))))
-            r.add_prefix(Gtk.Image(icon_name="object-select-symbolic", css_classes=["success"]))
-            change = Gtk.Button(label=_("Other file…"), valign=Gtk.Align.CENTER)
-            change.connect("clicked", lambda _b: self.choose_image())
-            r.add_suffix(change)
-            group.add(r)
-        elif self.looking:
-            group.add(spinner_row(_("Looking for the newest version…")))
-        else:
-            if self.offer:
-                title = _("Plinius {version}").format(version=self.offer["version"]) if self.offer["version"] \
-                    else self.offer["name"]
-                r = row(title, _("{size} to download, from {host}").format(
-                    size=size_text(self.offer["size"]), host=urllib.parse.urlsplit(IMAGE_INDEX).netloc))
-                r.add_prefix(Gtk.Image(icon_name="folder-download-symbolic"))
-                download = Gtk.Button(label=_("Download"), valign=Gtk.Align.CENTER, css_classes=["suggested-action"])
-                download.connect("clicked", lambda _b: self.start_download())
-                r.add_suffix(download)
-                group.add(r)
-            else:
-                group.set_description(_("No download is offered right now ({reason}). Choose an image file of "
-                                        "Plinius instead.").format(reason=self.offer_error or _("none published yet")))
-            group.add(button_row(_("Choose an image file…"), "document-open-symbolic", self.choose_image,
-                                 suggested=not self.offer))
-        prefs.add(group)
+    def title(self):
+        """Plinius with its version for the image from the server, else the name of the file."""
+        if self.image and self.offer and os.path.basename(self.image.path) == self.offer["name"] \
+                and self.offer["version"]:
+            return _("Plinius {version}").format(version=self.offer["version"])
+        if self.image:
+            return os.path.basename(self.image.path)
+        if self.offer and self.offer["version"]:
+            return _("Plinius {version}").format(version=self.offer["version"])
+        return self.offer["name"] if self.offer else _("Plinius")
 
-    def add_target_group(self, prefs):
-        group = Adw.PreferencesGroup(title=_("Where to install"))
-        need = card_size_hint(card_need(self.image) if self.image else 14 << 30)
-        card, card_check = radio_row(_("On the memory card"), _(
-            "Recommended. Volla OS stays on the phone, and a menu at each start lets you choose. Needs a memory "
-            "card of {size} or more in the phone.").format(size=need), active=self.target == "card")
-        phone, phone_check = radio_row(_("On the phone itself"), _(
-            "Replaces Volla OS: all its apps and data are erased. Plinius then starts without a memory card, "
-            "and faster."), group=card_check, active=self.target == "phone")
-        for r, check, target in ((card, card_check, "card"), (phone, phone_check, "phone")):
-            problem = self.image and self.problems.get(target)
-            if problem:
-                r.set_subtitle(problem)
-                r.set_sensitive(False)
-            check.connect("toggled", lambda c, t=target: c.get_active() and self.set_target(t))
-            group.add(r)
-        prefs.add(group)
 
-    def set_target(self, target):
-        self.target = target
-        self.update_install()
+def metered():
+    try:
+        return Gio.NetworkMonitor.get_default().get_network_metered()
+    except GLib.Error:
+        return False
 
-    def needs_pin(self):
-        """Older images: the app sets the PIN, otherwise the lock screen could never be passed."""
-        return not (self.image and self.image.first_start)
 
-    def add_pin_group(self, prefs):
-        self.pin_note = None
-        if not self.needs_pin():
-            prefs.add(Adw.PreferencesGroup(title=_("PIN"), description=_(
-                "At its first start the phone asks you for a PIN or a password, after the encryption. It unlocks "
-                "the phone and confirms changes in Settings.")))
-            return
-        group = Adw.PreferencesGroup(title=_("PIN"), description=_(
-            "Plinius asks for it on the lock screen. Choose 4 to 12 digits and keep it in mind."))
-        for attr, title in (("pin", _("PIN")), ("pin_again", _("Repeat PIN"))):
-            entry = Adw.PasswordEntryRow(title=title, text=getattr(self, attr))
-            entry.set_input_purpose(Gtk.InputPurpose.PIN)
-            entry.connect("changed", lambda e, a=attr: (setattr(self, a, e.get_text()), self.update_install()))
-            group.add(entry)
-        self.pin_note = row("", visible=False)
-        self.pin_note.add_prefix(Gtk.Image(icon_name="dialog-information-symbolic"))
-        group.add(self.pin_note)
-        prefs.add(group)
+def image_row(source, owner, change=False):
+    """One row for where the image stands: looking, downloading (with a bar), checking, ready, or what
+    to do. The owner gets image_progress() calls for the bar (see show_image_progress)."""
+    owner.download_bar = owner.download_row = None
+    if source.checking:
+        return spinner_row(_("Checking the image… A compressed one takes a few minutes."))
+    if source.job:
+        r = row(_("Downloading Plinius"), "")
+        r.add_prefix(Adw.Spinner())
+        bar = Gtk.ProgressBar(valign=Gtk.Align.CENTER, width_request=120)
+        r.add_suffix(bar)
+        cancel = Gtk.Button(label=_("Cancel"), valign=Gtk.Align.CENTER)
+        cancel.connect("clicked", lambda _b: source.cancel())
+        r.add_suffix(cancel)
+        owner.download_row, owner.download_bar = r, bar
+        show_image_progress(source, owner)
+        return r
+    if source.image:
+        r = check_row(source.title(), _("{size}, ready").format(size=size_text(source.image.size)), True)
+        if change:
+            other = Gtk.Button(label=_("Other file…"), valign=Gtk.Align.CENTER)
+            other.connect("clicked", lambda _b: source.choose_file())
+            r.add_suffix(other)
+        return r
+    if source.looking:
+        return spinner_row(_("Looking for the newest version…"))
+    if source.offer:
+        r = row(source.title(), _("The download did not finish: {error}").format(error=source.download_error)
+                if source.download_error else _("{size} to download, from {host}").format(
+                    size=size_text(source.offer["size"]), host=urllib.parse.urlsplit(IMAGE_INDEX).netloc))
+        r.add_prefix(Gtk.Image(icon_name="folder-download-symbolic"))
+        download = Gtk.Button(label=_("Try again") if source.download_error else _("Download"),
+                              valign=Gtk.Align.CENTER, css_classes=["suggested-action"])
+        download.connect("clicked", lambda _b: source.start_download())
+        r.add_suffix(download)
+        return r
+    r = row(_("No download is offered right now"), source.offer_error or _("none published yet"))
+    r.add_prefix(Gtk.Image(icon_name="dialog-information-symbolic"))
+    choose = Gtk.Button(label=_("Choose a file…"), valign=Gtk.Align.CENTER, css_classes=["suggested-action"])
+    choose.connect("clicked", lambda _b: source.choose_file())
+    r.add_suffix(choose)
+    return r
 
-    def update_install(self):
-        """Whether everything is chosen; the button says what is missing."""
-        pin = self.needs_pin()
-        if self.pin_note:
-            problem = pin_problem(self.pin, self.pin_again) if self.pin or self.pin_again else ""
-            self.pin_note.set_title(problem)
-            # Not while the second one is still being typed
-            typing = 0 < len(self.pin_again) < len(self.pin)
-            self.pin_note.set_visible(bool(problem) and (not self.pin.isdigit() or len(self.pin) > 12
-                                                         or bool(self.pin_again) and not typing))
-        ready = bool(self.image) and not self.problems.get(self.target) and \
-            not (pin and pin_problem(self.pin, self.pin_again))
-        self.install_button.set_sensitive(ready and bool(self.device.access))
 
-    def add_language_group(self, prefs):
-        """First of all: then the phone speaks it from its first start on, the encryption included."""
-        group = Adw.PreferencesGroup(title=_("Language"), description=_(
-            "Plinius speaks it from the first start on, and the keyboard follows it. Settings on the phone change "
-            "both later."))
-        names = [name for _code, name, *_rest in SYSTEM_LANGUAGES]
-        combo = Adw.ComboRow(title=_("Language of Plinius"), model=Gtk.StringList.new(names))
-        combo.set_selected(next(i for i, e in enumerate(SYSTEM_LANGUAGES) if e[0] == self.language))
-        combo.connect("notify::selected", lambda c, _p: setattr(self, "language", SYSTEM_LANGUAGES[c.get_selected()][0]))
-        group.add(combo)
-        prefs.add(group)
+def show_image_progress(source, owner):
+    if getattr(owner, "download_bar", None):
+        done, total = source.downloaded
+        owner.download_bar.set_fraction(done / total if total else 0)
+        owner.download_row.set_subtitle(_("{done} of {total}").format(done=size_text(done), total=size_text(total)))
 
-    def add_choose(self, prefs):
-        self.add_language_group(prefs)
-        self.add_image_group(prefs)
-        self.add_target_group(prefs)
-        self.add_pin_group(prefs)
-        group = Adw.PreferencesGroup()
-        self.install_button = button_row(_("Install Plinius…"), "system-software-install-symbolic", self.confirm_start,
-                                         suggested=True)
-        group.add(self.install_button)
-        prefs.add(group)
-        self.update_install()
 
-    def confirm_start(self):
-        body = [_("The phone restarts several times, and the app does the rest. Keep it connected until the app "
-                  "says it is done; that can take an hour.")]
-        if bootloader_open(self.device) is not True:
-            body.append(_("If the bootloader of the phone is still locked, unlocking it erases all data on the phone: "
-                          "apps, photos, messages and accounts. Copy what you still need first."))
-        if self.target == "phone":
-            body.append(_("Volla OS and all its data will be erased. Before that, the app has you back up on this "
-                          "computer what it overwrites."))
-        else:
-            body.append(_("Before anything is written to the memory card, the app shows what happens to it."))
+class InstallPage(FollowingPage):
+    """Plinius on the phone in the three steps of the website. Connect is the start page; here: Check
+    (into the bootloader, unlock if needed, start the rescue system and read the memory card), then
+    Install (a summary with one button, details behind Change). It follows the phone through its
+    restarts (see FollowingPage) and does each automatic step once. Unlocking and erasing something
+    wait for a click."""
 
-        def response(rid):
-            if rid != "start":
-                return
-            self.pin_hash = sha512_crypt(self.pin) if self.needs_pin() else None
-            self.pin = self.pin_again = ""
-            self.started = True
+    def __init__(self, win, device):
+        super().__init__(win, device, _("Install Plinius"))
+        self.source = win.images
+        menu = Gio.Menu()
+        menu.append(_("Advanced…"), "install.advanced")
+        actions = Gio.SimpleActionGroup()
+        advanced = Gio.SimpleAction(name="advanced")
+        advanced.connect("activate", lambda *_a: self.win.push(PhonePage(self.win, self.device)))
+        actions.add_action(advanced)
+        self.insert_action_group("install", actions)
+        self.header.pack_end(Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu,
+                                            tooltip_text=_("Systems, boot menu, backups and the rescue system")))
+        self.steps = StepBar(1)
+        self.toolbar.add_top_bar(self.steps)
+        self.target, self.pin, self.pin_again, self.pin_hash = "card", "", "", None
+        self.language = default_language()
+        self.started, self.working, self.finished = False, False, False
+        # Automatic steps already done, and the one running now with its last message
+        self.done, self.status, self.error = set(), "", ""
+        self.choice, self.editing = None, False
+        # Unlocking the bootloader on this page erased userdata: there is nothing in it to back up then
+        self.erased = False
+        # OEM unlocking was off: the phone went to Volla OS to turn it on, and waits there for Continue
+        self.need_oem = False
+        self.download_bar = self.download_row = self.go_button = self.pin_note = None
+        self.source.listeners[self] = self
+        self.render()
+
+    # The image (see ImageSource)
+
+    def image_changed(self):
+        if not self.working and not self.finished:
             self.render()
 
-        alert(self.win, _("Install Plinius?"), "\n\n".join(body), [("cancel", _("Cancel")), ("start", _("Start"))],
-              response, Adw.ResponseAppearance.SUGGESTED)
+    def image_progress(self):
+        show_image_progress(self.source, self)
 
     # What the page shows
 
-    def step_rows(self, prefs, current):
-        group = Adw.PreferencesGroup()
-        for n, name in enumerate(self.STEPS):
-            r = row(name)
-            if n < current or self.finished:
-                r.add_prefix(Gtk.Image(icon_name="object-select-symbolic", css_classes=["success"]))
-            else:
-                r.add_prefix(Gtk.Label(label=str(n + 1), width_chars=2,
-                                       css_classes=["title-4", "accent"] if n == current else ["title-4", "dim-label"]))
-            group.add(r)
-        prefs.add(group)
-
     def render(self):
         d, prefs = self.device, self.new_prefs()
-        # The steps only once it has started: before, the choices are all there is
-        if self.started:
-            self.step_rows(prefs, 2 if d.rescue and not self.waiting else 1)
+        self.go_button = self.pin_note = None
+        self.steps.set_step(2 if self.working or self.finished else 1, self.finished)
         if self.finished:
             prefs.add(Adw.PreferencesGroup(title=_("Plinius is installed"), description=_(
                 "You can disconnect the phone.")))
@@ -7875,8 +7877,8 @@ class InstallPage(FollowingPage):
         self.starting = False
         if is_plinius(d) is False:
             prefs.add(Adw.PreferencesGroup(title=_("This is not a Volla Phone Plinius"), description=_(
-                "Plinius is made for the Volla Phone Plinius and Plinius Plus only. Backups of this phone work "
-                "under Advanced, at the top right.")))
+                "Plinius is made for the Volla Phone Plinius and Plinius Plus only. Backups of this phone are under "
+                "Advanced, in the menu at the top right.")))
             return
         if d.login:
             group = Adw.PreferencesGroup(description=d.problem)
@@ -7886,8 +7888,11 @@ class InstallPage(FollowingPage):
         if d.problem and not d.access:
             prefs.add(Adw.PreferencesGroup(title=_("The phone cannot be used yet"), description=d.problem))
             return
+        # In the rescue system there is nothing to restart, and reading the card changes nothing
+        if d.rescue:
+            self.started = True
         if not self.started:
-            self.add_choose(prefs)
+            self.add_check(prefs)
         elif d.rescue:
             self.load_layout(prefs)
             if d.layout is not None:
@@ -7896,6 +7901,33 @@ class InstallPage(FollowingPage):
             self.in_bootloader(prefs)
         else:
             self.in_system(prefs)
+
+    # Step 2: check
+
+    def add_check(self, prefs):
+        """What is known about the phone so far; the rest shows once it runs the rescue system."""
+        d = self.device
+        group = Adw.PreferencesGroup(title=_("Check the phone"), description=_(
+            "The phone restarts a few times for this. Nothing is erased without asking you first."))
+        plinius, unlocked = is_plinius(d), bootloader_open(d)
+        group.add(check_row(_("Volla Phone Plinius") if plinius else _("Phone model"),
+                            "" if plinius else _("Checked next"), True if plinius else None))
+        if unlocked is False:
+            group.add(check_row(_("The bootloader is locked"), _(
+                "Unlocking it erases all data on the phone. Copy what you still need first."), False))
+        else:
+            group.add(check_row(_("Bootloader unlocked") if unlocked else _("Bootloader"),
+                                "" if unlocked else _("Checked next"), True if unlocked else None))
+        group.add(check_row(_("Memory card"), _("Checked next"), None))
+        group.add(image_row(self.source, self))
+        prefs.add(group)
+        go = Adw.PreferencesGroup()
+        go.add(button_row(_("Check the phone"), "system-search-symbolic", self.start, suggested=True))
+        prefs.add(go)
+
+    def start(self):
+        self.started = True
+        self.render()
 
     def add_status(self, prefs, title):
         group = Adw.PreferencesGroup(title=title)
@@ -7948,6 +7980,14 @@ class InstallPage(FollowingPage):
         d = self.device
         # It may have new data by now
         self.erased = False
+        if self.need_oem:
+            group = steps_group(_("Turn on OEM unlocking"), _(
+                "On the phone, then continue here. The phone restarts into the bootloader by itself."), (
+                _("On the phone, open Settings → About phone and tap “Build number” seven times."),
+                _("Open Settings → System → Developer options and turn on “OEM unlocking”.")))
+            group.add(button_row(_("Continue"), "go-next-symbolic", self.oem_done, suggested=True))
+            prefs.add(group)
+            return
         if d.access and (d.mode == "adb" or d.access.root is not None):
             self.add_status(prefs, _("Restarting into the bootloader"))
             # It is gone from USB for a moment and comes back in the bootloader (see FollowingPage)
@@ -7956,6 +7996,11 @@ class InstallPage(FollowingPage):
             prefs.add(steps_group(_("Start the bootloader"), _(
                 "The system on the phone does not let the app restart it. Please start the bootloader by hand."),
                 fastboot_steps()))
+
+    def oem_done(self):
+        self.need_oem = False
+        self.done.discard((self.device.serial or self.device.key, "bootloader"))
+        self.render()
 
     def in_bootloader(self, prefs):
         d, config = self.device, self.win.config
@@ -7976,34 +8021,27 @@ class InstallPage(FollowingPage):
 
     def add_unlock(self, prefs):
         d = self.device
-        ability = d.access.unlock_ability
-        text = _("Plinius needs an unlocked bootloader. Unlocking erases all personal data on the phone: apps, "
-                 "photos, messages and accounts. Device data such as the IMEI is kept.")
-        if ability:
-            # OEM unlocking is on already: the steps on the phone are done
-            group = Adw.PreferencesGroup(title=_("Unlock the bootloader"), description=text)
-            r = row(_("OEM unlocking is turned on. The phone asks once more: press Volume up there."))
-            r.add_prefix(Gtk.Image(icon_name="object-select-symbolic", css_classes=["success"]))
-            group.add(r)
-        else:
-            restart = Gtk.Button(label=_("Restart"), valign=Gtk.Align.CENTER)
-            restart.connect("clicked", lambda _b: in_thread(lambda: d.access.reboot(""), lambda *_a: False))
-            group = steps_group(_("Unlock the bootloader"), text, unlock_steps(restart))
-            if ability is False:
-                r = row(_("OEM unlocking is not turned on yet: start with step 1."))
-                r.add_prefix(Gtk.Image(icon_name="dialog-information-symbolic"))
-                group.add(r)
-        if self.error:
-            group.set_description(self.error)
+        if d.access.unlock_ability is False:
+            # Only Volla OS can turn it on: there and back, the app restarts the phone both ways
+            group = Adw.PreferencesGroup(title=_("OEM unlocking is still off"), description=_(
+                "It is turned on in Volla OS. The phone restarts into it, then this page shows what to do."))
+            group.add(button_row(_("Restart into Volla OS"), "system-reboot-symbolic", self.to_system, suggested=True))
+            prefs.add(group)
+            return
+        group = Adw.PreferencesGroup(title=_("Unlock the bootloader"), description=self.error or _(
+            "Plinius needs it. Unlocking erases all data on the phone: apps, photos, messages and accounts."))
         if self.status and (d.serial or d.key, "unlock") in self.done and not self.error:
             group.add(spinner_row(self.status))
         else:
-            button = Adw.ButtonRow(title=_("Unlock bootloader…"), start_icon_name="changes-allow-symbolic",
-                                   sensitive=ability is not False)
+            button = button_row(_("Unlock and erase…"), "changes-allow-symbolic", self.confirm_unlock)
             button.add_css_class("destructive-action")
-            button.connect("activated", lambda *_a: self.confirm_unlock())
             group.add(button)
         prefs.add(group)
+
+    def to_system(self):
+        self.need_oem = True
+        d = self.device
+        in_thread(lambda: d.access.reboot(""), lambda *_a: False)
 
     def confirm_unlock(self):
         d = self.device
@@ -8025,88 +8063,209 @@ class InstallPage(FollowingPage):
         self.erased = True
         self.render()
 
-    # In the rescue system: what happens, then the work
+    # Step 3: install, in the rescue system
 
     def show_layout(self, prefs, layout):
         """Nothing about the systems: only the plan for Plinius (see after_layout)."""
 
     def after_layout(self, prefs):
+        self.steps.set_step(2)
+        image, card = self.source.image, self.device.layout and self.device.layout["card"]
+        if not image:
+            group = Adw.PreferencesGroup(title=_("Install Plinius"), description=_(
+                "The phone is ready. Plinius is not here yet:"))
+            group.add(image_row(self.source, self))
+            prefs.add(group)
+            return
+        if self.target == "card" and self.source.problems.get("card"):
+            self.target = "phone"
+        choices = card_choices(card, image) if card and self.target == "card" else []
+        if self.target == "card" and not choices:
+            self.add_card_problem(prefs, card)
+            return
+        if self.target == "card" and self.choice not in choices:
+            safe = [c for c in choices if c["kind"] in ("free", "add")]
+            self.choice = (safe or choices)[0]
+            # Nothing on the card is spared: let the user see the ways there are
+            self.editing = self.editing or not safe and len(choices) > 1
+        self.add_summary(prefs, card, choices)
+        if self.needs_pin():
+            self.add_pin_group(prefs)
         if self.target == "phone":
             self.add_phone_plan(prefs)
         else:
-            self.add_card_plan(prefs)
+            self.add_card_go(prefs, card)
+        self.update_install()
 
-    def add_phone_plan(self, prefs):
-        d, config, image = self.device, self.win.config, self.image
-        size = max(PHONE_SYSTEM_DEFAULT, image.size)
-        problem = phone_install_problem(d, config, image, size)
-        group = Adw.PreferencesGroup(title=_("Install on the phone itself"), description=problem or _(
-            "Volla OS and all its data are erased now. The bootloader, the partition table and a memory card stay "
-            "as they are."))
-        if not problem:
-            empty = INTERNAL_CHANGES if self.erased else ()
-            backup, missing = backup_group(self.win, d, phone_changes(pending_rescue(config, d.serial)["partition"][
-                len("init_boot"):]), _("Installing overwrites these partitions of Volla OS."), empty)
-            prefs.add(backup)
-            sure = Adw.SwitchRow(title=_("I have copied what I still need"),
-                                 subtitle=_("All data of Volla OS on this phone will be erased."))
-            button = button_row(_("Erase Volla OS and install"), "system-software-install-symbolic",
-                                lambda: self.run(lambda job: run_install_phone(job, d, config, image, size,
-                                                                               pin_hash=self.pin_hash, empty=empty,
-                                                                               language=self.language)),
-                                sensitive=False)
-            button.add_css_class("destructive-action")
-            sure.connect("notify::active", lambda s, _p: button.set_sensitive(s.get_active() and not missing))
-            group.add(sure)
-            group.add(button)
+    def add_summary(self, prefs, card, choices):
+        group = Adw.PreferencesGroup(title=_("Ready to install"))
+        change = Gtk.Button(label=_("Done") if self.editing else _("Change"), valign=Gtk.Align.CENTER,
+                            css_classes=["flat"])
+        change.connect("clicked", lambda _b: self.toggle_editing())
+        group.set_header_suffix(change)
+        if self.editing:
+            group.add(image_row(self.source, self, change=True))
+            self.add_target_rows(group)
+            if self.target == "card" and len(choices) > 1:
+                self.add_choice_rows(group, card, choices)
+            group.add(self.language_row())
+        else:
+            r = row(self.source.title(), size_text(self.source.image.size))
+            r.add_prefix(Gtk.Image(icon_name="system-software-install-symbolic"))
+            group.add(r)
+            if self.target == "phone":
+                r = row(_("On the phone itself"), _("Replaces Volla OS: all its apps and data are erased."))
+            else:
+                r = row(*self.choice_text(card, self.choice))
+            r.add_prefix(Gtk.Image(icon_name="phone-symbolic" if self.target == "phone" else "media-flash-symbolic"))
+            if self.target == "phone" or self.choice["kind"] not in ("free", "add"):
+                r.add_suffix(Gtk.Image(icon_name="dialog-warning-symbolic", css_classes=["warning"]))
+            group.add(r)
+            r = row(_("Language"), self.language_name())
+            r.add_prefix(Gtk.Image(icon_name="preferences-desktop-locale-symbolic"))
+            group.add(r)
         prefs.add(group)
 
-    def add_card_plan(self, prefs):
-        d, image = self.device, self.image
-        card = d.layout and d.layout["card"]
-        other = button_row(_("Install on the phone itself instead"), "phone-symbolic", self.to_phone,
-                           sensitive=not self.problems.get("phone"))
-        again = button_row(_("Look again"), "view-refresh-symbolic", self.look_again)
+    def toggle_editing(self):
+        self.editing = not self.editing
+        self.render()
+
+    def add_target_rows(self, group):
+        card, card_check = radio_row(_("On the memory card"), _(
+            "Recommended. Volla OS stays on the phone, and a menu at each start lets you choose."),
+            active=self.target == "card")
+        phone, phone_check = radio_row(_("On the phone itself"), _(
+            "Replaces Volla OS: all its apps and data are erased. Plinius then starts without a memory card, "
+            "and faster."), group=card_check, active=self.target == "phone")
+        for r, check, target in ((card, card_check, "card"), (phone, phone_check, "phone")):
+            problem = self.source.problems.get(target)
+            if problem:
+                r.set_subtitle(problem)
+                r.set_sensitive(False)
+            check.connect("toggled", lambda c, t=target: c.get_active() and self.set_target(t))
+            group.add(r)
+
+    def set_target(self, target):
+        if target != self.target:
+            self.target = target
+            self.render()
+
+    def add_choice_rows(self, group, card, choices):
+        first = None
+        for choice in choices:
+            title, text = self.choice_text(card, choice)
+            r, check = radio_row(title, text, group=first, active=choice == self.choice)
+            r.set_margin_start(24)
+            first = first or check
+            check.connect("toggled", lambda c, ch=choice: c.get_active() and self.set_choice(ch))
+            if choice["kind"] not in ("free", "add"):
+                r.add_suffix(Gtk.Image(icon_name="dialog-warning-symbolic", css_classes=["warning"],
+                                       tooltip_text="\n".join(choice.get("warnings") or ())))
+            group.add(r)
+
+    def set_choice(self, choice):
+        if choice != self.choice:
+            self.choice = choice
+            self.render()
+
+    def language_name(self):
+        return next(e[1] for e in SYSTEM_LANGUAGES if e[0] == self.language)
+
+    def language_row(self):
+        names = [name for _code, name, *_rest in SYSTEM_LANGUAGES]
+        combo = Adw.ComboRow(title=_("Language"), subtitle=_("The keyboard follows it. Settings on the phone change "
+                                                             "both later."), model=Gtk.StringList.new(names))
+        combo.set_selected(next(i for i, e in enumerate(SYSTEM_LANGUAGES) if e[0] == self.language))
+        combo.connect("notify::selected", lambda c, _p: setattr(self, "language", SYSTEM_LANGUAGES[c.get_selected()][0]))
+        return combo
+
+    def needs_pin(self):
+        """Older images: the app sets the PIN, otherwise the lock screen could never be passed."""
+        return not (self.source.image and self.source.image.first_start)
+
+    def add_pin_group(self, prefs):
+        group = Adw.PreferencesGroup(title=_("PIN"), description=_(
+            "Plinius asks for it on the lock screen. Choose 4 to 12 digits and keep it in mind."))
+        for attr, title in (("pin", _("PIN")), ("pin_again", _("Repeat PIN"))):
+            entry = Adw.PasswordEntryRow(title=title, text=getattr(self, attr))
+            entry.set_input_purpose(Gtk.InputPurpose.PIN)
+            entry.connect("changed", lambda e, a=attr: (setattr(self, a, e.get_text()), self.update_install()))
+            group.add(entry)
+        self.pin_note = row("", visible=False)
+        self.pin_note.add_prefix(Gtk.Image(icon_name="dialog-information-symbolic"))
+        group.add(self.pin_note)
+        prefs.add(group)
+
+    def pin_ready(self):
+        return not (self.needs_pin() and pin_problem(self.pin, self.pin_again))
+
+    def update_install(self):
+        """Whether the PIN is complete; the note says what is missing."""
+        if self.pin_note:
+            problem = pin_problem(self.pin, self.pin_again) if self.pin or self.pin_again else ""
+            self.pin_note.set_title(problem)
+            # Not while the second one is still being typed
+            typing = 0 < len(self.pin_again) < len(self.pin)
+            self.pin_note.set_visible(bool(problem) and (not self.pin.isdigit() or len(self.pin) > 12
+                                                         or bool(self.pin_again) and not typing))
+        if self.go_button:
+            self.go_button.set_sensitive(self.pin_ready() and getattr(self.go_button, "allowed", True))
+
+    def add_card_problem(self, prefs, card):
+        image = self.source.image
+        other = button_row(_("Install on the phone itself instead"), "phone-symbolic", lambda: self.set_target("phone"),
+                           sensitive=not self.source.problems.get("phone"))
+        again = button_row(_("Look again"), "view-refresh-symbolic", self.look_again, suggested=True)
         if not card:
             group = Adw.PreferencesGroup(title=_("No memory card found"), description=_(
                 "Put a memory card of {size} or more into the phone and look again. Or install Plinius on the phone "
                 "itself.").format(size=card_size_hint(card_need(image))))
-            group.add(again)
-            group.add(other)
-            prefs.add(group)
-            return
-        choices = card_choices(card, image)
-        if not choices:
+        else:
             group = Adw.PreferencesGroup(title=_("The memory card is too small"), description=_(
                 "Plinius needs a memory card of {need} or more; this one has {size}.").format(
                 need=card_size_hint(card_need(image)), size=size_text(card["size"])))
-            group.add(again)
-            group.add(other)
-            prefs.add(group)
-            return
-        if not card["settings"]:
-            description = _("This memory card ({size}) has no boot menu yet. It is erased and set up for Plinius. "
-                            "{contents}").format(size=size_text(card["size"]), contents=card_contents(card))
-        else:
-            description = _("This memory card ({size}) already has a boot menu. Choose where Plinius goes.").format(
-                size=size_text(card["size"]))
-        group = Adw.PreferencesGroup(title=_("On the memory card"), description=description)
-        first = None
-        if self.choice not in choices:
-            self.choice = choices[0]
-        for choice in choices:
-            r, check = radio_row(*self.choice_text(card, choice), group=first, active=choice is self.choice)
-            first = first or check
-            check.connect("toggled", lambda c, ch=choice: c.get_active() and self.set_choice(ch))
-            if choice.get("warnings"):
-                r.add_suffix(Gtk.Image(icon_name="dialog-warning-symbolic", css_classes=["warning"],
-                                       tooltip_text="\n".join(choice["warnings"])))
-            if len(choices) > 1 or card["settings"]:
-                group.add(r)
-        self.card_button = button_row("", "system-software-install-symbolic", lambda: self.confirm_card(card))
-        group.add(self.card_button)
+        group.add(again)
+        group.add(other)
         prefs.add(group)
-        self.set_choice(self.choice)
+
+    def add_card_go(self, prefs, card):
+        safe = self.choice["kind"] in ("free", "add")
+        group = Adw.PreferencesGroup(description=_("This takes up to an hour. Keep the phone connected."))
+        self.go_button = button_row(_("Install Plinius") if safe else _("Erase and install Plinius"),
+                                    "system-software-install-symbolic", lambda: self.confirm_card(card))
+        self.go_button.add_css_class("suggested-action" if safe else "destructive-action")
+        group.add(self.go_button)
+        prefs.add(group)
+
+    def add_phone_plan(self, prefs):
+        d, config, image = self.device, self.win.config, self.source.image
+        size = max(PHONE_SYSTEM_DEFAULT, image.size)
+        problem = phone_install_problem(d, config, image, size)
+        if problem:
+            prefs.add(Adw.PreferencesGroup(title=_("Install on the phone itself"), description=problem))
+            return
+        empty = INTERNAL_CHANGES if self.erased else ()
+        backup, missing = backup_group(self.win, d, phone_changes(pending_rescue(config, d.serial)["partition"][
+            len("init_boot"):]), _("Installing overwrites these partitions of Volla OS."), empty)
+        prefs.add(backup)
+        group = Adw.PreferencesGroup(description=_("This takes up to an hour. Keep the phone connected."))
+        sure = Adw.SwitchRow(title=_("I have copied what I still need"),
+                             subtitle=_("All data of Volla OS on this phone will be erased."))
+        self.go_button = button_row(_("Erase Volla OS and install"), "system-software-install-symbolic",
+                                    lambda: self.run(lambda job: run_install_phone(
+                                        job, d, config, image, size, pin_hash=self.pin_hash, empty=empty,
+                                        language=self.language)))
+        self.go_button.add_css_class("destructive-action")
+        self.go_button.allowed = False
+
+        def toggled(s, _p):
+            self.go_button.allowed = s.get_active() and not missing
+            self.update_install()
+
+        sure.connect("notify::active", toggled)
+        group.add(sure)
+        group.add(self.go_button)
+        prefs.add(group)
 
     def choice_text(self, card, choice):
         kind = choice["kind"]
@@ -8128,15 +8287,8 @@ class InstallPage(FollowingPage):
             "{system} for Plinius and about {data} for your files. Everything on the card is erased.").format(
             system=size_text(choice["system"]), data=size_text(data))
 
-    def set_choice(self, choice):
-        self.choice = choice
-        safe = choice["kind"] in ("free", "add")
-        self.card_button.set_title(_("Install Plinius") if safe else _("Erase and install Plinius"))
-        for css, on in (("suggested-action", safe), ("destructive-action", not safe)):
-            (self.card_button.add_css_class if on else self.card_button.remove_css_class)(css)
-
     def confirm_card(self, card):
-        d, choice, image = self.device, self.choice, self.image
+        d, choice, image = self.device, self.choice, self.source.image
 
         def work(job):
             run_install_card(job, d, card, choice, image, "Plinius", self.pin_hash, self.language)
@@ -8151,10 +8303,6 @@ class InstallPage(FollowingPage):
         alert(self.win, _("Erase and install?"), text, [("cancel", _("Cancel")), ("go", _("Erase and install"))],
               lambda rid: rid == "go" and self.run(work), Adw.ResponseAppearance.DESTRUCTIVE)
 
-    def to_phone(self):
-        self.target = "phone"
-        self.render()
-
     def look_again(self):
         self.device.layout = None
         self.render()
@@ -8162,6 +8310,8 @@ class InstallPage(FollowingPage):
     def run(self, work):
         """work(job) on an OperationPage; it returns False if the phone stays in the rescue system."""
         d, win, target = self.device, self.win, self.target
+        self.pin_hash = sha512_crypt(self.pin) if self.needs_pin() else None
+        self.pin = self.pin_again = ""
         page = OperationPage(_("Installing Plinius"), "system-software-install-symbolic")
         job = Job(page)
         win.nav.push(page)
@@ -8190,6 +8340,7 @@ class InstallPage(FollowingPage):
             self.working = False
             if result == "ok":
                 self.finished = True
+                self.render()
                 if target == "phone":
                     text = _("The phone is starting Plinius. The first start takes a few minutes; unlock it with your "
                              "PIN. With a memory card in the phone, choose VollaOS in its boot menu: that entry now "
@@ -8225,11 +8376,19 @@ class Window(Adw.ApplicationWindow):
 
     def __init__(self, app):
         super().__init__(application=app, title=APP_NAME, default_width=760, default_height=860)
+        global STEP_CSS_LOADED
+        if not STEP_CSS_LOADED:
+            load_step_css()
+            STEP_CSS_LOADED = True
         self.config = load_config()
         self.listeners = {}
+        # The image of Plinius is fetched from the start: by the time the phone is ready it is mostly there
+        self.images = ImageSource(self)
+        self.download_bar = self.download_row = None
         self.toasts = Adw.ToastOverlay()
         self.nav = Adw.NavigationView()
-        self.nav.connect("popped", lambda _nav, page: self.listeners.pop(page, None))
+        self.nav.connect("popped", lambda _nav, page: (self.listeners.pop(page, None),
+                                                       self.images.listeners.pop(page, None)))
         self.toasts.set_child(self.nav)
         self.set_content(self.toasts)
         # All backups in the storage location (see refresh_backups); the phone pages pick their own
@@ -8254,6 +8413,9 @@ class Window(Adw.ApplicationWindow):
         self.nav.add(Adw.NavigationPage(title=APP_NAME, tag="main", child=toolbar))
         self.refresh_backups()
         self.scanner.start()
+        self.images.listeners["main"] = self
+        self.image_changed()
+        self.images.look()
 
     def toast(self, text):
         self.toasts.add_toast(Adw.Toast(title=text, use_markup=False))
@@ -8279,26 +8441,30 @@ class Window(Adw.ApplicationWindow):
 
     def build_devices(self):
         self.device_stack = Gtk.Stack()
-        hint = _("Plinius Boot puts Plinius on a Volla Phone Plinius: on its memory card next to Volla OS, or "
-                 "instead of Volla OS. Prepare the phone as shown here, and the app does the rest.")
-        empty = Adw.StatusPage(icon_name="phone-symbolic", title=_("Install Plinius"),
-                               description=GLib.markup_escape_text(hint))
+        # Step 1 of 3 as on the website: connect. The phone page that follows is step 2 (see InstallPage)
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24)
-        box.append(steps_group(_("Prepare the phone"), None, prepare_steps()))
-        other = Adw.PreferencesGroup()
-        bootloader = Adw.ExpanderRow(title=_("Is the phone in the bootloader, or does it run Linux?"), subtitle=_(
-            "It is found there as well. This is how to start the bootloader:"), use_markup=False)
-        for n, text in enumerate(fastboot_steps(), 1):
+        how = Adw.PreferencesGroup()
+        usb = Adw.ExpanderRow(title=_("Is USB debugging on?"), subtitle=_("How to turn it on"))
+        for n, text in enumerate(prepare_steps(), 1):
             r = row(text)
             r.add_prefix(Gtk.Label(label=str(n), width_chars=2, css_classes=["dim-label"]))
-            bootloader.add_row(r)
-        other.add(bootloader)
-        box.append(other)
+            usb.add_row(r)
+        how.add(usb)
+        box.append(how)
+        self.image_holder = Adw.Bin()
+        box.append(self.image_holder)
         searching = Gtk.Box(halign=Gtk.Align.CENTER, spacing=8)
         searching.append(Adw.Spinner())
-        searching.append(Gtk.Label(label=_("Searching…"), css_classes=["dim-label"]))
+        searching.append(Gtk.Label(label=_("Waiting for the phone…"), css_classes=["dim-label"]))
         box.append(searching)
-        empty.set_child(Adw.Clamp(maximum_size=560, child=box))
+        status = Adw.StatusPage(icon_name="phone-symbolic", title=_("Connect the phone"), vexpand=True,
+                                description=GLib.markup_escape_text(_(
+                                    "Connect the Volla Phone Plinius to this computer with a USB-C cable. The app "
+                                    "finds it by itself.")))
+        status.set_child(Adw.Clamp(maximum_size=560, child=box))
+        empty = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        empty.append(StepBar(0))
+        empty.append(status)
         self.device_stack.add_named(empty, "empty")
         self.device_page = Adw.PreferencesPage()
         self.device_group = Adw.PreferencesGroup(title=_("Phones"))
@@ -8314,6 +8480,15 @@ class Window(Adw.ApplicationWindow):
         box.append(self.device_stack)
         self.check_tools_now()
         return box
+
+    def image_changed(self):
+        """The image on the start page: mostly it is ready, or nearly, when the phone is."""
+        group = Adw.PreferencesGroup()
+        group.add(image_row(self.images, self))
+        self.image_holder.set_child(group)
+
+    def image_progress(self):
+        show_image_progress(self.images, self)
 
     def check_tools_now(self, *_args):
         """Whether the programs the app needs are there and run; nothing else works without them."""

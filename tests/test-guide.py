@@ -795,4 +795,82 @@ if zstandard:
     except ValueError:
         check("only reading and writing", True)
 
+# The image of the guided installation (ImageSource): fetched from the start, not over a metered line
+class Listener:
+    def __init__(self):
+        self.changes = self.progress = 0
+
+    def image_changed(self):
+        self.changes += 1
+
+    def image_progress(self):
+        self.progress += 1
+
+
+def sync(work, done):
+    """in_thread without a thread: the work, then done() at once."""
+    try:
+        result, error = work(), None
+    except Exception as e:  # noqa: BLE001
+        result, error = None, str(e)
+    done(result, error)
+
+
+real = (app.in_thread, app.download_image, app.metered, app.SystemImage, app.alert)
+app.in_thread = sync
+downloads, checked = [], []
+app.download_image = lambda job, info: downloads.append(info["name"]) or os.path.join(app.IMAGES, info["name"])
+
+
+class FakeSystemImage:
+    def __init__(self, path):
+        self.path, self.size, self.problem, self.name, self.first_start = path, 5, "", "Arch Linux ARM", True
+
+    def check(self):
+        checked.append(self.path)
+
+    def phone_problem(self):
+        return ""
+
+    def close(self):
+        pass
+
+
+app.SystemImage = FakeSystemImage
+real_card_problem, app.card_image_problem = app.card_image_problem, lambda image: ""
+offer = {"version": "2026.11.25", "name": "plinius-arch-25112026.img.zst", "size": 7, "sha256": "0" * 64,
+         "url": "https://plinius.cais.de/images/plinius-arch-25112026.img.zst"}
+app.metered = lambda: True
+source, listener = app.ImageSource(None), Listener()
+source.listeners["page"] = listener
+source.show_offer(offer, None)
+check("over a metered line the download waits for a click", not downloads and not source.looking
+      and listener.changes == 1 and source.title() == "Plinius 2026.11.25")
+app.metered = lambda: False
+source = app.ImageSource(None)
+source.listeners["page"] = listener
+source.show_offer(offer, None)
+check("otherwise the newest image is downloaded at once and checked", downloads == [offer["name"]]
+      and checked == [os.path.join(app.IMAGES, offer["name"])] and source.image and not source.job)
+check("the image from the server is named by its version", source.title() == "Plinius 2026.11.25")
+source.download_progress(3, 7)
+check("progress reaches the pages without drawing them anew", source.downloaded == (3, 7) and listener.progress == 1)
+source.image.path = "/home/user/own.img"
+check("an image of one's own by its file name", source.title() == "own.img")
+
+
+def failing(job, info):
+    raise RuntimeError("connection lost")
+
+
+app.download_image = failing
+
+source = app.ImageSource(None)
+source.offer = offer
+source.start_download()
+check("a download that fails says why and can start again", source.download_error == "connection lost"
+      and not source.job and not source.image)
+app.in_thread, app.download_image, app.metered, app.SystemImage, app.alert = real
+app.card_image_problem = real_card_problem
+
 print("All guide checks passed")

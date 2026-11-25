@@ -24,6 +24,13 @@
   <url type="homepage">https://github.com/misc-de/plinius-boot</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.19" date="2026-11-25">
+      <description>
+        <p>The installation goes in three steps, as on the website: Connect, Check, Install. Each step has one button; the rest is folded away.</p>
+        <p>The newest image downloads from the start of the app on, not over a metered connection. Checking the phone comes before any choice, and the last step shows a summary that Change opens.</p>
+        <p>If OEM unlocking is still off, the app restarts the phone into Volla OS, shows the two taps there and takes it back by itself.</p>
+      </description>
+    </release>
     <release version="0.18" date="2026-11-25">
       <description>
         <p>The app keeps two downloaded images, the newest and the one before it. Older ones and unfinished downloads of images the server no longer offers are deleted, so a new image every day does not fill the disk.</p>
