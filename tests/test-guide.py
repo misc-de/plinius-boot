@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Tests the logic of the guided flow without a phone and without a window: the tool check, what the
 app makes of a phone, and how it reads the memory card. card-plinius.txt is the real output of
-CARD_SCRIPT on a Plinius with Ubuntu Touch and Arch on its card."""
+CARD_SCRIPT on a Plinius with Ubuntu Touch and Arch on its card. The pages of the way back to Volla OS
+are built on a display of their own (gtk4-broadwayd), if it is installed, and never shown."""
+import atexit
 import hashlib
 import importlib.machinery
 import importlib.util
@@ -14,16 +16,30 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import types
 import urllib.error
 
 sys.dont_write_bytecode = True
 here = pathlib.Path(__file__).resolve().parent
 tmp = pathlib.Path(tempfile.mkdtemp())
+atexit.register(shutil.rmtree, tmp, ignore_errors=True)
 for variable in ("XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME", "XDG_RUNTIME_DIR"):
     os.environ[variable] = str(tmp)
 os.environ["LC_ALL"] = "C.UTF-8"
 os.environ["LANGUAGE"] = "en"
+# A display of its own for the pages, never the desktop's: GTK's broadway backend, if it is installed. GTK opens
+# its display when the app is loaded
+if shutil.which("gtk4-broadwayd"):
+    number = 40 + os.getpid() % 200
+    broadway = subprocess.Popen(["gtk4-broadwayd", "--address", "127.0.0.1", f":{number}"],
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    atexit.register(broadway.kill)
+    for _wait in range(50):
+        if any(name.startswith("broadway") for name in os.listdir(tmp)):
+            break
+        time.sleep(0.1)
+    os.environ["GDK_BACKEND"], os.environ["BROADWAY_DISPLAY"] = "broadway", f":{number}"
 
 loader = importlib.machinery.SourceFileLoader("plinius_boot", str(here.parent / "plinius-boot"))
 app = importlib.util.module_from_spec(importlib.util.spec_from_loader(loader.name, loader))
@@ -1361,5 +1377,265 @@ try:
 except app.Failed as e:
     check("the rescue system is never written back as the original", "rescue system" in str(e))
 app.save_config = real_save
+
+# The way back to Volla OS: the backup made before Plinius went inside the phone, found by the vbmeta of the phone
+store = tmp / "way-back"
+volla_init = b"ANDROID!" + b"init_boot of Volla OS " * 40
+plinius_init = b"ANDROID!" + b"init_boot of Plinius " * 40
+volla_descriptor = [len(volla_init), "sha256", "", hashlib.sha256(volla_init).hexdigest()]
+images = {"boot_b": b"ANDROID!" + b"Volla boot " * 300, "vendor_boot_b": b"VNDRBOOT" + b"Volla vendor " * 200,
+          "init_boot_b": volla_init, "userdata": b"\0" * 4096 + b"Volla data " * 500}
+
+
+def image_backup(stamp, images, serial="S1", sign=True, extra=None, damaged=()):
+    folder = store / f"Plinius_{serial}" / stamp.replace(":", "")
+    folder.mkdir(parents=True)
+    entries = []
+    for name, data in images.items():
+        with app.zstd_writer(str(folder / f"{name}.img.zst")) as f:
+            f.write(data[:-1] + b"?" if name in damaged else data)
+        entries.append({"name": name, "size": len(data), "sha256": hashlib.sha256(data).hexdigest(),
+                        **(extra or {}).get(name, {})})
+    manifest = {"format": 1, "created": f"2026-11-20T{stamp}:00+01:00", "complete": True, "partitions": entries,
+                "device": {"serial": serial, "os_id": app.RESCUE_ID, "profile": "volla-plinius", "name": "Plinius"}}
+    if sign:
+        app.sign_manifest(manifest)
+    (folder / app.MANIFEST).write_text(json.dumps(manifest))
+    return folder
+
+
+targets = tmp / "phone-partitions"
+targets.mkdir()
+
+
+class WayBackAccess:
+    """A phone in the rescue system whose partitions are files here."""
+    mode = "ssh"
+
+    def info(self):
+        return {"serial": "S1"}
+
+    def writer(self, path):
+        return subprocess.Popen(["sh", "-c", 'cat > "$1"', "sh", path], stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    def checksum(self, path, size):
+        with open(path, "rb") as f:
+            return hashlib.sha256(f.read(size)).hexdigest()
+
+
+parts = [app.Partition(name, str(targets / name), len(data)) for name, data in images.items()]
+parts.append(app.Partition("vbmeta_b", str(targets / "vbmeta_b"), 4096, head=b"AVB0" + b"\0" * 252))
+way_phone = types.SimpleNamespace(rescue=True, serial="S1", profile=plain, mode="ssh", access=WayBackAccess(),
+                                  info={"serial": "S1", "slot": "b", "os_id": app.RESCUE_ID},
+                                  load_parts=lambda reload=False: parts, title=lambda: "Volla Phone Plinius")
+real_avb, real_save, real_write, real_idle = app.avb_hashes, app.save_config, app.write_original, app.GLib.idle_add
+app.avb_hashes = lambda head: {"init_boot": volla_descriptor} if head.startswith(b"AVB0") else {}
+app.save_config = lambda config: None
+app.GLib.idle_add = lambda function, *args: function(*args)
+newest = image_backup("10:00", dict(images, init_boot_b=plinius_init))            # a backup of Plinius itself
+volla = image_backup("09:00", images, extra={"init_boot_b": {"replaced": "update server"}})
+image_backup("08:50", images, sign=False)
+image_backup("08:40", images, serial="S2")
+image_backup("08:30", dict(images, init_boot_b=b"ANDROID!" + app.RESCUE_MARK), extra={"init_boot_b": {"rescue": True}})
+image_backup("08:20", {n: d for n, d in images.items() if n != "vendor_boot_b"})
+image_backup("08:10", {n.replace("_b", "_a"): d for n, d in images.items()})
+image_backup("08:05", images, damaged=("init_boot_b",))
+erased = image_backup("08:00", {n: d for n, d in images.items() if n != "userdata"})
+backups = app.list_backups(str(store))
+by_folder = {b.path: b for b in backups}
+check("without knowing the rescue partition there is no way back",
+      app.volla_backups(backups, way_phone, {}) == [] and "which partition" in app.return_problem(way_phone, {}))
+config = {"rescue_in": {"S1": {"partition": "init_boot_b"}}}
+found = app.volla_backups(backups, way_phone, config)
+check("only backups of Volla OS from this phone and this computer, newest first",
+      [b.path for b, _e in found] == [str(volla), str(erased)])
+check("what goes back: the boot partitions of the slot and userdata, in this order",
+      [e["name"] for e in found[0][1]] == ["boot_b", "vendor_boot_b", "init_boot_b", "userdata"]
+      and [e["name"] for e in found[1][1]] == ["boot_b", "vendor_boot_b", "init_boot_b"])
+
+
+def refusal(stamp, config=config):
+    try:
+        app.volla_way_back(by_folder[str(store / "Plinius_S1" / stamp)], way_phone, config)
+    except app.Failed as e:
+        return str(e)
+    return ""
+
+
+check("a backup of Plinius is not Volla OS", "not the one of Volla OS" in refusal("1000"))
+check("one this computer did not make is refused", "not made of this phone" in refusal("0850"))
+check("the rescue system is never Volla OS's init_boot", "not the one of Volla OS" in refusal("0830"))
+check("a missing partition is named", refusal("0820") == "This backup does not hold vendor_boot_b.")
+check("another slot does not fit", "boot_b, vendor_boot_b, init_boot_b" in refusal("0810"))
+check("a damaged image is refused", "damaged" in refusal("0805"))
+app.avb_hashes = lambda head: {}
+check("without a checksum in vbmeta nothing is a way back", "no checksum for init_boot" in refusal("0900"))
+app.avb_hashes = lambda head: {"init_boot": volla_descriptor} if head.startswith(b"AVB0") else {}
+check("the way back runs in the rescue system of a Plinius only",
+      "rescue system" in app.return_problem(types.SimpleNamespace(way_phone.__dict__ | {"rescue": False}), config)
+      and "Plinius" in app.return_problem(types.SimpleNamespace(way_phone.__dict__ | {"profile": None}), config)
+      and app.return_problem(way_phone, config) == "")
+
+
+class PlanPage(Page):
+    def __init__(self):
+        super().__init__()
+        self.plan, self.texts = [], []
+
+    def set_plan(self, steps):
+        self.plan = steps
+
+    def progress(self, done, total, text):
+        self.texts.append(text)
+
+
+written = []
+app.write_original = lambda device, config, original, step: written.append((original[0], json.loads(json.dumps(config))))
+config = {"rescue_in": {"S1": {"partition": "init_boot_b"}},
+          "phone_system": {"S1": {"init_boot": [1, "sha256", "", "x"]}, "S2": {}},
+          "init_boot_seen": {"S1": {"slot": "b"}}, "format_userdata": {"S1": True}}
+try:
+    app.run_return_volla(app.Job(PlanPage()), types.SimpleNamespace(way_phone.__dict__ | {"rescue": False}), config,
+                         by_folder[str(volla)])
+    check("outside the rescue system nothing is written", False)
+except app.Failed:
+    check("outside the rescue system nothing is written", not written and not any(targets.iterdir()))
+smaller = [app.Partition(p.name, p.path, p.size - 1 if p.name == "userdata" else p.size, head=p.head) for p in parts]
+try:
+    app.run_return_volla(app.Job(PlanPage()), types.SimpleNamespace(way_phone.__dict__ | {
+        "load_parts": lambda reload=False: smaller}), config, by_folder[str(volla)])
+    check("a partition of another size: nothing is written", False)
+except app.Failed as e:
+    check("a partition of another size: nothing is written, nothing forgotten", "different size" in str(e)
+          and not written and not any(targets.iterdir()) and "S1" in config["phone_system"])
+plan_page = PlanPage()
+app.run_return_volla(app.Job(plan_page), way_phone, config, by_folder[str(volla)])
+on_phone = {p.name: (targets / p.name).read_bytes() for p in parts if (targets / p.name).exists()}
+check("boot, vendor_boot and userdata are written in the rescue system, init_boot is not",
+      on_phone == {n: images[n] for n in ("boot_b", "vendor_boot_b", "userdata")})
+check("then Volla OS's init_boot goes in place of the rescue system", len(written) == 1 and written[0][0] == volla_init)
+before = written[0][1]
+check("by then the app expects Volla OS's init_boot and forgets the system it installed",
+      before["rescue_in"]["S1"]["expected"] == volla_descriptor and "S1" not in before["phone_system"]
+      and "S2" in before["phone_system"] and "S1" not in before["init_boot_seen"])
+check("userdata from the backup is not formatted afterwards", "S1" not in before["format_userdata"])
+check("the original stays on this computer, should writing it fail",
+      app.find_original("S1", "init_boot", volla_descriptor) == (volla_init, "backup-0900"))
+steps = [text for text, _size in plan_page.plan]
+check("the plan names the steps as they are reported", steps[:6] == [
+    f"{verb} {name} ({i} of 3)" for i, name in enumerate(("boot_b", "vendor_boot_b", "userdata"), 1)
+    for verb in ("Checking", "Writing")] and all(s in plan_page.texts for s in steps[:6])
+      and steps[6:] == ["Restarting into the bootloader…", "Writing the original init_boot_b…", "Starting the phone…"])
+for p in parts:
+    (targets / p.name).unlink(missing_ok=True)
+written.clear()
+app.run_return_volla(app.Job(PlanPage()), way_phone, config, by_folder[str(erased)], leave=False)
+check("without userdata in the backup it is formatted on the way out, as after unlocking",
+      config["format_userdata"]["S1"] and not (targets / "userdata").exists() and not written)
+check("that step is planned", "Formatting the data partition…" in [t for t, _s in app.return_steps([], "init_boot_b", True)])
+# The pages of the way back, on the display of their own (see the start); nothing is presented
+if app.Gdk.Display.get_default() is not None and os.environ.get("GDK_BACKEND") == "broadway":
+    app.Adw.init()
+
+    def widgets(widget):
+        found, child = [widget], widget.get_first_child()
+        while child:
+            found += widgets(child)
+            child = child.get_next_sibling()
+        return found
+
+    def texts(widget):
+        out = set()
+        for w in widgets(widget):
+            for getter in ("get_title", "get_subtitle", "get_description", "get_label"):
+                value = getattr(w, getter, lambda: None)()
+                if isinstance(value, str) and value:
+                    out.add(value)
+        return out
+
+    def find(widget, kind, title):
+        return next(w for w in widgets(widget) if isinstance(w, kind) and w.get_title() == title)
+
+    WayBackAccess.can_read = WayBackAccess.can_write = True
+    WayBackAccess.partitions = lambda self: parts
+    phone = app.Device("ssh:way-back", "ssh", WayBackAccess(), {"serial": "S1", "os_id": app.RESCUE_ID, "slot": "b",
+                                                                 "codename": "ansuz"})
+    phone.layout = {"android": [], "storage": [], "card": None, "complete": True,
+                    "phone": {"kind": "plinius", "name": "Arch Linux ARM"}}
+    pages = []
+    nav = types.SimpleNamespace(push=pages.append, pop_to_page=lambda page: None, pop_to_tag=lambda tag: None)
+    scanner = types.SimpleNamespace(visible=lambda: [phone], busy=set(), rescan=lambda: None, devices={phone.key: phone})
+    ui_config = {"rescue_in": {"S1": {"partition": "init_boot_b"}}, "phone_system": {"S1": {}}}
+    win = types.SimpleNamespace(config=ui_config, scanner=scanner, backups=app.list_backups(str(store)), push=pages.append,
+                                nav=nav, choose_dir=lambda then=None: None)
+    real_thread, app.in_thread = app.in_thread, sync
+    in_volla = app.Device("adb:way-back", "adb", WayBackAccess(), {"serial": "S1", "codename": "ansuz"})
+    win.images = app.ImageSource(None)
+    install = app.InstallPage(win, in_volla)
+    find(install, app.Adw.ActionRow, "Back to Volla OS or Ubuntu Touch").emit("activated")
+    check("the first step of the installation leads there too", isinstance(pages.pop(), app.ReturnPage))
+    app.return_row(win, phone).emit("activated")
+    back = pages.pop()
+    check("the way back opens from the start page and the installation", isinstance(back, app.ReturnPage))
+    shown = texts(back)
+    check("a phone this app put Plinius in: inside the phone is chosen, with the phone to continue",
+          "Continue with Volla Phone Plinius" in shown and "Volla OS from its backup" in shown
+          and app.UBPORTS_INSTALLER in shown and any("Nobody has tried this on a real phone yet." in t for t in shown))
+    back.set_where("card")
+    shown = texts(back)
+    check("on the card: the card out, or the entry of the boot menu, nothing to write",
+          "Take the memory card out" in shown and "Or choose “VollaOS” in the boot menu" in shown
+          and "Continue with Volla Phone Plinius" not in shown)
+    scanner.visible = lambda: []
+    back.on_devices([])
+    back.set_where("phone")
+    shown = texts(back)
+    check("without a phone: waiting, and how to reach the bootloader by hand",
+          "Waiting for the phone…" in shown and "Start the bootloader" in shown)
+    other = app.ReturnPage(win)
+    check("without a phone nothing is chosen", "Volla OS from its backup" not in texts(other)
+          and "Take the memory card out" not in texts(other))
+    scanner.visible = lambda: [phone]
+    check("from the start page: inside, if this app put Plinius into the connected phone",
+          "Continue with Volla Phone Plinius" in texts(app.ReturnPage(win)))
+    returning = app.VollaReturnPage(win, phone)
+    shown = texts(returning)
+    check("in the rescue system: the backup of Volla OS and what it writes",
+          "Write Volla OS back" in shown and "The backup of Volla OS" in shown
+          and {"boot_b", "vendor_boot_b", "init_boot_b", "userdata"} <= shown)
+    button = find(returning, app.Adw.ButtonRow, "Erase Arch Linux ARM and write Volla OS back")
+    sure = find(returning, app.Adw.SwitchRow, "I have copied what I still need")
+    check("the button waits for the switch", not button.get_sensitive())
+    sure.set_active(True)
+    check("then it can be used", button.get_sensitive())
+    app.write_original = lambda device, config, original, step: written.append(original[0])
+    written.clear()
+    returning.run_return(by_folder[str(volla)])
+    operation = pages.pop()
+    check("the way back runs and says so", isinstance(operation, app.OperationPage) and written == [volla_init]
+          and "Volla OS is back" in texts(operation) and not scanner.busy)
+
+    def no_bootloader(device, config, original, step):
+        raise app.Failed("The phone did not appear in the bootloader.")
+
+    app.write_original = no_bootloader
+    returning.run_return(by_folder[str(volla)])
+    shown = " ".join(texts(pages.pop()))
+    check("a failure says the rescue system is still there", "Volla OS was not written back" in shown
+          and "still holds the rescue system" in shown)
+    win.backups = []
+    returning.backups_changed()
+    check("without a backup: the storage location, and Volla's own package", "No backup of Volla OS found" in
+          texts(returning) and "Choose the storage location…" in texts(returning))
+    phone.layout = dict(phone.layout, phone={"kind": "android", "name": "Volla OS"})
+    returning.render()
+    check("Volla OS inside already: only the way out of the rescue system", "Volla OS is inside the phone" in
+          texts(returning) and "Write original back and restart" in texts(returning))
+    app.in_thread = real_thread
+else:
+    print("  skipped: the pages of the way back (no gtk4-broadwayd)")
+app.avb_hashes, app.save_config, app.write_original, app.GLib.idle_add = real_avb, real_save, real_write, real_idle
+shutil.rmtree(store)
+shutil.rmtree(targets)
 
 print("All guide checks passed")

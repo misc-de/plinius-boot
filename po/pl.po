@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: plinius-boot\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 12:26+0100\n"
+"POT-Creation-Date: 2026-11-26 19:09+0100\n"
 "PO-Revision-Date: 2026-10-28 11:10+0100\n"
 "Last-Translator: plinius-boot\n"
 "Language-Team: none\n"
@@ -38,9 +38,9 @@ msgstr "Łańcuch rozruchu i oprogramowanie sprzętowe"
 msgid "Bootloader, kernel, modem and other firmware."
 msgstr "Bootloader, jądro, modem i inne oprogramowanie sprzętowe."
 
-#: plinius-boot:297 plinius-boot:660 plinius-boot:5886 plinius-boot:6453
-#: plinius-boot:6772 plinius-boot:6821 plinius-boot:7304 plinius-boot:7337
-#: plinius-boot:7341 plinius-boot:7367
+#: plinius-boot:297 plinius-boot:660 plinius-boot:6018 plinius-boot:6585
+#: plinius-boot:6904 plinius-boot:6953 plinius-boot:7446 plinius-boot:7479
+#: plinius-boot:7483 plinius-boot:7509 plinius-boot:8479
 msgid "System"
 msgstr "System"
 
@@ -48,7 +48,7 @@ msgstr "System"
 msgid "The Android system and vendor partitions."
 msgstr "Partycje systemu Android i producenta (vendor)."
 
-#: plinius-boot:298 plinius-boot:6772 plinius-boot:7304
+#: plinius-boot:298 plinius-boot:6904 plinius-boot:7446
 msgid "User data"
 msgstr "Dane użytkownika"
 
@@ -57,8 +57,8 @@ msgid "Your files, apps and settings. Very large and often encrypted."
 msgstr ""
 "Twoje pliki, aplikacje i ustawienia. Bardzo duże i często zaszyfrowane."
 
-#: plinius-boot:299 plinius-boot:6780 plinius-boot:6782 plinius-boot:7170
-#: plinius-boot:7342 plinius-boot:7394 plinius-boot:7432 plinius-boot:8606
+#: plinius-boot:299 plinius-boot:6912 plinius-boot:6914 plinius-boot:7312
+#: plinius-boot:7484 plinius-boot:7536 plinius-boot:7574 plinius-boot:9013
 msgid "Memory card"
 msgstr "Karta pamięci"
 
@@ -189,12 +189,12 @@ msgstr "Tryb pobierania MediaTek"
 msgid "Not connected"
 msgstr "Nie podłączony"
 
-#: plinius-boot:646 plinius-boot:6765
+#: plinius-boot:646 plinius-boot:6897
 #, python-brace-format
 msgid "build {number}"
 msgstr "kompilacja {number}"
 
-#: plinius-boot:650 plinius-boot:6766
+#: plinius-boot:650 plinius-boot:6898
 #, python-brace-format
 msgid "security patch {date}"
 msgstr "poprawka zabezpieczeń {date}"
@@ -218,8 +218,8 @@ msgstr "Slot {slot}"
 msgid "Not a regular file"
 msgstr "Nie jest zwykłym plikiem"
 
-#: plinius-boot:912 plinius-boot:5977 plinius-boot:5987 plinius-boot:6004
-#: plinius-boot:6021 plinius-boot:6080 plinius-boot:6245 plinius-boot:7597
+#: plinius-boot:912 plinius-boot:6109 plinius-boot:6119 plinius-boot:6136
+#: plinius-boot:6153 plinius-boot:6212 plinius-boot:6377 plinius-boot:7739
 msgid "Rescue system"
 msgstr "System ratunkowy"
 
@@ -262,7 +262,7 @@ msgstr "Nie działa: {error}"
 
 #: plinius-boot:1332 plinius-boot:4014 plinius-boot:4031 plinius-boot:4137
 #: plinius-boot:4228 plinius-boot:4232 plinius-boot:4327 plinius-boot:4329
-#: plinius-boot:4339 plinius-boot:4861
+#: plinius-boot:4339 plinius-boot:4993
 msgid "Reading the partition table"
 msgstr "Odczytywanie tablicy partycji"
 
@@ -270,15 +270,15 @@ msgstr "Odczytywanie tablicy partycji"
 msgid "Could not read the partition list."
 msgstr "Nie udało się odczytać listy partycji."
 
-#: plinius-boot:1455 plinius-boot:6363
+#: plinius-boot:1455 plinius-boot:6495
 msgid "The phone was disconnected."
 msgstr "Telefon został odłączony."
 
-#: plinius-boot:1631 plinius-boot:8604
+#: plinius-boot:1631 plinius-boot:9011
 msgid "Bootloader"
 msgstr "Bootloader"
 
-#: plinius-boot:1690 plinius-boot:2694 plinius-boot:9275
+#: plinius-boot:1690 plinius-boot:2694 plinius-boot:9683
 msgid "Unknown phone"
 msgstr "Nieznany telefon"
 
@@ -381,7 +381,7 @@ msgstr "{name} z kopii zapasowej z {date}"
 msgid "fastboot could not start the rescue system: {error}"
 msgstr "fastboot nie mógł uruchomić systemu ratunkowego: {error}"
 
-#: plinius-boot:2165 plinius-boot:8739
+#: plinius-boot:2165 plinius-boot:9149
 msgid "Confirm on the phone: press Volume up to unlock."
 msgstr ""
 "Potwierdź na telefonie: naciśnij przycisk zwiększania głośności, aby "
@@ -406,7 +406,7 @@ msgstr ""
 "odrzucone, zacznij od nowa. W przeciwnym razie uruchom ponownie telefon w "
 "bootloaderze i sprawdź go tu jeszcze raz."
 
-#: plinius-boot:2180 plinius-boot:4530
+#: plinius-boot:2180 plinius-boot:4470 plinius-boot:4662
 msgid "Formatting the data partition…"
 msgstr "Formatowanie partycji danych…"
 
@@ -522,7 +522,7 @@ msgstr ""
 "Obraz do zapisania to system ratunkowy tej aplikacji, a nie oryginał. Nic "
 "nie zostało zapisane."
 
-#: plinius-boot:2536 plinius-boot:5513
+#: plinius-boot:2536 plinius-boot:4468 plinius-boot:5645
 msgid "Restarting into the bootloader…"
 msgstr "Ponowne uruchamianie w bootloaderze…"
 
@@ -543,12 +543,12 @@ msgstr ""
 "Telefon w bootloaderze nie jest w oczekiwanym stanie (slot {slot}, partycja "
 "{name}). Niczego nie zapisano."
 
-#: plinius-boot:2556
+#: plinius-boot:2556 plinius-boot:4468
 #, python-brace-format
 msgid "Writing the original {name}…"
 msgstr "Zapisywanie oryginalnego {name}…"
 
-#: plinius-boot:2565 plinius-boot:5513
+#: plinius-boot:2565 plinius-boot:4471 plinius-boot:5645
 msgid "Starting the phone…"
 msgstr "Uruchamianie telefonu…"
 
@@ -624,7 +624,7 @@ msgstr "suma kontrolna na telefonie się nie zgadza"
 msgid "{name}: {size}, saved as {file}"
 msgstr "{name}: {size}, zapisano jako {file}"
 
-#: plinius-boot:3006 plinius-boot:3052
+#: plinius-boot:3006 plinius-boot:3052 plinius-boot:4466
 #, python-brace-format
 msgid "Checking {name} ({i} of {n})"
 msgstr "Sprawdzanie {name} ({i} z {n})"
@@ -639,11 +639,11 @@ msgstr "{name}: suma kontrolna się nie zgadza"
 msgid "{name}: OK"
 msgstr "{name}: OK"
 
-#: plinius-boot:3035 plinius-boot:6266 plinius-boot:6541 plinius-boot:6542
+#: plinius-boot:3035 plinius-boot:6398 plinius-boot:6673 plinius-boot:6674
 msgid "Reading the partition list…"
 msgstr "Odczytywanie listy partycji…"
 
-#: plinius-boot:3039 plinius-boot:6526
+#: plinius-boot:3039 plinius-boot:6658
 #, python-brace-format
 msgid ""
 "This backup belongs to a {backup}, but the connected phone is a {device}."
@@ -688,7 +688,7 @@ msgstr ""
 "Kopia zapasowa {name} jest uszkodzona (suma kontrolna się nie zgadza). Na tę "
 "partycję niczego nie zapisano."
 
-#: plinius-boot:3090
+#: plinius-boot:3090 plinius-boot:4467
 #, python-brace-format
 msgid "Writing {name} ({i} of {n})"
 msgstr "Zapisywanie {name} ({i} z {n})"
@@ -781,14 +781,14 @@ msgstr ""
 "partycji danych nigdy by się nie uruchomił."
 
 #: plinius-boot:3460 plinius-boot:4020 plinius-boot:4069 plinius-boot:4149
-#: plinius-boot:4484 plinius-boot:4650 plinius-boot:4715 plinius-boot:4813
-#: plinius-boot:4817 plinius-boot:5082 plinius-boot:5175 plinius-boot:5218
+#: plinius-boot:4616 plinius-boot:4782 plinius-boot:4847 plinius-boot:4945
+#: plinius-boot:4949 plinius-boot:5214 plinius-boot:5307 plinius-boot:5350
 msgid "The name of a partition is not valid."
 msgstr "Nazwa partycji jest nieprawidłowa."
 
-#: plinius-boot:3498 plinius-boot:3998 plinius-boot:6801 plinius-boot:6833
-#: plinius-boot:6837 plinius-boot:6881 plinius-boot:7134 plinius-boot:7819
-#: plinius-boot:9024
+#: plinius-boot:3498 plinius-boot:3998 plinius-boot:6933 plinius-boot:6965
+#: plinius-boot:6969 plinius-boot:7013 plinius-boot:7276 plinius-boot:7966
+#: plinius-boot:9428
 msgid "Unnamed system"
 msgstr "System bez nazwy"
 
@@ -806,7 +806,7 @@ msgstr ""
 msgid "{what} failed: {error}"
 msgstr "{what} nie powiodło się: {error}"
 
-#: plinius-boot:3532 plinius-boot:3949 plinius-boot:4186
+#: plinius-boot:3532 plinius-boot:3949 plinius-boot:4186 plinius-boot:4452
 msgid "This only works in the rescue system. Nothing was changed."
 msgstr "To działa tylko w systemie ratunkowym. Niczego nie zmieniono."
 
@@ -858,15 +858,15 @@ msgstr ""
 "Partycji {source} nie da się zmniejszyć i nie mieści się ona na partycji "
 "{target}."
 
-#: plinius-boot:3621 plinius-boot:5249
+#: plinius-boot:3621 plinius-boot:5381
 msgid "The memory card has no partition with boot entries."
 msgstr "Karta pamięci nie ma partycji z wpisami rozruchowymi."
 
-#: plinius-boot:3626 plinius-boot:3633 plinius-boot:5292
+#: plinius-boot:3626 plinius-boot:3633 plinius-boot:5424
 msgid "The name of a boot entry is not valid."
 msgstr "Nazwa wpisu rozruchowego jest nieprawidłowa."
 
-#: plinius-boot:3635 plinius-boot:5278 plinius-boot:5411 plinius-boot:5506
+#: plinius-boot:3635 plinius-boot:5410 plinius-boot:5543 plinius-boot:5638
 msgid "Writing the boot entries"
 msgstr "Zapisywanie wpisów rozruchowych"
 
@@ -949,28 +949,28 @@ msgstr "Stary system jest zapisany w {dir}."
 msgid "Writing the image to partition {number}"
 msgstr "Zapisywanie obrazu na partycji {number}"
 
-#: plinius-boot:3860 plinius-boot:5440 plinius-boot:5454 plinius-boot:5494
-#: plinius-boot:5497
+#: plinius-boot:3860 plinius-boot:5572 plinius-boot:5586 plinius-boot:5626
+#: plinius-boot:5629
 msgid "Fitting the file system to the partition"
 msgstr "Dopasowywanie systemu plików do partycji"
 
-#: plinius-boot:3863 plinius-boot:4273 plinius-boot:4304 plinius-boot:4882
-#: plinius-boot:5479 plinius-boot:5505
+#: plinius-boot:3863 plinius-boot:4273 plinius-boot:4304 plinius-boot:5014
+#: plinius-boot:5611 plinius-boot:5637
 msgid "Copying the drivers of Volla OS"
 msgstr "Kopiowanie sterowników Volla OS"
 
-#: plinius-boot:3866 plinius-boot:4130 plinius-boot:5206
+#: plinius-boot:3866 plinius-boot:4130 plinius-boot:5338
 #, python-brace-format
 msgid "Emptying partition {number}"
 msgstr "Opróżnianie partycji {number}"
 
-#: plinius-boot:3869 plinius-boot:4132 plinius-boot:4485 plinius-boot:5207
-#: plinius-boot:5429 plinius-boot:5430 plinius-boot:5432 plinius-boot:5457
-#: plinius-boot:5458 plinius-boot:5493 plinius-boot:5499
+#: plinius-boot:3869 plinius-boot:4132 plinius-boot:4617 plinius-boot:5339
+#: plinius-boot:5561 plinius-boot:5562 plinius-boot:5564 plinius-boot:5589
+#: plinius-boot:5590 plinius-boot:5625 plinius-boot:5631
 msgid "Emptying the data partition"
 msgstr "Opróżnianie partycji danych"
 
-#: plinius-boot:3894 plinius-boot:3937 plinius-boot:4072 plinius-boot:4417
+#: plinius-boot:3894 plinius-boot:3937 plinius-boot:4072 plinius-boot:4549
 msgid "Nothing was changed."
 msgstr "Niczego nie zmieniono."
 
@@ -984,7 +984,7 @@ msgid "The memory card has changed since this swap began. Nothing was changed."
 msgstr ""
 "Karta pamięci zmieniła się od rozpoczęcia tej zamiany. Niczego nie zmieniono."
 
-#: plinius-boot:3993 plinius-boot:4404
+#: plinius-boot:3993 plinius-boot:4536
 msgid ""
 "A new system needs a kernel from an existing system on the memory card, and "
 "there is none."
@@ -1011,7 +1011,7 @@ msgstr "To nie jest mniej niż obecnie."
 msgid "Partition {number} holds {used}, so it cannot become that small."
 msgstr "Partycja {number} zawiera {used}, więc nie może być aż tak mała."
 
-#: plinius-boot:4076 plinius-boot:5086 plinius-boot:5177
+#: plinius-boot:4076 plinius-boot:5218 plinius-boot:5309
 msgid ""
 "The partition table of the memory card looks different than expected. "
 "Nothing was changed."
@@ -1019,7 +1019,7 @@ msgstr ""
 "Tablica partycji karty pamięci wygląda inaczej, niż oczekiwano. Niczego nie "
 "zmieniono."
 
-#: plinius-boot:4080 plinius-boot:6811 plinius-boot:7288 plinius-boot:7369
+#: plinius-boot:4080 plinius-boot:6943 plinius-boot:7430 plinius-boot:7511
 #, python-brace-format
 msgid "Partition {number}"
 msgstr "Partycja {number}"
@@ -1029,13 +1029,13 @@ msgid "Making the file system smaller"
 msgstr "Zmniejszanie systemu plików"
 
 #: plinius-boot:4093 plinius-boot:4097 plinius-boot:4126 plinius-boot:4127
-#: plinius-boot:4447 plinius-boot:4470 plinius-boot:4507 plinius-boot:4517
-#: plinius-boot:5087 plinius-boot:5095 plinius-boot:5102 plinius-boot:5184
-#: plinius-boot:5491
+#: plinius-boot:4579 plinius-boot:4602 plinius-boot:4639 plinius-boot:4649
+#: plinius-boot:5219 plinius-boot:5227 plinius-boot:5234 plinius-boot:5316
+#: plinius-boot:5623
 msgid "Changing the partition table"
 msgstr "Zmienianie tablicy partycji"
 
-#: plinius-boot:4104 plinius-boot:5098 plinius-boot:5187
+#: plinius-boot:4104 plinius-boot:5230 plinius-boot:5319
 msgid ""
 "The partition table does not show what was written. Restart the rescue "
 "system and check."
@@ -1060,11 +1060,11 @@ msgstr ""
 "Najpierw utwórz kopię zapasową {names}: to droga powrotu. Nic nie zostało "
 "zmienione."
 
-#: plinius-boot:4188 plinius-boot:4397
+#: plinius-boot:4188 plinius-boot:4454 plinius-boot:4529
 msgid "This is only made for the Volla Phone Plinius."
 msgstr "To jest przeznaczone tylko dla Volla Phone Plinius."
 
-#: plinius-boot:4191
+#: plinius-boot:4191 plinius-boot:4410 plinius-boot:4456
 msgid ""
 "The app must know which partition holds the rescue system. Start the rescue "
 "system from the bootloader with this app."
@@ -1091,17 +1091,17 @@ msgid "Writing the Android image"
 msgstr "Zapisywanie obrazu Androida"
 
 #: plinius-boot:4271 plinius-boot:4289 plinius-boot:4307 plinius-boot:4309
-#: plinius-boot:5435 plinius-boot:5467 plinius-boot:5472
+#: plinius-boot:5567 plinius-boot:5599 plinius-boot:5604
 msgid "Writing the system"
 msgstr "Zapisywanie systemu"
 
-#: plinius-boot:4272 plinius-boot:4298 plinius-boot:4663 plinius-boot:5460
-#: plinius-boot:5501
+#: plinius-boot:4272 plinius-boot:4298 plinius-boot:4795 plinius-boot:5592
+#: plinius-boot:5633
 msgid "Setting the PIN"
 msgstr "Ustawianie PIN-u"
 
-#: plinius-boot:4272 plinius-boot:4301 plinius-boot:4735 plinius-boot:5470
-#: plinius-boot:5476 plinius-boot:5503
+#: plinius-boot:4272 plinius-boot:4301 plinius-boot:4867 plinius-boot:5602
+#: plinius-boot:5608 plinius-boot:5635
 msgid "Setting the language"
 msgstr "Ustawianie języka"
 
@@ -1145,11 +1145,34 @@ msgstr "Zapisywanie {name}"
 msgid "Mounting the phone's data partition"
 msgstr "Montowanie partycji danych telefonu"
 
-#: plinius-boot:4395
+#: plinius-boot:4413
+msgid "This backup was not made of this phone on this computer."
+msgstr ""
+"Ta kopia zapasowa nie została utworzona z tego telefonu na tym komputerze."
+
+#: plinius-boot:4417
+#, python-brace-format
+msgid "This backup does not hold {names}."
+msgstr "Ta kopia zapasowa nie zawiera {names}."
+
+#: plinius-boot:4422 plinius-boot:5985
+#, python-brace-format
+msgid "The phone's {vbmeta} holds no checksum for {name}."
+msgstr "{vbmeta} telefonu nie zawiera sumy kontrolnej dla {name}."
+
+#: plinius-boot:4425 plinius-boot:4429
+#, python-brace-format
+msgid ""
+"The {name} in this backup is not the one of Volla OS that the phone expects."
+msgstr ""
+"{name} w tej kopii zapasowej nie jest tym z Volla OS, którego oczekuje "
+"telefon."
+
+#: plinius-boot:4527
 msgid "The partition userdata was not found on this phone."
 msgstr "Nie znaleziono partycji userdata na tym telefonie."
 
-#: plinius-boot:4399
+#: plinius-boot:4531
 msgid ""
 "The app must know the original of the rescue partition, so that it can "
 "format userdata afterwards. Start the rescue system from the bootloader with "
@@ -1158,16 +1181,16 @@ msgstr ""
 "Aplikacja musi znać oryginał partycji ratunkowej, aby móc potem sformatować "
 "userdata. Uruchom system ratunkowy z bootloadera za pomocą tej aplikacji."
 
-#: plinius-boot:4402
+#: plinius-boot:4534
 msgid "The partition table of the phone is full."
 msgstr "Tablica partycji telefonu jest pełna."
 
-#: plinius-boot:4406
+#: plinius-boot:4538
 #, python-brace-format
 msgid "That leaves less than {size} for Volla OS."
 msgstr "Dla Volla OS zostanie wtedy mniej niż {size}."
 
-#: plinius-boot:4425 plinius-boot:4450 plinius-boot:4497
+#: plinius-boot:4557 plinius-boot:4582 plinius-boot:4629
 msgid ""
 "The partition table of the phone looks different than expected. Nothing was "
 "changed."
@@ -1175,15 +1198,15 @@ msgstr ""
 "Tablica partycji telefonu wygląda inaczej, niż oczekiwano. Niczego nie "
 "zmieniono."
 
-#: plinius-boot:4428 plinius-boot:4430 plinius-boot:4431
+#: plinius-boot:4560 plinius-boot:4562 plinius-boot:4563
 msgid "Saving the partition table"
 msgstr "Tworzenie kopii tablicy partycji"
 
-#: plinius-boot:4436 plinius-boot:4445
+#: plinius-boot:4568 plinius-boot:4577
 msgid "The partition table could not be saved. Nothing was changed."
 msgstr "Nie udało się utworzyć kopii tablicy partycji. Niczego nie zmieniono."
 
-#: plinius-boot:4479
+#: plinius-boot:4611
 msgid ""
 "The partition table does not show what was written. Put it back under Copies "
 "on this PC."
@@ -1191,27 +1214,27 @@ msgstr ""
 "Tablica partycji nie pokazuje tego, co zapisano. Przywróć ją w sekcji „Kopie "
 "na tym PC”."
 
-#: plinius-boot:4480
+#: plinius-boot:4612
 msgid "Emptying the new partitions"
 msgstr "Opróżnianie nowych partycji"
 
-#: plinius-boot:4502
+#: plinius-boot:4634
 msgid ""
 "The copy of the partition table on this PC is damaged. Nothing was changed."
 msgstr ""
 "Kopia tablicy partycji na tym PC jest uszkodzona. Niczego nie zmieniono."
 
-#: plinius-boot:4503
+#: plinius-boot:4635
 msgid "Changing the boot entries"
 msgstr "Zmienianie wpisów rozruchowych"
 
-#: plinius-boot:4513 plinius-boot:4515
+#: plinius-boot:4645 plinius-boot:4647
 msgid ""
 "The partition table could not be sent to the phone. Nothing was changed."
 msgstr ""
 "Nie udało się wysłać tablicy partycji do telefonu. Niczego nie zmieniono."
 
-#: plinius-boot:4533
+#: plinius-boot:4665
 #, python-brace-format
 msgid ""
 "The data partition could not be formatted: {error}\n"
@@ -1221,34 +1244,34 @@ msgstr ""
 "Uruchom w bootloaderze „fastboot -w”, w przeciwnym razie Volla OS będzie "
 "ciągle uruchamiać się ponownie."
 
-#: plinius-boot:4547
+#: plinius-boot:4679
 msgid ""
 "The memory card has changed since this copy was made. Nothing was changed."
 msgstr ""
 "Karta pamięci zmieniła się od utworzenia tej kopii. Niczego nie zmieniono."
 
-#: plinius-boot:4638
+#: plinius-boot:4770
 msgid "The PIN needs 4 to 12 digits."
 msgstr "PIN musi mieć od 4 do 12 cyfr."
 
-#: plinius-boot:4640
+#: plinius-boot:4772
 msgid "The two PINs are not the same."
 msgstr "Oba kody PIN nie są takie same."
 
-#: plinius-boot:4648
+#: plinius-boot:4780
 msgid "The PIN could not be prepared."
 msgstr "Nie udało się przygotować PIN-u."
 
-#: plinius-boot:4713
+#: plinius-boot:4845
 msgid "That language is not offered."
 msgstr "Ten język nie jest dostępny."
 
-#: plinius-boot:4841
+#: plinius-boot:4973
 #, python-brace-format
 msgid "{path} could not be read."
 msgstr "Nie można odczytać {path}."
 
-#: plinius-boot:4866
+#: plinius-boot:4998
 msgid ""
 "The partitions of Volla OS (super) could not be read, so vendor and "
 "vendor_dlkm were not copied. Plinius takes them from Volla OS's partitions "
@@ -1258,7 +1281,7 @@ msgstr ""
 "zostały skopiowane. Plinius pobiera je z partycji Volla OS podczas "
 "uruchamiania."
 
-#: plinius-boot:4877
+#: plinius-boot:5009
 #, python-brace-format
 msgid ""
 "{name} was not found among the partitions of Volla OS on this phone. Some of "
@@ -1267,7 +1290,7 @@ msgstr ""
 "Nie znaleziono {name} wśród partycji Volla OS na tym telefonie. Część "
 "sprzętu może nie działać."
 
-#: plinius-boot:4884
+#: plinius-boot:5016
 #, python-brace-format
 msgid ""
 "vendor and vendor_dlkm could not be copied ({error}). Plinius takes them "
@@ -1276,7 +1299,7 @@ msgstr ""
 "Nie można skopiować vendor i vendor_dlkm ({error}). Plinius pobiera je z "
 "partycji Volla OS podczas uruchamiania."
 
-#: plinius-boot:4891
+#: plinius-boot:5023
 msgid ""
 "Volla OS on this phone has not finished an update, so its drivers may be "
 "copied as they were before it. If some of the hardware does not work: bring "
@@ -1288,7 +1311,7 @@ msgstr ""
 "działa: przywrócić Volla OS z kopii zapasowej, uruchomić go raz do "
 "zakończenia aktualizacji i ponownie zainstalować Plinius."
 
-#: plinius-boot:4895
+#: plinius-boot:5027
 msgid ""
 "Volla OS has not finished an update, but its drivers are the ones Plinius "
 "was tested with."
@@ -1296,7 +1319,7 @@ msgstr ""
 "Volla OS nie dokończył aktualizacji, ale jego sterowniki są tymi, z którymi "
 "testowano Plinius."
 
-#: plinius-boot:4897
+#: plinius-boot:5029
 #, python-brace-format
 msgid ""
 "{name} of Volla OS on this phone is not the one Plinius was tested with. It "
@@ -1309,34 +1332,34 @@ msgstr ""
 "przywrócić Volla OS z kopii zapasowej, zaktualizować go do najnowszej wersji "
 "i ponownie zainstalować Plinius."
 
-#: plinius-boot:4914 plinius-boot:4922
+#: plinius-boot:5046 plinius-boot:5054
 msgid "The download server sent something unexpected."
 msgstr "Serwer pobierania przysłał coś nieoczekiwanego."
 
-#: plinius-boot:4941
+#: plinius-boot:5073
 msgid "Checking the image that was downloaded earlier"
 msgstr "Sprawdzanie wcześniej pobranego obrazu"
 
-#: plinius-boot:4950
+#: plinius-boot:5082
 msgid "Checking what was downloaded so far"
 msgstr "Sprawdzanie dotychczas pobranych danych"
 
-#: plinius-boot:4959 plinius-boot:8406
+#: plinius-boot:5091 plinius-boot:8809
 msgid "Downloading Plinius"
 msgstr "Pobieranie Pliniusa"
 
-#: plinius-boot:4965
+#: plinius-boot:5097
 msgid "The download is larger than the server said. Nothing was kept."
 msgstr "Pobrany plik jest większy, niż podał serwer. Niczego nie zachowano."
 
-#: plinius-boot:4967
+#: plinius-boot:5099
 msgid ""
 "The download stopped before the end. Try again: it goes on where it stopped."
 msgstr ""
 "Pobieranie przerwało się przed końcem. Spróbuj ponownie: będzie kontynuowane "
 "od miejsca przerwania."
 
-#: plinius-boot:4970
+#: plinius-boot:5102
 msgid ""
 "The downloaded image is damaged: its checksum does not match. It was "
 "deleted, try again."
@@ -1344,23 +1367,23 @@ msgstr ""
 "Pobrany obraz jest uszkodzony: suma kontrolna się nie zgadza. Został "
 "usunięty, spróbuj ponownie."
 
-#: plinius-boot:5023
+#: plinius-boot:5155
 #, python-brace-format
 msgid ""
 "This image does not bring {name}, so it cannot start from the memory card."
 msgstr ""
 "Ten obraz nie zawiera {name}, więc nie może uruchomić się z karty pamięci."
 
-#: plinius-boot:5120
+#: plinius-boot:5252
 #, python-brace-format
 msgid "{n} GB"
 msgstr "{n} GB"
 
-#: plinius-boot:5163
+#: plinius-boot:5295
 msgid "It holds no partitions."
 msgstr "Nie ma na niej partycji."
 
-#: plinius-boot:5164
+#: plinius-boot:5296
 #, python-brace-format
 msgid "It holds {n} partition."
 msgid_plural "It holds {n} partitions."
@@ -1368,74 +1391,74 @@ msgstr[0] "Ma {n} partycję."
 msgstr[1] "Ma {n} partycje."
 msgstr[2] "Ma {n} partycji."
 
-#: plinius-boot:5166
+#: plinius-boot:5298
 #, python-brace-format
 msgid "Systems on it: {names}."
 msgstr "Systemy na niej: {names}."
 
-#: plinius-boot:5181 plinius-boot:5188 plinius-boot:5205 plinius-boot:5489
+#: plinius-boot:5313 plinius-boot:5320 plinius-boot:5337 plinius-boot:5621
 msgid "Setting up the memory card"
 msgstr "Przygotowywanie karty pamięci"
 
-#: plinius-boot:5230
+#: plinius-boot:5362
 msgid "Reading the boot entries failed."
 msgstr "Odczyt wpisów rozruchowych nie powiódł się."
 
-#: plinius-boot:5232
+#: plinius-boot:5364
 msgid "Reading the boot entries"
 msgstr "Odczytywanie wpisów rozruchowych"
 
-#: plinius-boot:5266
+#: plinius-boot:5398
 msgid "The new boot entry is not on the memory card."
 msgstr "Nowego wpisu rozruchowego nie ma na karcie pamięci."
 
-#: plinius-boot:5296 plinius-boot:5303 plinius-boot:5506
+#: plinius-boot:5428 plinius-boot:5435 plinius-boot:5638
 msgid "Copying the kernel"
 msgstr "Kopiowanie jądra"
 
-#: plinius-boot:5372
+#: plinius-boot:5504
 msgid "The memory card was set up, but it does not show what was written."
 msgstr ""
 "Karta pamięci została przygotowana, ale nie pokazuje tego, co zapisano."
 
-#: plinius-boot:5381
+#: plinius-boot:5513
 msgid "The new place is not on the memory card."
 msgstr "Nowego miejsca nie ma na karcie pamięci."
 
-#: plinius-boot:5390 plinius-boot:7975 plinius-boot:8031
+#: plinius-boot:5522 plinius-boot:8122 plinius-boot:8178
 msgid "That is not possible"
 msgstr "To niemożliwe"
 
-#: plinius-boot:5453 plinius-boot:5496
+#: plinius-boot:5585 plinius-boot:5628
 msgid "Writing Plinius to the memory card"
 msgstr "Zapisywanie Pliniusa na karcie pamięci"
 
-#: plinius-boot:5580
+#: plinius-boot:5712
 msgid "Connect the phone to this computer with a USB-C cable."
 msgstr "Podłącz telefon do tego komputera kablem USB-C."
 
-#: plinius-boot:5581
+#: plinius-boot:5713
 msgid "Turn the phone off completely."
 msgstr "Całkowicie wyłącz telefon."
 
-#: plinius-boot:5582
+#: plinius-boot:5714
 msgid ""
 "Press and hold Volume down and Power at the same time until a menu appears."
 msgstr ""
 "Naciśnij i przytrzymaj jednocześnie przycisk zmniejszania głośności i "
 "przycisk zasilania, aż pojawi się menu."
 
-#: plinius-boot:5583
+#: plinius-boot:5715
 msgid "Select “fastboot” with Volume down and confirm with Power."
 msgstr ""
 "Wybierz „fastboot” przyciskiem zmniejszania głośności i potwierdź "
 "przyciskiem zasilania."
 
-#: plinius-boot:5584
+#: plinius-boot:5716
 msgid "The phone appears here by itself after a few seconds."
 msgstr "Po kilku sekundach telefon sam pojawi się tutaj."
 
-#: plinius-boot:5626 plinius-boot:7669
+#: plinius-boot:5758 plinius-boot:7811
 #, python-brace-format
 msgid "{n} partition"
 msgid_plural "{n} partitions"
@@ -1443,33 +1466,33 @@ msgstr[0] "{n} partycja"
 msgstr[1] "{n} partycje"
 msgstr[2] "{n} partycji"
 
-#: plinius-boot:5645
+#: plinius-boot:5777
 msgid "All"
 msgstr "Wszystkie"
 
-#: plinius-boot:5731
+#: plinius-boot:5863
 msgid "Details"
 msgstr "Szczegóły"
 
-#: plinius-boot:5733 plinius-boot:5959 plinius-boot:6067 plinius-boot:6165
-#: plinius-boot:6222 plinius-boot:6376 plinius-boot:6390 plinius-boot:6619
-#: plinius-boot:6640 plinius-boot:6957 plinius-boot:6987 plinius-boot:7010
-#: plinius-boot:7880 plinius-boot:7902 plinius-boot:7987 plinius-boot:8043
-#: plinius-boot:8065 plinius-boot:8081 plinius-boot:8746 plinius-boot:9051
-#: plinius-boot:9436
+#: plinius-boot:5865 plinius-boot:6091 plinius-boot:6199 plinius-boot:6297
+#: plinius-boot:6354 plinius-boot:6508 plinius-boot:6522 plinius-boot:6751
+#: plinius-boot:6772 plinius-boot:7089 plinius-boot:7119 plinius-boot:7142
+#: plinius-boot:8027 plinius-boot:8049 plinius-boot:8134 plinius-boot:8190
+#: plinius-boot:8212 plinius-boot:8228 plinius-boot:8501 plinius-boot:9156
+#: plinius-boot:9455 plinius-boot:9844
 msgid "Cancel"
 msgstr "Anuluj"
 
-#: plinius-boot:5746
+#: plinius-boot:5878
 msgid "Cancelling…"
 msgstr "Anulowanie…"
 
-#: plinius-boot:5781
+#: plinius-boot:5913
 #, python-brace-format
 msgid "{rate}/s, about {left} left"
 msgstr "{rate}/s, pozostało około {left}"
 
-#: plinius-boot:5782
+#: plinius-boot:5914
 #, python-brace-format
 msgid "{n} minute"
 msgid_plural "{n} minutes"
@@ -1477,12 +1500,7 @@ msgstr[0] "{n} minuty"
 msgstr[1] "{n} minut"
 msgstr[2] "{n} minut"
 
-#: plinius-boot:5853
-#, python-brace-format
-msgid "The phone's {vbmeta} holds no checksum for {name}."
-msgstr "{vbmeta} telefonu nie zawiera sumy kontrolnej dla {name}."
-
-#: plinius-boot:5855
+#: plinius-boot:5987
 #, python-brace-format
 msgid ""
 "Inside the phone is {system}, not Volla OS, and the app never saw its "
@@ -1495,11 +1513,11 @@ msgstr ""
 "ratunkowy zostaje. Zapisz właściwy {name} z pliku w Zaawansowane, System "
 "ratunkowy."
 
-#: plinius-boot:5858 plinius-boot:8792
+#: plinius-boot:5990 plinius-boot:7162
 msgid "the current system"
 msgstr "obecny system"
 
-#: plinius-boot:5863
+#: plinius-boot:5995
 #, python-brace-format
 msgid ""
 "Start the rescue system once more, so that the app can read which {name} the "
@@ -1508,43 +1526,43 @@ msgstr ""
 "Uruchom jeszcze raz system ratunkowy, aby aplikacja mogła odczytać, jakiego "
 "{name} oczekuje telefon."
 
-#: plinius-boot:5880 plinius-boot:7548 plinius-boot:7606
+#: plinius-boot:6012 plinius-boot:7690 plinius-boot:7748
 msgid "Rescue system and bootloader"
 msgstr "System ratunkowy i bootloader"
 
-#: plinius-boot:5884 plinius-boot:6454 plinius-boot:6476
+#: plinius-boot:6016 plinius-boot:6586 plinius-boot:6608
 msgid "Phone"
 msgstr "Telefon"
 
-#: plinius-boot:5886
+#: plinius-boot:6018
 msgid "Model"
 msgstr "Model"
 
-#: plinius-boot:5887 plinius-boot:6454
+#: plinius-boot:6019 plinius-boot:6586
 msgid "Serial number"
 msgstr "Numer seryjny"
 
-#: plinius-boot:5887
+#: plinius-boot:6019
 msgid "Chip"
 msgstr "Układ"
 
-#: plinius-boot:5888
+#: plinius-boot:6020
 msgid "Active slot"
 msgstr "Aktywny slot"
 
-#: plinius-boot:5888
+#: plinius-boot:6020
 msgid "Connection"
 msgstr "Połączenie"
 
-#: plinius-boot:5905 plinius-boot:6222 plinius-boot:7559
+#: plinius-boot:6037 plinius-boot:6354 plinius-boot:7701
 msgid "Restart"
 msgstr "Uruchom ponownie"
 
-#: plinius-boot:5907 plinius-boot:7562 plinius-boot:8717
+#: plinius-boot:6039 plinius-boot:7704 plinius-boot:9127
 msgid "Unlock the bootloader"
 msgstr "Odblokuj bootloader"
 
-#: plinius-boot:5908
+#: plinius-boot:6040
 msgid ""
 "The rescue system and restoring need an unlocked bootloader. Unlocking "
 "erases all personal data on the phone: apps, photos, messages and accounts. "
@@ -1556,44 +1574,44 @@ msgstr ""
 "wiadomości i konta. Dane urządzenia, takie jak IMEI, zostają zachowane. "
 "Najpierw skopiuj z telefonu wszystko, czego jeszcze potrzebujesz."
 
-#: plinius-boot:5914
+#: plinius-boot:6046
 msgid "OEM unlocking is turned on: continue with step 5."
 msgstr "Odblokowanie OEM jest włączone: przejdź do kroku 5."
 
-#: plinius-boot:5915
+#: plinius-boot:6047
 msgid "OEM unlocking is not turned on yet: start with step 1."
 msgstr "Odblokowanie OEM nie jest jeszcze włączone: zacznij od kroku 1."
 
-#: plinius-boot:5921
+#: plinius-boot:6053
 msgid "Unlock bootloader…"
 msgstr "Odblokuj bootloader…"
 
-#: plinius-boot:5945
+#: plinius-boot:6077
 msgid "Unlocking did not finish"
 msgstr "Odblokowanie nie zostało zakończone"
 
-#: plinius-boot:5945 plinius-boot:5950 plinius-boot:6054 plinius-boot:6152
-#: plinius-boot:6201 plinius-boot:6912 plinius-boot:6926 plinius-boot:7797
-#: plinius-boot:7943 plinius-boot:7975 plinius-boot:8031 plinius-boot:8371
-#: plinius-boot:9392 plinius-boot:9495
+#: plinius-boot:6077 plinius-boot:6082 plinius-boot:6186 plinius-boot:6284
+#: plinius-boot:6333 plinius-boot:7044 plinius-boot:7058 plinius-boot:7944
+#: plinius-boot:8090 plinius-boot:8122 plinius-boot:8178 plinius-boot:8774
+#: plinius-boot:9800 plinius-boot:9903
 msgid "Close"
 msgstr "Zamknij"
 
-#: plinius-boot:5948 plinius-boot:8604
+#: plinius-boot:6080 plinius-boot:9011
 msgid "Bootloader unlocked"
 msgstr "Bootloader odblokowany"
 
-#: plinius-boot:5949
+#: plinius-boot:6081
 msgid ""
 "The data partition has been formatted. The rescue system can be started now."
 msgstr ""
 "Partycja danych została sformatowana. Teraz można uruchomić system ratunkowy."
 
-#: plinius-boot:5956 plinius-boot:8743
+#: plinius-boot:6088 plinius-boot:9153
 msgid "Unlock the bootloader?"
 msgstr "Odblokować bootloader?"
 
-#: plinius-boot:5957 plinius-boot:8744
+#: plinius-boot:6089 plinius-boot:9154
 msgid ""
 "This erases all personal data on the phone: apps, photos, messages and "
 "accounts. It cannot be undone. The phone then asks once more; press Volume "
@@ -1603,11 +1621,11 @@ msgstr ""
 "i konta. Tego nie można cofnąć. Telefon zapyta potem jeszcze raz; naciśnij "
 "tam przycisk zwiększania głośności, aby odblokować."
 
-#: plinius-boot:5959 plinius-boot:8746
+#: plinius-boot:6091 plinius-boot:9156
 msgid "Unlock and erase"
 msgstr "Odblokuj i usuń dane"
 
-#: plinius-boot:5978
+#: plinius-boot:6110
 msgid ""
 "Runs only in memory. No partition is in use, so all of them can be backed up "
 "and restored. Restart the phone to leave the rescue system."
@@ -1616,16 +1634,16 @@ msgstr ""
 "można skopiować i przywrócić. Uruchom ponownie telefon, aby opuścić system "
 "ratunkowy."
 
-#: plinius-boot:5980 plinius-boot:6672 plinius-boot:8141
+#: plinius-boot:6112 plinius-boot:6804 plinius-boot:8288
 msgid "Restart phone"
 msgstr "Uruchom ponownie telefon"
 
-#: plinius-boot:5983 plinius-boot:6007 plinius-boot:6094 plinius-boot:7572
-#: plinius-boot:7583 plinius-boot:7734
+#: plinius-boot:6115 plinius-boot:6139 plinius-boot:6226 plinius-boot:7714
+#: plinius-boot:7725 plinius-boot:7881
 msgid "Restart into bootloader"
 msgstr "Uruchom ponownie w bootloaderze"
 
-#: plinius-boot:5988
+#: plinius-boot:6120
 msgid ""
 "Starts a small system only in memory; nothing is written to the phone. "
 "Afterwards all partitions can be backed up and restored. The kernel comes "
@@ -1637,19 +1655,19 @@ msgstr ""
 "obrazu rozruchowego tego telefonu, na przykład z wcześniejszej kopii "
 "zapasowej lub z pliku boot.img Ubuntu Touch."
 
-#: plinius-boot:5991 plinius-boot:7353
+#: plinius-boot:6123 plinius-boot:7495
 msgid "Kernel"
 msgstr "Jądro"
 
-#: plinius-boot:5992 plinius-boot:6084 plinius-boot:7781
+#: plinius-boot:6124 plinius-boot:6216 plinius-boot:7928
 msgid "Choose file…"
 msgstr "Wybierz plik…"
 
-#: plinius-boot:5996 plinius-boot:6030 plinius-boot:6067 plinius-boot:7775
+#: plinius-boot:6128 plinius-boot:6162 plinius-boot:6199 plinius-boot:7922
 msgid "Start rescue system"
 msgstr "Uruchom system ratunkowy"
 
-#: plinius-boot:6005
+#: plinius-boot:6137
 msgid ""
 "For a complete backup without a running system, restart into the bootloader "
 "and start the rescue system there."
@@ -1657,13 +1675,13 @@ msgstr ""
 "Aby utworzyć pełną kopię zapasową bez działającego systemu, uruchom ponownie "
 "telefon w bootloaderze i uruchom tam system ratunkowy."
 
-#: plinius-boot:6018
+#: plinius-boot:6150
 msgid "Or start the rescue system once more, for example for another backup."
 msgstr ""
 "Albo uruchom system ratunkowy jeszcze raz, na przykład dla kolejnej kopii "
 "zapasowej."
 
-#: plinius-boot:6022 plinius-boot:7763
+#: plinius-boot:6154 plinius-boot:7910
 #, python-brace-format
 msgid ""
 "This phone's bootloader cannot start a system from memory. The rescue system "
@@ -1677,20 +1695,20 @@ msgstr ""
 "wybranego pliku i tylko wtedy, gdy zgadza się z sumą kontrolną oczekiwaną "
 "przez telefon."
 
-#: plinius-boot:6054 plinius-boot:6201 plinius-boot:7797
+#: plinius-boot:6186 plinius-boot:6333 plinius-boot:7944
 msgid "The rescue system could not be started"
 msgstr "Nie udało się uruchomić systemu ratunkowego"
 
-#: plinius-boot:6057 plinius-boot:6204
+#: plinius-boot:6189 plinius-boot:6336
 msgid "The rescue system is starting. The phone appears in a moment."
 msgstr "System ratunkowy się uruchamia. Telefon za chwilę się pojawi."
 
-#: plinius-boot:6064
+#: plinius-boot:6196
 #, python-brace-format
 msgid "Write the rescue system to {name}?"
 msgstr "Zapisać system ratunkowy do {name}?"
 
-#: plinius-boot:6065
+#: plinius-boot:6197
 msgid ""
 "Until the original is written back, the phone starts only the rescue system. "
 "The app does that from the phone's page when you are done."
@@ -1698,7 +1716,7 @@ msgstr ""
 "Dopóki oryginał nie zostanie przywrócony, telefon uruchamia tylko system "
 "ratunkowy. Aplikacja zrobi to ze strony telefonu, gdy skończysz."
 
-#: plinius-boot:6075
+#: plinius-boot:6207
 #, python-brace-format
 msgid ""
 "The rescue system is in {name}, so the phone does not start its own system "
@@ -1709,7 +1727,7 @@ msgstr ""
 "dopóki oryginał nie zostanie przywrócony. Najpierw wykonaj kopię zapasową; "
 "dla {name} również zapisze ona oryginał."
 
-#: plinius-boot:6078
+#: plinius-boot:6210
 #, python-brace-format
 msgid ""
 "The rescue system is still in {name}, so the phone does not start its own "
@@ -1718,20 +1736,20 @@ msgstr ""
 "System ratunkowy nadal jest w {name}, więc telefon nie uruchomi własnego "
 "systemu, dopóki oryginał nie zostanie przywrócony."
 
-#: plinius-boot:6081 plinius-boot:6248
+#: plinius-boot:6213 plinius-boot:6380
 #, python-brace-format
 msgid "Original {name}"
 msgstr "Oryginalny {name}"
 
-#: plinius-boot:6081 plinius-boot:6248 plinius-boot:7511
+#: plinius-boot:6213 plinius-boot:6380 plinius-boot:7653
 msgid "Searching…"
 msgstr "Wyszukiwanie…"
 
-#: plinius-boot:6088 plinius-boot:7600 plinius-boot:8138
+#: plinius-boot:6220 plinius-boot:7742 plinius-boot:8285 plinius-boot:8439
 msgid "Write original back and restart"
 msgstr "Przywróć oryginał i uruchom ponownie"
 
-#: plinius-boot:6107
+#: plinius-boot:6239
 msgid ""
 "Not found on the update server. Choose the init_boot.img or the full update "
 "package of the installed system."
@@ -1739,32 +1757,32 @@ msgstr ""
 "Nie znaleziono na serwerze aktualizacji. Wybierz init_boot.img lub pełny "
 "pakiet aktualizacji zainstalowanego systemu."
 
-#: plinius-boot:6111 plinius-boot:6296
+#: plinius-boot:6243 plinius-boot:6428
 #, python-brace-format
 msgid "{source}, checksum matches"
 msgstr "{source}, suma kontrolna się zgadza"
 
-#: plinius-boot:6116
+#: plinius-boot:6248
 msgid "Original image or update package"
 msgstr "Oryginalny obraz lub pakiet aktualizacji"
 
-#: plinius-boot:6124
+#: plinius-boot:6256
 msgid "Checking…"
 msgstr "Sprawdzanie…"
 
-#: plinius-boot:6152
+#: plinius-boot:6284
 msgid "The original was not written back"
 msgstr "Nie przywrócono oryginału"
 
-#: plinius-boot:6155
+#: plinius-boot:6287
 msgid "The original is back; the phone is starting its own system."
 msgstr "Oryginał został przywrócony; telefon uruchamia własny system."
 
-#: plinius-boot:6162
+#: plinius-boot:6294
 msgid "Write the original back?"
 msgstr "Przywrócić oryginał?"
 
-#: plinius-boot:6163
+#: plinius-boot:6295
 #, python-brace-format
 msgid ""
 "The phone restarts into the bootloader, gets the original {name} and then "
@@ -1773,50 +1791,50 @@ msgstr ""
 "Telefon uruchomi się ponownie w bootloaderze, otrzyma oryginalny {name}, a "
 "potem uruchomi własny system. System ratunkowy zniknie."
 
-#: plinius-boot:6165
+#: plinius-boot:6297
 msgid "Write back and restart"
 msgstr "Przywróć i uruchom ponownie"
 
-#: plinius-boot:6171 plinius-boot:7780
+#: plinius-boot:6303 plinius-boot:7927
 msgid ""
 "No boot image found in the backups of this phone. Choose a boot image file."
 msgstr ""
 "W kopiach zapasowych tego telefonu nie znaleziono obrazu rozruchowego. "
 "Wybierz plik obrazu rozruchowego."
 
-#: plinius-boot:6176
+#: plinius-boot:6308
 msgid "Boot image with kernel"
 msgstr "Obraz rozruchowy z jądrem"
 
-#: plinius-boot:6188
+#: plinius-boot:6320
 msgid "This file is not a boot image with a kernel."
 msgstr "Ten plik nie jest obrazem rozruchowym z jądrem."
 
-#: plinius-boot:6211
+#: plinius-boot:6343
 msgid "Restart into bootloader?"
 msgstr "Uruchomić ponownie w bootloaderze?"
 
-#: plinius-boot:6211
+#: plinius-boot:6343
 msgid "Restart phone?"
 msgstr "Uruchomić ponownie telefon?"
 
-#: plinius-boot:6212
+#: plinius-boot:6344
 msgid "The phone restarts into the bootloader (fastboot mode)."
 msgstr "Telefon uruchomi się ponownie w bootloaderze (tryb fastboot)."
 
-#: plinius-boot:6213
+#: plinius-boot:6345
 msgid "The phone restarts into its normal system."
 msgstr "Telefon uruchomi się ponownie w swoim normalnym systemie."
 
-#: plinius-boot:6220 plinius-boot:6664 plinius-boot:7624 plinius-boot:7753
+#: plinius-boot:6352 plinius-boot:6796 plinius-boot:7766 plinius-boot:7900
 msgid "The phone is restarting"
 msgstr "Telefon uruchamia się ponownie"
 
-#: plinius-boot:6233 plinius-boot:6276
+#: plinius-boot:6365 plinius-boot:6408
 msgid "Create backup"
 msgstr "Utwórz kopię zapasową"
 
-#: plinius-boot:6246
+#: plinius-boot:6378
 #, python-brace-format
 msgid ""
 "The rescue system is in {name}. The backup gets the original of {name} as "
@@ -1825,49 +1843,49 @@ msgstr ""
 "System ratunkowy jest w {name}. Kopia zapasowa dostanie też oryginał {name}, "
 "jeśli zostanie znaleziony."
 
-#: plinius-boot:6258 plinius-boot:7630
+#: plinius-boot:6390 plinius-boot:7772
 msgid "Storage location"
 msgstr "Miejsce zapisu"
 
-#: plinius-boot:6260 plinius-boot:7632
+#: plinius-boot:6392 plinius-boot:7774
 msgid "Change…"
 msgstr "Zmień…"
 
-#: plinius-boot:6265 plinius-boot:7366
+#: plinius-boot:6397 plinius-boot:7508
 msgid "Partitions"
 msgstr "Partycje"
 
-#: plinius-boot:6266 plinius-boot:8623
+#: plinius-boot:6398 plinius-boot:9033
 msgid "One moment…"
 msgstr "Chwileczkę…"
 
-#: plinius-boot:6293
+#: plinius-boot:6425
 msgid "Not found on the update server; the backup is made without it."
 msgstr "Nie znaleziono na serwerze aktualizacji; kopia powstanie bez niego."
 
-#: plinius-boot:6303 plinius-boot:6534
+#: plinius-boot:6435 plinius-boot:6666
 #, python-brace-format
 msgid "Could not read the partition list: {error}"
 msgstr "Nie udało się odczytać listy partycji: {error}"
 
-#: plinius-boot:6308
+#: plinius-boot:6440
 msgid "What is backed up"
 msgstr "Co zostanie zapisane"
 
-#: plinius-boot:6309
+#: plinius-boot:6441
 msgid "Everything Plinius overwrites"
 msgstr "Wszystko, co Plinius nadpisze"
 
-#: plinius-boot:6309
+#: plinius-boot:6441
 #, python-brace-format
 msgid "{size}; packed, the backup is mostly much smaller."
 msgstr "{size}; po spakowaniu kopia jest zwykle znacznie mniejsza."
 
-#: plinius-boot:6324
+#: plinius-boot:6456
 msgid "backup only"
 msgstr "tylko kopia zapasowa"
 
-#: plinius-boot:6342 plinius-boot:6571
+#: plinius-boot:6474 plinius-boot:6703
 #, python-brace-format
 msgid "{n} partition selected, {size}"
 msgid_plural "{n} partitions selected, {size}"
@@ -1875,21 +1893,21 @@ msgstr[0] "Wybrano {n} partycję, {size}"
 msgstr[1] "Wybrano {n} partycje, {size}"
 msgstr[2] "Wybrano {n} partycji, {size}"
 
-#: plinius-boot:6347
+#: plinius-boot:6479
 #, python-brace-format
 msgid "Waiting for the original of {name}…"
 msgstr "Oczekiwanie na oryginał {name}…"
 
-#: plinius-boot:6349
+#: plinius-boot:6481
 #, python-brace-format
 msgid "{size} to back up"
 msgstr "{size} do zapisania"
 
-#: plinius-boot:6353
+#: plinius-boot:6485
 msgid "Getting the last part from the update server…"
 msgstr "Pobieranie ostatniej części z serwera aktualizacji…"
 
-#: plinius-boot:6355
+#: plinius-boot:6487
 msgid ""
 "A part is not on the update server, so this backup is no way back. Advanced "
 "in the menu has more ways."
@@ -1897,11 +1915,11 @@ msgstr ""
 "Części nie ma na serwerze aktualizacji, więc ta kopia nie pozwoli wrócić. "
 "Zaawansowane w menu oferują inne sposoby."
 
-#: plinius-boot:6372
+#: plinius-boot:6504
 msgid "Some partitions are in use"
 msgstr "Niektóre partycje są w użyciu"
 
-#: plinius-boot:6373
+#: plinius-boot:6505
 #, python-brace-format
 msgid ""
 "{names} are mounted by the running system and can change while they are "
@@ -1912,15 +1930,15 @@ msgstr ""
 "odczytu. Ich kopia zapasowa może być niespójna. Aby uzyskać spójną kopię "
 "zapasową, uruchom system ratunkowy z bootloadera."
 
-#: plinius-boot:6376
+#: plinius-boot:6508
 msgid "Back up anyway"
 msgstr "Mimo to utwórz kopię"
 
-#: plinius-boot:6386
+#: plinius-boot:6518
 msgid "Possibly not enough space"
 msgstr "Możliwy brak miejsca"
 
-#: plinius-boot:6387
+#: plinius-boot:6519
 #, python-brace-format
 msgid ""
 "The selected partitions hold {total}, but only {free} are free in {dir}. "
@@ -1929,44 +1947,46 @@ msgstr ""
 "Wybrane partycje zajmują {total}, ale w {dir} wolne jest tylko {free}. Kopie "
 "zapasowe są kompresowane i często są znacznie mniejsze. Kontynuować mimo to?"
 
-#: plinius-boot:6390 plinius-boot:8673 plinius-boot:9105
+#: plinius-boot:6522 plinius-boot:9083 plinius-boot:9509
 msgid "Continue"
 msgstr "Dalej"
 
-#: plinius-boot:6400
+#: plinius-boot:6532
 msgid "Creating backup"
 msgstr "Tworzenie kopii zapasowej"
 
-#: plinius-boot:6424
+#: plinius-boot:6556
 msgid "Backup created"
 msgstr "Utworzono kopię zapasową"
 
-#: plinius-boot:6425 plinius-boot:6466
+#: plinius-boot:6557 plinius-boot:6598
 msgid "Show folder"
 msgstr "Pokaż katalog"
 
-#: plinius-boot:6426 plinius-boot:8116 plinius-boot:8857 plinius-boot:9100
+#: plinius-boot:6558 plinius-boot:8263 plinius-boot:8534 plinius-boot:9261
+#: plinius-boot:9504
 msgid "Done"
 msgstr "Gotowe"
 
-#: plinius-boot:6428
+#: plinius-boot:6560
 msgid "Backup cancelled"
 msgstr "Anulowano tworzenie kopii zapasowej"
 
-#: plinius-boot:6428
+#: plinius-boot:6560
 msgid "Nothing was saved."
 msgstr "Niczego nie zapisano."
 
-#: plinius-boot:6429 plinius-boot:6434 plinius-boot:6588 plinius-boot:6669
-#: plinius-boot:8120 plinius-boot:8123 plinius-boot:9109 plinius-boot:9113
+#: plinius-boot:6561 plinius-boot:6566 plinius-boot:6720 plinius-boot:6801
+#: plinius-boot:8267 plinius-boot:8270 plinius-boot:8538 plinius-boot:8542
+#: plinius-boot:9513 plinius-boot:9517
 msgid "Back"
 msgstr "Wstecz"
 
-#: plinius-boot:6431
+#: plinius-boot:6563
 msgid "Backup failed"
 msgstr "Tworzenie kopii zapasowej nie powiodło się"
 
-#: plinius-boot:6432
+#: plinius-boot:6564
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -1977,126 +1997,126 @@ msgstr ""
 "\n"
 "Zapisane dotąd partycje pozostają w {dir}."
 
-#: plinius-boot:6449
+#: plinius-boot:6581
 msgid "Backup"
 msgstr "Kopia zapasowa"
 
-#: plinius-boot:6455
+#: plinius-boot:6587
 msgid "Created"
 msgstr "Utworzono"
 
-#: plinius-boot:6456
+#: plinius-boot:6588
 msgid "Size on disk"
 msgstr "Rozmiar na dysku"
 
-#: plinius-boot:6456
+#: plinius-boot:6588
 msgid "Folder"
 msgstr "Katalog"
 
-#: plinius-boot:6459
+#: plinius-boot:6591
 msgid "Incomplete"
 msgstr "Niekompletna"
 
-#: plinius-boot:6459
+#: plinius-boot:6591
 msgid "This backup was interrupted. Only the listed partitions were saved."
 msgstr ""
 "Tworzenie tej kopii zapasowej zostało przerwane. Zapisano tylko wymienione "
 "partycje."
 
-#: plinius-boot:6465
+#: plinius-boot:6597
 msgid "Check backup"
 msgstr "Sprawdź kopię zapasową"
 
-#: plinius-boot:6468
+#: plinius-boot:6600
 msgid "Delete backup"
 msgstr "Usuń kopię zapasową"
 
-#: plinius-boot:6474 plinius-boot:6640
+#: plinius-boot:6606 plinius-boot:6772
 msgid "Restore"
 msgstr "Przywróć"
 
-#: plinius-boot:6475
+#: plinius-boot:6607
 msgid "Select a connected phone and the partitions to write back."
 msgstr "Wybierz podłączony telefon i partycje do ponownego zapisania."
 
-#: plinius-boot:6487
+#: plinius-boot:6619
 msgid "Restore…"
 msgstr "Przywróć…"
 
-#: plinius-boot:6508
+#: plinius-boot:6640
 msgid "No phone connected"
 msgstr "Nie podłączono telefonu"
 
-#: plinius-boot:6550
+#: plinius-boot:6682
 msgid "bootloader, only with confirmation"
 msgstr "bootloader, tylko po potwierdzeniu"
 
-#: plinius-boot:6552
+#: plinius-boot:6684
 msgid "saved while in use"
 msgstr "zapisana podczas działania"
 
-#: plinius-boot:6554
+#: plinius-boot:6686
 msgid "Connect a phone to restore."
 msgstr "Podłącz telefon, aby przywrócić."
 
-#: plinius-boot:6569
+#: plinius-boot:6701
 msgid "Connect the phone with a USB cable to restore this backup."
 msgstr "Podłącz telefon kablem USB, aby przywrócić tę kopię zapasową."
 
-#: plinius-boot:6577
+#: plinius-boot:6709
 msgid "Checking backup"
 msgstr "Sprawdzanie kopii zapasowej"
 
-#: plinius-boot:6590
+#: plinius-boot:6722
 msgid "Check failed"
 msgstr "Sprawdzanie nie powiodło się"
 
-#: plinius-boot:6592
+#: plinius-boot:6724
 msgid "Check cancelled"
 msgstr "Anulowano sprawdzanie"
 
-#: plinius-boot:6594
+#: plinius-boot:6726
 msgid "Backup damaged"
 msgstr "Kopia zapasowa jest uszkodzona"
 
-#: plinius-boot:6595
+#: plinius-boot:6727
 #, python-brace-format
 msgid "These partitions do not match their checksum: {names}"
 msgstr "Suma kontrolna tych partycji się nie zgadza: {names}"
 
-#: plinius-boot:6598
+#: plinius-boot:6730
 msgid "Backup is intact"
 msgstr "Kopia zapasowa jest nienaruszona"
 
-#: plinius-boot:6598
+#: plinius-boot:6730
 msgid "All partitions match their checksums."
 msgstr "Wszystkie sumy kontrolne się zgadzają."
 
-#: plinius-boot:6609
+#: plinius-boot:6741
 msgid "Backup deleted"
 msgstr "Usunięto kopię zapasową"
 
-#: plinius-boot:6611
+#: plinius-boot:6743
 #, python-brace-format
 msgid "The backup could not be deleted completely: {error}"
 msgstr "Nie udało się całkowicie usunąć kopii zapasowej: {error}"
 
-#: plinius-boot:6616
+#: plinius-boot:6748
 msgid "Delete backup?"
 msgstr "Usunąć kopię zapasową?"
 
-#: plinius-boot:6617
+#: plinius-boot:6749
 #, python-brace-format
 msgid "The backup from {date} is deleted from {dir}. This cannot be undone."
 msgstr ""
 "Kopia zapasowa z {date} zostanie usunięta z {dir}. Tej operacji nie można "
 "cofnąć."
 
-#: plinius-boot:6619
+#: plinius-boot:6751
 msgid "Delete"
 msgstr "Usuń"
 
-#: plinius-boot:6625
+#: plinius-boot:6757
 #, python-brace-format
 msgid ""
 "The current content of these partitions on the {device} is overwritten: "
@@ -2109,7 +2129,7 @@ msgstr ""
 "\n"
 "Tej operacji nie można cofnąć. Nie odłączaj kabla przed zakończeniem."
 
-#: plinius-boot:6629
+#: plinius-boot:6761
 #, python-brace-format
 msgid ""
 "Note: this backup was made on a different phone (serial number {serial})."
@@ -2117,7 +2137,7 @@ msgstr ""
 "Uwaga: ta kopia zapasowa została utworzona na innym telefonie (numer seryjny "
 "{serial})."
 
-#: plinius-boot:6634
+#: plinius-boot:6766
 #, python-brace-format
 msgid ""
 "{names} belong to the bootloader and its security settings. Writing an older "
@@ -2131,11 +2151,11 @@ msgstr ""
 "bootloader. Przywracaj je tylko wtedy, gdy pasują do obecnie zainstalowanego "
 "systemu."
 
-#: plinius-boot:6638
+#: plinius-boot:6770
 msgid "I understand the risk"
 msgstr "Rozumiem ryzyko"
 
-#: plinius-boot:6639
+#: plinius-boot:6771
 #, python-brace-format
 msgid "Restore {n} partition?"
 msgid_plural "Restore {n} partitions?"
@@ -2143,23 +2163,23 @@ msgstr[0] "Przywrócić {n} partycję?"
 msgstr[1] "Przywrócić {n} partycje?"
 msgstr[2] "Przywrócić {n} partycji?"
 
-#: plinius-boot:6649
+#: plinius-boot:6781
 msgid "Restoring backup"
 msgstr "Przywracanie kopii zapasowej"
 
-#: plinius-boot:6671
+#: plinius-boot:6803
 msgid "Backup restored"
 msgstr "Przywrócono kopię zapasową"
 
-#: plinius-boot:6671
+#: plinius-boot:6803
 msgid "Restart the phone to use the restored partitions."
 msgstr "Uruchom ponownie telefon, aby używać przywróconych partycji."
 
-#: plinius-boot:6674
+#: plinius-boot:6806
 msgid "Restore cancelled"
 msgstr "Anulowano przywracanie"
 
-#: plinius-boot:6675
+#: plinius-boot:6807
 msgid ""
 "The partition being written may now be incomplete. Restore it again before "
 "restarting the phone."
@@ -2167,15 +2187,15 @@ msgstr ""
 "Zapisywana partycja może być teraz niekompletna. Przywróć ją ponownie przed "
 "ponownym uruchomieniem telefonu."
 
-#: plinius-boot:6678
+#: plinius-boot:6810
 msgid "Restore failed"
 msgstr "Przywracanie nie powiodło się"
 
-#: plinius-boot:6695 plinius-boot:7742
+#: plinius-boot:6827 plinius-boot:7889
 msgid "Back up first"
 msgstr "Najpierw utwórz kopię zapasową"
 
-#: plinius-boot:6696
+#: plinius-boot:6828
 msgid ""
 "A backup made in this run of the rescue system counts: of these partitions "
 "alone, or of the whole phone."
@@ -2183,44 +2203,44 @@ msgstr ""
 "Liczy się kopia zapasowa wykonana w tym uruchomieniu systemu ratunkowego: "
 "tylko tych partycji albo całego telefonu."
 
-#: plinius-boot:6697
+#: plinius-boot:6829
 msgid "A backup made in this run of the rescue system holds them."
 msgstr ""
 "Zawiera je kopia zapasowa wykonana w tym uruchomieniu systemu ratunkowego."
 
-#: plinius-boot:6700
+#: plinius-boot:6832
 msgid "Erased when the bootloader was unlocked: nothing to back up"
 msgstr "Wyczyszczona przy odblokowaniu bootloadera: nie ma czego zapisywać"
 
-#: plinius-boot:6702
+#: plinius-boot:6834
 msgid "Backed up"
 msgstr "Zapisana"
 
-#: plinius-boot:6704
+#: plinius-boot:6836
 msgid ""
 "Not backed up yet. It counts with the original only, not with the rescue "
 "system."
 msgstr ""
 "Jeszcze niezapisana. Liczy się tylko z oryginałem, nie z systemem ratunkowym."
 
-#: plinius-boot:6706 plinius-boot:9001
+#: plinius-boot:6838 plinius-boot:9405
 msgid "Not backed up yet"
 msgstr "Jeszcze niezapisana"
 
-#: plinius-boot:6712
+#: plinius-boot:6844
 msgid "Back up these partitions…"
 msgstr "Utwórz kopię tych partycji…"
 
-#: plinius-boot:6715
+#: plinius-boot:6847
 msgid "Back up the whole phone…"
 msgstr "Utwórz kopię całego telefonu…"
 
-#: plinius-boot:6748 plinius-boot:6749
+#: plinius-boot:6880 plinius-boot:6881
 msgid "Restart the phone into its normal system (Volla OS or Android)."
 msgstr ""
 "Uruchom ponownie telefon w jego zwykłym systemie (Volla OS lub Android)."
 
-#: plinius-boot:6750
+#: plinius-boot:6882
 msgid ""
 "Open Settings → About phone and tap “Build number” seven times until the "
 "developer options are turned on."
@@ -2228,12 +2248,12 @@ msgstr ""
 "Otwórz Ustawienia → Informacje o telefonie i dotknij siedem razy „Numer "
 "kompilacji”, aż opcje programisty zostaną włączone."
 
-#: plinius-boot:6752 plinius-boot:8672
+#: plinius-boot:6884 plinius-boot:9082
 msgid "Open Settings → System → Developer options and turn on “OEM unlocking”."
 msgstr ""
 "Otwórz Ustawienia → System → Opcje programisty i włącz „Odblokowanie OEM”."
 
-#: plinius-boot:6753
+#: plinius-boot:6885
 msgid ""
 "Start the bootloader again: turn the phone off, hold Volume down and Power "
 "until a menu appears, select “fastboot” with Volume down and confirm with "
@@ -2244,14 +2264,14 @@ msgstr ""
 "„fastboot” przyciskiem zmniejszania głośności i potwierdź przyciskiem "
 "zasilania."
 
-#: plinius-boot:6755
+#: plinius-boot:6887
 msgid ""
 "Click “Unlock bootloader” below and confirm on the phone with Volume up."
 msgstr ""
 "Kliknij poniżej „Odblokuj bootloader” i potwierdź na telefonie przyciskiem "
 "zwiększania głośności."
 
-#: plinius-boot:6756
+#: plinius-boot:6888
 msgid ""
 "The app then formats the data partition. Without this step Volla OS keeps "
 "restarting."
@@ -2259,83 +2279,83 @@ msgstr ""
 "Następnie aplikacja sformatuje partycję danych. Bez tego kroku Volla OS "
 "będzie ciągle uruchamiać się ponownie."
 
-#: plinius-boot:6762
+#: plinius-boot:6894
 msgid "On the phone"
 msgstr "Na telefonie"
 
-#: plinius-boot:6771
+#: plinius-boot:6903
 msgid "Android or Volla OS"
 msgstr "Android lub Volla OS"
 
-#: plinius-boot:6771 plinius-boot:7337
+#: plinius-boot:6903 plinius-boot:7479
 msgid "The version shows once the rescue system runs."
 msgstr "Wersja pojawi się po uruchomieniu systemu ratunkowego."
 
-#: plinius-boot:6780
+#: plinius-boot:6912
 msgid "No memory card found."
 msgstr "Nie znaleziono karty pamięci."
 
-#: plinius-boot:6782 plinius-boot:7269 plinius-boot:7432
+#: plinius-boot:6914 plinius-boot:7411 plinius-boot:7574
 #, python-brace-format
 msgid "{size}, of which {free} are free"
 msgstr "{size}, z czego wolne: {free}"
 
-#: plinius-boot:6797
+#: plinius-boot:6929
 #, python-brace-format
 msgid "System: partition {number}, {size}"
 msgstr "System: partycja {number}, {size}"
 
-#: plinius-boot:6799
+#: plinius-boot:6931
 #, python-brace-format
 msgid "Data: partition {number}, {size}"
 msgstr "Dane: partycja {number}, {size}"
 
-#: plinius-boot:6804 plinius-boot:7206 plinius-boot:7355 plinius-boot:7425
+#: plinius-boot:6936 plinius-boot:7348 plinius-boot:7497 plinius-boot:7567
 msgid "running now"
 msgstr "działa teraz"
 
-#: plinius-boot:6813 plinius-boot:7167 plinius-boot:7341
+#: plinius-boot:6945 plinius-boot:7309 plinius-boot:7483
 msgid "no system found"
 msgstr "nie znaleziono systemu"
 
-#: plinius-boot:6821 plinius-boot:7367
+#: plinius-boot:6953 plinius-boot:7509
 msgid "Data"
 msgstr "Dane"
 
-#: plinius-boot:6823 plinius-boot:7199 plinius-boot:7846
+#: plinius-boot:6955 plinius-boot:7341 plinius-boot:7993
 #, python-brace-format
 msgid "{used} of {size} in use"
 msgstr "{used} z {size} w użyciu"
 
-#: plinius-boot:6825
+#: plinius-boot:6957
 #, python-brace-format
 msgid "{label}: partition {number}, {size}"
 msgstr "{label}: partycja {number}, {size}"
 
-#: plinius-boot:6845
+#: plinius-boot:6977
 #, python-brace-format
 msgid "{others} starts with the kernel of this system. It stays in place."
 msgstr ""
 "Z jądrem tego systemu uruchamia się: {others}. Jądro zostaje na swoim "
 "miejscu."
 
-#: plinius-boot:6849
+#: plinius-boot:6981
 msgid "Install a system here"
 msgstr "Zainstaluj tutaj system"
 
-#: plinius-boot:6850
+#: plinius-boot:6982
 msgid "Replaces the system on this place with an image file. The kernel stays."
 msgstr "Zastępuje system w tym miejscu plikiem obrazu. Jądro zostaje."
 
-#: plinius-boot:6851 plinius-boot:7925
+#: plinius-boot:6983 plinius-boot:8072
 msgid "Choose image…"
 msgstr "Wybierz obraz…"
 
-#: plinius-boot:6860
+#: plinius-boot:6992
 msgid "Move this system"
 msgstr "Przenieś ten system"
 
-#: plinius-boot:6861
+#: plinius-boot:6993
 msgid ""
 "Copies it to another place. This place stays as it is until you use it for "
 "something else."
@@ -2343,19 +2363,19 @@ msgstr ""
 "Kopiuje go w inne miejsce. To miejsce pozostaje bez zmian, dopóki nie "
 "użyjesz go do czegoś innego."
 
-#: plinius-boot:6864
+#: plinius-boot:6996
 msgid "Free partitions"
 msgstr "Wolne partycje"
 
-#: plinius-boot:6870
+#: plinius-boot:7002
 msgid "There is no other place on this memory card."
 msgstr "Na tej karcie pamięci nie ma innego miejsca."
 
-#: plinius-boot:6874
+#: plinius-boot:7006
 msgid "Swap places"
 msgstr "Zamień miejscami"
 
-#: plinius-boot:6875
+#: plinius-boot:7007
 msgid ""
 "Both systems change places, through copies on this PC. They stay there until "
 "you delete them."
@@ -2363,39 +2383,39 @@ msgstr ""
 "Oba systemy zamieniają się miejscami, przez kopie na tym PC. Kopie zostają "
 "tam, dopóki ich nie usuniesz."
 
-#: plinius-boot:6899 plinius-boot:7929
+#: plinius-boot:7031 plinius-boot:8076
 msgid "Image of a system"
 msgstr "Obraz systemu"
 
-#: plinius-boot:6906 plinius-boot:7936
+#: plinius-boot:7038 plinius-boot:8083
 msgid "Checking the image…"
 msgstr "Sprawdzanie obrazu…"
 
-#: plinius-boot:6912 plinius-boot:6926 plinius-boot:7943 plinius-boot:8371
+#: plinius-boot:7044 plinius-boot:7058 plinius-boot:8090 plinius-boot:8774
 msgid "This image cannot be installed"
 msgstr "Nie można zainstalować tego obrazu"
 
-#: plinius-boot:6929
+#: plinius-boot:7061
 msgid "Name in the boot menu"
 msgstr "Nazwa w menu rozruchowym"
 
-#: plinius-boot:6933
+#: plinius-boot:7065
 msgid "Empty the data of the old system"
 msgstr "Opróżnij dane starego systemu"
 
-#: plinius-boot:6934
+#: plinius-boot:7066
 msgid "Old data rarely fits another system."
 msgstr "Stare dane rzadko pasują do innego systemu."
 
-#: plinius-boot:6936 plinius-boot:6962 plinius-boot:7865
+#: plinius-boot:7068 plinius-boot:7094 plinius-boot:8012
 msgid "Keep a copy on this PC"
 msgstr "Zachowaj kopię na tym PC"
 
-#: plinius-boot:6937
+#: plinius-boot:7069
 msgid "The way back if the new system does not start."
 msgstr "Droga powrotu, jeśli nowy system się nie uruchomi."
 
-#: plinius-boot:6939
+#: plinius-boot:7071
 #, python-brace-format
 msgid ""
 "{new} goes to partitions {system} and {data}, which get a new entry in the "
@@ -2404,37 +2424,37 @@ msgstr ""
 "System {new} trafi na partycje {system} i {data}, które dostaną nowy wpis w "
 "menu rozruchowym."
 
-#: plinius-boot:6941
+#: plinius-boot:7073
 #, python-brace-format
 msgid "{old} on partition {number} will be overwritten with {new}."
 msgstr "System {old} na partycji {number} zostanie nadpisany systemem {new}."
 
-#: plinius-boot:6951
+#: plinius-boot:7083
 msgid "Installing a system"
 msgstr "Instalowanie systemu"
 
-#: plinius-boot:6953 plinius-boot:7979
+#: plinius-boot:7085 plinius-boot:8126
 msgid "The system is installed"
 msgstr "System jest zainstalowany"
 
-#: plinius-boot:6954
+#: plinius-boot:7086
 msgid "Restart the phone and choose it in the boot menu."
 msgstr "Uruchom ponownie telefon i wybierz go w menu rozruchowym."
 
-#: plinius-boot:6956
+#: plinius-boot:7088
 #, python-brace-format
 msgid "Install {name}?"
 msgstr "Zainstalować {name}?"
 
-#: plinius-boot:6957 plinius-boot:8181
+#: plinius-boot:7089 plinius-boot:8584
 msgid "Install"
 msgstr "Zainstaluj"
 
-#: plinius-boot:6963
+#: plinius-boot:7095
 msgid "The way back for what is overwritten."
 msgstr "Droga powrotu dla tego, co zostanie nadpisane."
 
-#: plinius-boot:6966
+#: plinius-boot:7098
 #, python-brace-format
 msgid ""
 "{old} will be overwritten and leaves the boot menu. {new} then starts from "
@@ -2443,12 +2463,12 @@ msgstr ""
 "System {old} zostanie nadpisany i zniknie z menu rozruchowego. System {new} "
 "będzie potem uruchamiany z tego miejsca."
 
-#: plinius-boot:6969
+#: plinius-boot:7101
 #, python-brace-format
 msgid "{new} then starts from partitions {system} and {data}."
 msgstr "System {new} będzie potem uruchamiany z partycji {system} i {data}."
 
-#: plinius-boot:6973
+#: plinius-boot:7105
 #, python-brace-format
 msgid ""
 "For copying, the file system on partition {numbers} is made smaller for a "
@@ -2457,15 +2477,15 @@ msgstr ""
 "Na czas kopiowania system plików na partycji {numbers} zostanie zmniejszony. "
 "Jego zawartość się nie zmieni."
 
-#: plinius-boot:6981
+#: plinius-boot:7113
 msgid "Moving a system"
 msgstr "Przenoszenie systemu"
 
-#: plinius-boot:6983
+#: plinius-boot:7115
 msgid "The system is moved"
 msgstr "System został przeniesiony"
 
-#: plinius-boot:6983
+#: plinius-boot:7115
 msgid ""
 "Restart the phone and check that it starts. The old partitions stay as they "
 "are until you use them."
@@ -2473,16 +2493,16 @@ msgstr ""
 "Uruchom ponownie telefon i sprawdź, czy system się uruchamia. Stare partycje "
 "pozostają bez zmian, dopóki ich nie użyjesz."
 
-#: plinius-boot:6986
+#: plinius-boot:7118
 #, python-brace-format
 msgid "Move {name}?"
 msgstr "Przenieść {name}?"
 
-#: plinius-boot:6987
+#: plinius-boot:7119
 msgid "Move"
 msgstr "Przenieś"
 
-#: plinius-boot:6992
+#: plinius-boot:7124
 #, python-brace-format
 msgid ""
 "{a} and {b} change places. Both are first copied to this PC and checked; "
@@ -2492,15 +2512,15 @@ msgstr ""
 "ten PC i sprawdzone; dopiero potem cokolwiek zostanie nadpisane. Jeśli "
 "proces się zatrzyma, można go kontynuować od tego miejsca."
 
-#: plinius-boot:7006 plinius-boot:8051
+#: plinius-boot:7138 plinius-boot:8198
 msgid "Swapping systems"
 msgstr "Zamienianie systemów"
 
-#: plinius-boot:7006 plinius-boot:8052
+#: plinius-boot:7138 plinius-boot:8199
 msgid "The systems have swapped places"
 msgstr "Systemy zamieniły się miejscami"
 
-#: plinius-boot:7007 plinius-boot:8053
+#: plinius-boot:7139 plinius-boot:8200
 msgid ""
 "Restart the phone and check that both start. The copies stay on this PC "
 "until you delete them."
@@ -2508,20 +2528,24 @@ msgstr ""
 "Uruchom ponownie telefon i sprawdź, czy oba systemy się uruchamiają. Kopie "
 "zostają na tym PC, dopóki ich nie usuniesz."
 
-#: plinius-boot:7009
+#: plinius-boot:7141
 #, python-brace-format
 msgid "Swap {a} and {b}?"
 msgstr "Zamienić systemy {a} i {b}?"
 
-#: plinius-boot:7010
+#: plinius-boot:7142
 msgid "Swap"
 msgstr "Zamień"
 
-#: plinius-boot:7074
+#: plinius-boot:7162
+msgid "The current system"
+msgstr "Obecny system"
+
+#: plinius-boot:7216
 msgid "Choose in the boot menu"
 msgstr "Wybierz w menu rozruchu"
 
-#: plinius-boot:7075
+#: plinius-boot:7217
 #, python-brace-format
 msgid ""
 "With a memory card in the phone, its boot menu appears for a few seconds. "
@@ -2536,115 +2560,115 @@ msgstr ""
 "pozycja uruchamia coś innego, także inny system ratunkowy. Jeśli tak się "
 "stanie, uruchom telefon ponownie i wybierz jeszcze raz."
 
-#: plinius-boot:7080
+#: plinius-boot:7222
 msgid "Waiting for the phone. If nothing happens, check the cable."
 msgstr "Oczekiwanie na telefon. Jeśli nic się nie dzieje, sprawdź kabel."
 
-#: plinius-boot:7090
+#: plinius-boot:7232
 msgid "Reading what is installed…"
 msgstr "Odczytywanie tego, co jest zainstalowane…"
 
-#: plinius-boot:7099
+#: plinius-boot:7241
 msgid "Could not read what is installed"
 msgstr "Nie udało się odczytać tego, co jest zainstalowane"
 
-#: plinius-boot:7134
+#: plinius-boot:7276
 msgid "Volla OS"
 msgstr "Volla OS"
 
-#: plinius-boot:7165
+#: plinius-boot:7307
 msgid "The phone's own system"
 msgstr "Własny system telefonu"
 
-#: plinius-boot:7169
+#: plinius-boot:7311
 msgid "Its partitions are not there"
 msgstr "Brak jego partycji"
 
-#: plinius-boot:7170 plinius-boot:7303 plinius-boot:7338 plinius-boot:7342
+#: plinius-boot:7312 plinius-boot:7445 plinius-boot:7480 plinius-boot:7484
 msgid "Phone storage"
 msgstr "Pamięć telefonu"
 
-#: plinius-boot:7202
+#: plinius-boot:7344
 msgid "type Linux /home"
 msgstr "typ Linux /home"
 
-#: plinius-boot:7268
+#: plinius-boot:7410
 msgid "Partitioning of the memory card"
 msgstr "Podział karty pamięci"
 
-#: plinius-boot:7274
+#: plinius-boot:7416
 msgid "Free space"
 msgstr "Wolne miejsce"
 
-#: plinius-boot:7282
+#: plinius-boot:7424
 msgid "Boot menu and kernels"
 msgstr "Menu startowe i jądra"
 
-#: plinius-boot:7284 plinius-boot:7313
+#: plinius-boot:7426 plinius-boot:7455
 #, python-brace-format
 msgid "System of {title}"
 msgstr "System {title}"
 
-#: plinius-boot:7284 plinius-boot:7313
+#: plinius-boot:7426 plinius-boot:7455
 #, python-brace-format
 msgid "Data of {title}"
 msgstr "Dane {title}"
 
-#: plinius-boot:7287 plinius-boot:7314
+#: plinius-boot:7429 plinius-boot:7456
 msgid "Not used by any boot entry"
 msgstr "Nieużywana przez żaden wpis startowy"
 
-#: plinius-boot:7319
+#: plinius-boot:7461
 msgid "The partitions show once the rescue system runs."
 msgstr "Partycje pojawią się, gdy działa system ratunkowy."
 
-#: plinius-boot:7338 plinius-boot:7342
+#: plinius-boot:7480 plinius-boot:7484
 msgid "Medium"
 msgstr "Nośnik"
 
-#: plinius-boot:7347
+#: plinius-boot:7489
 #, python-brace-format
 msgid "Folder {folder} in the boot menu partition"
 msgstr "Folder {folder} na partycji menu startowego"
 
-#: plinius-boot:7349
+#: plinius-boot:7491
 #, python-brace-format
 msgid "the kernel of {title}"
 msgstr "jądro {title}"
 
-#: plinius-boot:7352
+#: plinius-boot:7494
 #, python-brace-format
 msgid "also starts {titles}"
 msgstr "uruchamia też {titles}"
 
-#: plinius-boot:7355
+#: plinius-boot:7497
 msgid "State"
 msgstr "Stan"
 
-#: plinius-boot:7357 plinius-boot:7376
+#: plinius-boot:7499 plinius-boot:7518
 msgid "Boot entry"
 msgstr "Wpis startowy"
 
-#: plinius-boot:7373
+#: plinius-boot:7515
 msgid "The partitions of this entry are not on the memory card."
 msgstr "Partycji tego wpisu nie ma na karcie pamięci."
 
-#: plinius-boot:7376
+#: plinius-boot:7518
 msgid "As the bootloader reads it."
 msgstr "Tak, jak czyta go bootloader."
 
-#: plinius-boot:7413
+#: plinius-boot:7555
 msgid "The systems the phone offers when it starts, in this order."
 msgstr "Systemy, które telefon oferuje przy starcie, w tej kolejności."
 
-#: plinius-boot:7415
+#: plinius-boot:7557
 msgid ""
 "Without a memory card the phone shows no boot menu and starts its own system."
 msgstr ""
 "Bez karty pamięci telefon nie pokazuje menu startowego i uruchamia własny "
 "system."
 
-#: plinius-boot:7417
+#: plinius-boot:7559
 msgid ""
 "The boot menu is on the memory card. It shows once the rescue system runs, "
 "or with an administrator login to Linux on the phone."
@@ -2652,11 +2676,11 @@ msgstr ""
 "Menu startowe jest na karcie pamięci. Pojawi się, gdy działa system "
 "ratunkowy, albo po zalogowaniu jako administrator do Linuksa na telefonie."
 
-#: plinius-boot:7420 plinius-boot:7471 plinius-boot:7618
+#: plinius-boot:7562 plinius-boot:7613 plinius-boot:7760
 msgid "Boot menu"
 msgstr "Menu startowe"
 
-#: plinius-boot:7441
+#: plinius-boot:7583
 msgid ""
 "The complete picture, including the memory card, shows once the rescue "
 "system runs."
@@ -2664,15 +2688,15 @@ msgstr ""
 "Pełny obraz, łącznie z kartą pamięci, pojawi się po uruchomieniu systemu "
 "ratunkowego."
 
-#: plinius-boot:7469
+#: plinius-boot:7611
 msgid "Systems"
 msgstr "Systemy"
 
-#: plinius-boot:7472
+#: plinius-boot:7614
 msgid "Backups"
 msgstr "Kopie zapasowe"
 
-#: plinius-boot:7509
+#: plinius-boot:7651
 msgid ""
 "Not connected. Connect the phone with a USB cable to see its systems. Its "
 "backups are on the Backups tab."
@@ -2680,23 +2704,23 @@ msgstr ""
 "Nie podłączony. Podłącz telefon kablem USB, aby zobaczyć jego systemy. Jego "
 "kopie zapasowe są na karcie Kopie zapasowe."
 
-#: plinius-boot:7518
+#: plinius-boot:7660
 msgid "The tools work"
 msgstr "Narzędzia działają"
 
-#: plinius-boot:7519
+#: plinius-boot:7661
 msgid "This is a Volla Phone Plinius"
 msgstr "To jest Volla Phone Plinius"
 
-#: plinius-boot:7520 plinius-boot:8549
+#: plinius-boot:7662 plinius-boot:8956
 msgid "This is not a Volla Phone Plinius"
 msgstr "To nie jest Volla Phone Plinius"
 
-#: plinius-boot:7521
+#: plinius-boot:7663
 msgid "Not known yet in this mode."
 msgstr "W tym trybie jeszcze nieznane."
 
-#: plinius-boot:7522
+#: plinius-boot:7664
 msgid ""
 "Backing up and restoring works, changing systems is only made for the "
 "Plinius."
@@ -2704,27 +2728,27 @@ msgstr ""
 "Tworzenie i przywracanie kopii zapasowych działa, zmiana systemu jest "
 "przewidziana tylko dla modelu Plinius."
 
-#: plinius-boot:7525
+#: plinius-boot:7667
 msgid "The bootloader is unlocked"
 msgstr "Bootloader jest odblokowany"
 
-#: plinius-boot:7525 plinius-boot:7758 plinius-boot:8601
+#: plinius-boot:7667 plinius-boot:7905 plinius-boot:9008
 msgid "The bootloader is locked"
 msgstr "Bootloader jest zablokowany"
 
-#: plinius-boot:7526
+#: plinius-boot:7668
 msgid "Whether the bootloader is unlocked is not known yet"
 msgstr "Nie wiadomo jeszcze, czy bootloader jest odblokowany"
 
-#: plinius-boot:7531 plinius-boot:8555 plinius-boot:9315
+#: plinius-boot:7673 plinius-boot:8962 plinius-boot:9723
 msgid "Log in…"
 msgstr "Zaloguj się…"
 
-#: plinius-boot:7547
+#: plinius-boot:7689
 msgid "Backing up and restoring works on the Backups tab."
 msgstr "Kopie zapasowe i przywracanie są na karcie Kopie zapasowe."
 
-#: plinius-boot:7563
+#: plinius-boot:7705
 msgid ""
 "Changing systems needs an unlocked bootloader. Unlocking erases all personal "
 "data on the phone: apps, photos, messages and accounts. Device data such as "
@@ -2735,11 +2759,11 @@ msgstr ""
 "Dane urządzenia, takie jak IMEI, zostają zachowane. Najpierw skopiuj z "
 "telefonu wszystko, czego jeszcze potrzebujesz."
 
-#: plinius-boot:7568
+#: plinius-boot:7710
 msgid "Continue to unlocking"
 msgstr "Przejdź do odblokowania"
 
-#: plinius-boot:7581
+#: plinius-boot:7723
 msgid ""
 "The phone's system does not tell whether the bootloader is unlocked. The "
 "bootloader itself does."
@@ -2747,12 +2771,12 @@ msgstr ""
 "System telefonu nie podaje, czy bootloader jest odblokowany. Podaje to sam "
 "bootloader."
 
-#: plinius-boot:7588 plinius-boot:7699 plinius-boot:7732 plinius-boot:7738
-#: plinius-boot:8682
+#: plinius-boot:7730 plinius-boot:7838 plinius-boot:7879 plinius-boot:7885
+#: plinius-boot:8390 plinius-boot:8417 plinius-boot:9092
 msgid "Start the bootloader"
 msgstr "Uruchom bootloader"
 
-#: plinius-boot:7598 plinius-boot:8136
+#: plinius-boot:7740 plinius-boot:8283
 #, python-brace-format
 msgid ""
 "The rescue system is in {name}, so the phone does not start its own system "
@@ -2761,11 +2785,11 @@ msgstr ""
 "System ratunkowy znajduje się w {name}, więc telefon nie uruchomi własnego "
 "systemu, dopóki oryginał nie zostanie przywrócony."
 
-#: plinius-boot:7604
+#: plinius-boot:7746
 msgid "Change or install systems"
 msgstr "Zmień lub zainstaluj systemy"
 
-#: plinius-boot:7619
+#: plinius-boot:7761
 msgid ""
 "The boot menu shows once the phone is connected and what is installed has "
 "been read."
@@ -2773,15 +2797,15 @@ msgstr ""
 "Menu rozruchu pojawi się, gdy telefon zostanie podłączony i odczytane "
 "zostanie, co jest zainstalowane."
 
-#: plinius-boot:7638 plinius-boot:7745
+#: plinius-boot:7780 plinius-boot:7892
 msgid "Create backup…"
 msgstr "Utwórz kopię zapasową…"
 
-#: plinius-boot:7650
+#: plinius-boot:7792
 msgid "Connect the phone to create a backup."
 msgstr "Podłącz telefon, aby utworzyć kopię zapasową."
 
-#: plinius-boot:7652
+#: plinius-boot:7794
 msgid ""
 "The bootloader cannot read partitions. Start the rescue system on the "
 "Systems tab, or the phone's own system."
@@ -2789,7 +2813,7 @@ msgstr ""
 "Bootloader nie potrafi czytać partycji. Uruchom system ratunkowy na karcie "
 "Systemy albo własny system telefonu."
 
-#: plinius-boot:7655
+#: plinius-boot:7797
 msgid ""
 "For a consistent backup of all partitions, start the rescue system on the "
 "Systems tab first."
@@ -2797,23 +2821,31 @@ msgstr ""
 "Aby kopia wszystkich partycji była spójna, najpierw uruchom system ratunkowy "
 "na karcie Systemy."
 
-#: plinius-boot:7665
+#: plinius-boot:7807
 msgid "Backups of this phone"
 msgstr "Kopie zapasowe tego telefonu"
 
-#: plinius-boot:7673
+#: plinius-boot:7815
 msgid "incomplete"
 msgstr "niekompletna"
 
-#: plinius-boot:7680
+#: plinius-boot:7822
 msgid "No backups of this phone yet"
 msgstr "Brak jeszcze kopii tego telefonu"
 
-#: plinius-boot:7690
+#: plinius-boot:7832
 msgid "Change systems"
 msgstr "Zmień system"
 
-#: plinius-boot:7698
+#: plinius-boot:7838 plinius-boot:7917 plinius-boot:8417 plinius-boot:9797
+msgid "Start the rescue system"
+msgstr "Uruchom system ratunkowy"
+
+#: plinius-boot:7838
+msgid "See and change the systems"
+msgstr "Zobacz i zmień systemy"
+
+#: plinius-boot:7841
 msgid ""
 "Your systems stay untouched until you decide otherwise. The rescue system "
 "only runs while you need it."
@@ -2821,20 +2853,12 @@ msgstr ""
 "Twoje systemy pozostają nietknięte, dopóki nie zdecydujesz inaczej. System "
 "ratunkowy działa tylko wtedy, gdy go potrzebujesz."
 
-#: plinius-boot:7699 plinius-boot:7770 plinius-boot:9389
-msgid "Start the rescue system"
-msgstr "Uruchom system ratunkowy"
-
-#: plinius-boot:7699
-msgid "See and change the systems"
-msgstr "Zobacz i zmień systemy"
-
-#: plinius-boot:7733
+#: plinius-boot:7880
 msgid "The phone restarts into its bootloader. Nothing on it changes."
 msgstr ""
 "Telefon uruchomi się ponownie w bootloaderze. Nic się na nim nie zmieni."
 
-#: plinius-boot:7743
+#: plinius-boot:7890
 msgid ""
 "A backup is the way back if something goes wrong. Internal partitions such "
 "as the IMEI data cannot be restored from anywhere else."
@@ -2843,21 +2867,21 @@ msgstr ""
 "wewnętrznych, takich jak dane IMEI, nie da się przywrócić z żadnego innego "
 "źródła."
 
-#: plinius-boot:7759
+#: plinius-boot:7906
 msgid "Go back one page: it explains how to unlock it."
 msgstr "Wróć o stronę: znajdziesz tam opis, jak go odblokować."
 
-#: plinius-boot:7768
+#: plinius-boot:7915
 msgid "Starts a small system only in memory; nothing is written to the phone."
 msgstr ""
 "Uruchamia mały system tylko w pamięci RAM; na telefonie nic nie jest "
 "zapisywane."
 
-#: plinius-boot:7809
+#: plinius-boot:7956
 msgid "Change a system"
 msgstr "Zmień system"
 
-#: plinius-boot:7810
+#: plinius-boot:7957
 msgid ""
 "Choose a system to install another one on its place, to move it, or to swap "
 "it with another one."
@@ -2865,23 +2889,23 @@ msgstr ""
 "Wybierz system, aby zainstalować inny na jego miejscu, przenieść go lub "
 "zamienić z innym."
 
-#: plinius-boot:7812
+#: plinius-boot:7959
 msgid "Free place"
 msgstr "Wolne miejsce"
 
-#: plinius-boot:7826
+#: plinius-boot:7973
 msgid "There is no system on this memory card yet."
 msgstr "Na tej karcie pamięci nie ma jeszcze żadnego systemu."
 
-#: plinius-boot:7831
+#: plinius-boot:7978
 msgid "Copies on this PC"
 msgstr "Kopie na tym PC"
 
-#: plinius-boot:7838
+#: plinius-boot:7985
 msgid "Make room on the memory card"
 msgstr "Zwolnij miejsce na karcie pamięci"
 
-#: plinius-boot:7839
+#: plinius-boot:7986
 #, python-brace-format
 msgid ""
 "{free} are free. A partition that uses little of its space can become "
@@ -2890,46 +2914,46 @@ msgstr ""
 "Wolne: {free}. Partycję, która wykorzystuje mało ze swojego rozmiaru, można "
 "zmniejszyć; zwolniona przestrzeń pomieści nowe miejsce."
 
-#: plinius-boot:7845
+#: plinius-boot:7992
 #, python-brace-format
 msgid "Make partition {number} smaller"
 msgstr "Zmniejsz partycję {number}"
 
-#: plinius-boot:7851 plinius-boot:7901
+#: plinius-boot:7998 plinius-boot:8048
 msgid "Add a new place"
 msgstr "Dodaj nowe miejsce"
 
-#: plinius-boot:7851
+#: plinius-boot:7998
 #, python-brace-format
 msgid "Two partitions for a system and its data, up to {size} together."
 msgstr "Dwie partycje na system i jego dane, razem do {size}."
 
-#: plinius-boot:7863
+#: plinius-boot:8010
 msgid "New size in GiB"
 msgstr "Nowy rozmiar w GiB"
 
-#: plinius-boot:7866
+#: plinius-boot:8013
 msgid "Of what the partition holds, in case this goes wrong."
 msgstr "Tego, co zawiera partycja, na wypadek gdyby coś poszło nie tak."
 
-#: plinius-boot:7874
+#: plinius-boot:8021
 msgid "Making room"
 msgstr "Zwalnianie miejsca"
 
-#: plinius-boot:7876
+#: plinius-boot:8023
 msgid "There is more room now"
 msgstr "Teraz jest więcej miejsca"
 
-#: plinius-boot:7876
+#: plinius-boot:8023
 msgid "The system on this partition stays as it was."
 msgstr "System na tej partycji pozostaje bez zmian."
 
-#: plinius-boot:7878
+#: plinius-boot:8025
 #, python-brace-format
 msgid "Make partition {number} smaller?"
 msgstr "Zmniejszyć partycję {number}?"
 
-#: plinius-boot:7879
+#: plinius-boot:8026
 msgid ""
 "Its contents stay. It takes a while, and it must not be stopped halfway: "
 "keep the phone connected."
@@ -2937,50 +2961,50 @@ msgstr ""
 "Zawartość zostaje. To trochę potrwa i nie wolno tego przerywać w połowie: "
 "nie odłączaj telefonu."
 
-#: plinius-boot:7880
+#: plinius-boot:8027
 msgid "Make smaller"
 msgstr "Zmniejsz"
 
-#: plinius-boot:7885 plinius-boot:7954
+#: plinius-boot:8032 plinius-boot:8101
 msgid "System in GiB"
 msgstr "System w GiB"
 
-#: plinius-boot:7888
+#: plinius-boot:8035
 msgid "Data in GiB"
 msgstr "Dane w GiB"
 
-#: plinius-boot:7897
+#: plinius-boot:8044
 msgid "Adding a place"
 msgstr "Dodawanie miejsca"
 
-#: plinius-boot:7899
+#: plinius-boot:8046
 msgid "The new place is ready"
 msgstr "Nowe miejsce jest gotowe"
 
-#: plinius-boot:7899
+#: plinius-boot:8046
 msgid "You can now install or move a system there."
 msgstr "Możesz teraz zainstalować tam system lub go tam przenieść."
 
-#: plinius-boot:7901
+#: plinius-boot:8048
 msgid "The new partitions are empty and do not touch anything else."
 msgstr "Nowe partycje są puste i nie naruszają niczego innego."
 
-#: plinius-boot:7902
+#: plinius-boot:8049
 msgid "Add"
 msgstr "Dodaj"
 
-#: plinius-boot:7914
+#: plinius-boot:8061
 msgid ""
 "Places on the phone itself and a system instead of Volla OS overwrite these "
 "partitions."
 msgstr ""
 "Miejsca w samym telefonie i system zamiast Volla OS nadpisują te partycje."
 
-#: plinius-boot:7922
+#: plinius-boot:8069
 msgid "Install on the phone itself"
 msgstr "Zainstaluj na samym telefonie"
 
-#: plinius-boot:7923
+#: plinius-boot:8070
 msgid ""
 "Replaces Volla OS with a system from an image file. It then starts without a "
 "memory card, from storage that is much faster. All data of Volla OS is "
@@ -2990,27 +3014,27 @@ msgstr ""
 "pamięci, z dużo szybszej pamięci. Wszystkie dane Volla OS zostaną usunięte. "
 "Nikt jeszcze nie próbował tego na prawdziwym telefonie."
 
-#: plinius-boot:7955
+#: plinius-boot:8102
 msgid "The rest of the storage is for your data."
 msgstr "Reszta pamięci jest na Twoje dane."
 
-#: plinius-boot:7957 plinius-boot:8016
+#: plinius-boot:8104 plinius-boot:8163
 msgid "I have a backup and accept the loss"
 msgstr "Mam kopię zapasową i akceptuję utratę danych"
 
-#: plinius-boot:7958 plinius-boot:8017
+#: plinius-boot:8105 plinius-boot:8164
 msgid "All data of Volla OS on this phone will be erased."
 msgstr "Wszystkie dane Volla OS na tym telefonie zostaną usunięte."
 
-#: plinius-boot:7969 plinius-boot:8026
+#: plinius-boot:8116 plinius-boot:8173
 msgid "Nothing was changed: the switch was not turned on."
 msgstr "Niczego nie zmieniono: przełącznik nie był włączony."
 
-#: plinius-boot:7977
+#: plinius-boot:8124
 msgid "Installing on the phone"
 msgstr "Instalowanie na telefonie"
 
-#: plinius-boot:7980
+#: plinius-boot:8127
 msgid ""
 "The phone is restarting. Without a memory card it starts the new system. "
 "With one, choose the entry VollaOS in the boot menu: it now starts the new "
@@ -3020,12 +3044,12 @@ msgstr ""
 "kartą wybierz w menu rozruchu pozycję VollaOS: uruchamia ona teraz nowy "
 "system. Pozostałe pozycje się nie zmieniają."
 
-#: plinius-boot:7984
+#: plinius-boot:8131
 #, python-brace-format
 msgid "Replace Volla OS with {name}?"
 msgstr "Zastąpić Volla OS systemem {name}?"
 
-#: plinius-boot:7985
+#: plinius-boot:8132
 msgid ""
 "Volla OS can no longer start, and all its data is erased. The way back is a "
 "backup of it, or the Volla OS package. The bootloader and the partition "
@@ -3036,15 +3060,15 @@ msgstr ""
 "Bootloader i tablica partycji pozostają bez zmian, podobnie jak systemy na "
 "karcie pamięci."
 
-#: plinius-boot:7987
+#: plinius-boot:8134
 msgid "Replace Volla OS"
 msgstr "Zastąp Volla OS"
 
-#: plinius-boot:7994
+#: plinius-boot:8141
 msgid "Places on the phone itself"
 msgstr "Miejsca na samym telefonie"
 
-#: plinius-boot:7995
+#: plinius-boot:8142
 msgid ""
 "An experiment. This takes room from Volla OS and erases all its data. The "
 "boot menu stays on the memory card, so it is needed for these systems too."
@@ -3053,36 +3077,36 @@ msgstr ""
 "usuwa wszystkie jego dane. Menu rozruchowe zostaje na karcie pamięci, więc "
 "jest ona potrzebna także dla tych systemów."
 
-#: plinius-boot:7998
+#: plinius-boot:8145
 msgid "Make places on the phone"
 msgstr "Utwórz miejsca na telefonie"
 
-#: plinius-boot:7998
+#: plinius-boot:8145
 #, python-brace-format
 msgid "Up to {size} can be taken from Volla OS."
 msgstr "Od Volla OS można zabrać do {size}."
 
-#: plinius-boot:8009
+#: plinius-boot:8156
 msgid "How many places"
 msgstr "Ile miejsc"
 
-#: plinius-boot:8011
+#: plinius-boot:8158
 msgid "System in GiB, each"
 msgstr "System w GiB, na miejsce"
 
-#: plinius-boot:8014
+#: plinius-boot:8161
 msgid "Data in GiB, each"
 msgstr "Dane w GiB, na miejsce"
 
-#: plinius-boot:8033
+#: plinius-boot:8180
 msgid "Making places on the phone"
 msgstr "Tworzenie miejsc na telefonie"
 
-#: plinius-boot:8035
+#: plinius-boot:8182
 msgid "The places are ready"
 msgstr "Miejsca są gotowe"
 
-#: plinius-boot:8036
+#: plinius-boot:8183
 msgid ""
 "Volla OS will be formatted when you write the original back. Check that it "
 "starts, before you install anything: nobody has tried this on a real phone "
@@ -3092,11 +3116,11 @@ msgstr ""
 "uruchamia, zanim cokolwiek zainstalujesz: nikt jeszcze tego nie próbował na "
 "prawdziwym telefonie."
 
-#: plinius-boot:8039
+#: plinius-boot:8186
 msgid "Make places on the phone?"
 msgstr "Utworzyć miejsca na telefonie?"
 
-#: plinius-boot:8040
+#: plinius-boot:8187
 msgid ""
 "An experiment: it is not known yet whether Volla OS and its updates get "
 "along with this. All data of Volla OS is erased. The app saves the partition "
@@ -3109,61 +3133,61 @@ msgstr ""
 "ale danych to nie odzyska. Najpierw wykonaj kopię zapasową tego, czego "
 "potrzebujesz."
 
-#: plinius-boot:8043
+#: plinius-boot:8190
 msgid "Make places"
 msgstr "Utwórz miejsca"
 
-#: plinius-boot:8048
+#: plinius-boot:8195
 #, python-brace-format
 msgid "Unfinished swap: {titles}"
 msgstr "Niedokończona zamiana: {titles}"
 
-#: plinius-boot:8061
+#: plinius-boot:8208
 msgid "Putting a system back"
 msgstr "Przywracanie systemu"
 
-#: plinius-boot:8063
+#: plinius-boot:8210
 msgid "The system is back"
 msgstr "System został przywrócony"
 
-#: plinius-boot:8063
+#: plinius-boot:8210
 msgid "Restart the phone and check that it starts."
 msgstr "Uruchom ponownie telefon i sprawdź, czy system się uruchamia."
 
-#: plinius-boot:8064
+#: plinius-boot:8211
 #, python-brace-format
 msgid "Put {name} back?"
 msgstr "Przywrócić {name}?"
 
-#: plinius-boot:8065
+#: plinius-boot:8212
 msgid "What is on its partitions now will be overwritten."
 msgstr "To, co jest teraz na jego partycjach, zostanie nadpisane."
 
-#: plinius-boot:8065 plinius-boot:8081
+#: plinius-boot:8212 plinius-boot:8228
 msgid "Put back"
 msgstr "Przywróć"
 
-#: plinius-boot:8069
+#: plinius-boot:8216
 msgid "Partition table from before the places on the phone"
 msgstr "Tablica partycji sprzed utworzenia miejsc na telefonie"
 
-#: plinius-boot:8075
+#: plinius-boot:8222
 msgid "Putting the partition table back"
 msgstr "Przywracanie tablicy partycji"
 
-#: plinius-boot:8077
+#: plinius-boot:8224
 msgid "The partition table is back"
 msgstr "Tablica partycji została przywrócona"
 
-#: plinius-boot:8078
+#: plinius-boot:8225
 msgid "Volla OS will be formatted when you write the original back."
 msgstr "Volla OS zostanie sformatowany, gdy przywrócisz oryginał."
 
-#: plinius-boot:8079
+#: plinius-boot:8226
 msgid "Put the partition table back?"
 msgstr "Przywrócić tablicę partycji?"
 
-#: plinius-boot:8080
+#: plinius-boot:8227
 msgid ""
 "The places on the phone and the systems on them are gone afterwards, and "
 "Volla OS is formatted once more."
@@ -3171,21 +3195,21 @@ msgstr ""
 "Miejsca na telefonie i znajdujące się na nich systemy znikną, a Volla OS "
 "zostanie sformatowany jeszcze raz."
 
-#: plinius-boot:8086
+#: plinius-boot:8233
 #, python-brace-format
 msgid "Kept in {dir}"
 msgstr "Zachowano w {dir}"
 
-#: plinius-boot:8088
+#: plinius-boot:8235
 #, python-brace-format
 msgid "Finished swap, kept in {dir}"
 msgstr "Zakończona zamiana, zachowana w {dir}"
 
-#: plinius-boot:8118 plinius-boot:9107
+#: plinius-boot:8265 plinius-boot:8536 plinius-boot:9511
 msgid "Cancelled"
 msgstr "Anulowano"
 
-#: plinius-boot:8119
+#: plinius-boot:8266
 msgid ""
 "The boot menu still shows what it showed before. The partition that was "
 "being written may be incomplete, and a copy on this PC stays."
@@ -3193,7 +3217,7 @@ msgstr ""
 "Menu rozruchowe nadal pokazuje to samo, co wcześniej. Zapisywana partycja "
 "może być niekompletna, a kopia zostaje na tym PC."
 
-#: plinius-boot:8122
+#: plinius-boot:8269
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -3206,18 +3230,324 @@ msgstr ""
 "Menu rozruchowe zmienia się dopiero w ostatnim kroku, więc nadal pokazuje "
 "to, co wcześniej."
 
-#: plinius-boot:8134
+#: plinius-boot:8281
 msgid "When you are done"
 msgstr "Gdy skończysz"
 
-#: plinius-boot:8151 plinius-boot:8671
+#: plinius-boot:8297 plinius-boot:8312
+msgid "Back to Volla OS or Ubuntu Touch"
+msgstr "Powrót do Volla OS lub Ubuntu Touch"
+
+#: plinius-boot:8297
+msgid "How a phone with Plinius gets its system from before back"
+msgstr "Jak telefon z Plinius odzyskuje wcześniejszy system"
+
+#: plinius-boot:8331
+msgid "Where is Plinius now?"
+msgstr "Gdzie jest teraz Plinius?"
+
+#: plinius-boot:8332
+msgid "When Plinius was installed, the app asked where it should go."
+msgstr "Podczas instalacji Plinius aplikacja zapytała, gdzie go umieścić."
+
+#: plinius-boot:8333 plinius-boot:9204
+msgid "On the memory card"
+msgstr "Na karcie pamięci"
+
+#: plinius-boot:8334
+msgid "The system inside the phone stayed as it was."
+msgstr "System w samym telefonie pozostał taki, jaki był."
+
+#: plinius-boot:8335 plinius-boot:9207 plinius-boot:9370
+msgid "Inside the phone"
+msgstr "W samym telefonie"
+
+#: plinius-boot:8336
+msgid "Plinius replaced Volla OS there."
+msgstr "Plinius zastąpił tam Volla OS."
+
+#: plinius-boot:8360
+msgid "The system from before is still there"
+msgstr "Wcześniejszy system wciąż jest na miejscu"
+
+#: plinius-boot:8361
+msgid ""
+"Installing on the memory card left the inside of the phone as it was: Volla "
+"OS or Ubuntu Touch, with all its data."
+msgstr ""
+"Instalacja na karcie pamięci pozostawiła sam telefon bez zmian: Volla OS lub "
+"Ubuntu Touch ze wszystkimi danymi."
+
+#: plinius-boot:8364
+msgid "Take the memory card out"
+msgstr "Wyjmij kartę pamięci"
+
+#: plinius-boot:8365
+msgid "Without it the phone starts the system inside, as before."
+msgstr "Bez niej telefon uruchamia system w swoim wnętrzu, tak jak wcześniej."
+
+#: plinius-boot:8366
+#, python-brace-format
+msgid "Or choose “{title}” in the boot menu"
+msgstr "Albo wybierz „{title}” w menu startowym"
+
+#: plinius-boot:8367
+msgid ""
+"With the card in the phone, its boot menu shows for five seconds at every "
+"start. That entry starts the system inside the phone; after five seconds "
+"Plinius starts by itself."
+msgstr ""
+"Gdy karta jest w telefonie, przy każdym starcie przez pięć sekund widać jej "
+"menu startowe. Ta pozycja uruchamia system w samym telefonie; po pięciu "
+"sekundach Plinius uruchamia się sam."
+
+#: plinius-boot:8369
+msgid "No longer need Plinius?"
+msgstr "Plinius nie jest już potrzebny?"
+
+#: plinius-boot:8370
+msgid ""
+"Erase the memory card on a computer or in Volla OS, and use it for something "
+"else. Without its boot menu the phone starts only the system inside."
+msgstr ""
+"Wyczyść kartę pamięci na komputerze lub w Volla OS i używaj jej do czegoś "
+"innego. Bez jej menu startowego telefon uruchamia tylko system w swoim "
+"wnętrzu."
+
+#: plinius-boot:8379
+msgid "Volla OS from its backup"
+msgstr "Volla OS z kopii zapasowej"
+
+#: plinius-boot:8380
+msgid ""
+"Before Plinius went inside the phone, the app made a backup of Volla OS on "
+"this computer. Writing it back erases Plinius with all its files, and Volla "
+"OS comes back as it was then. Nobody has tried this on a real phone yet."
+msgstr ""
+"Zanim Plinius trafił do telefonu, aplikacja utworzyła na tym komputerze "
+"kopię zapasową Volla OS. Jej przywrócenie usuwa Plinius ze wszystkimi "
+"plikami, a Volla OS wraca taki, jaki był wtedy. Nikt jeszcze nie wypróbował "
+"tego na prawdziwym telefonie."
+
+#: plinius-boot:8384
+#, python-brace-format
+msgid "Continue with {phone}"
+msgstr "Dalej z {phone}"
+
+#: plinius-boot:8388 plinius-boot:9700
+msgid "Waiting for the phone…"
+msgstr "Oczekiwanie na telefon…"
+
+#: plinius-boot:8391
+msgid ""
+"If the phone does not show up here while Plinius runs, start its bootloader "
+"by hand."
+msgstr ""
+"Jeśli telefon nie pojawia się tutaj, gdy działa Plinius, uruchom jego "
+"bootloader ręcznie."
+
+#: plinius-boot:8393
+msgid "Without a backup"
+msgstr "Bez kopii zapasowej"
+
+#: plinius-boot:8394
+msgid ""
+"Then Volla OS comes back only with Volla's own installation package for this "
+"phone and its instructions. Volla OS starts anew that way: its data from "
+"before is gone."
+msgstr ""
+"Wtedy Volla OS wraca tylko dzięki własnemu pakietowi instalacyjnemu Volla "
+"dla tego telefonu i jego instrukcji. Volla OS startuje wtedy od nowa: dane "
+"sprzed tego przepadają."
+
+#: plinius-boot:8398
+msgid "Ubuntu Touch"
+msgstr "Ubuntu Touch"
+
+#: plinius-boot:8399
+msgid ""
+"Ubuntu Touch comes with its own program for the computer, the UBports "
+"Installer. It installs Ubuntu Touch inside the phone and erases what is "
+"there now. This app does not install Ubuntu Touch."
+msgstr ""
+"Ubuntu Touch ma własny program na komputer, UBports Installer. Instaluje on "
+"Ubuntu Touch w samym telefonie i usuwa to, co jest tam teraz. Ta aplikacja "
+"nie instaluje Ubuntu Touch."
+
+#: plinius-boot:8414 plinius-boot:8434
+msgid "Back to Volla OS"
+msgstr "Powrót do Volla OS"
+
+#: plinius-boot:8417
+msgid "Write Volla OS back"
+msgstr "Przywróć Volla OS"
+
+#: plinius-boot:8420
+msgid ""
+"Nothing is erased before you confirm it. The rescue system only runs while "
+"it is needed."
+msgstr ""
+"Nic nie zostanie usunięte, zanim tego nie potwierdzisz. System ratunkowy "
+"działa tylko wtedy, gdy jest potrzebny."
+
+#: plinius-boot:8423
+msgid "Copy what you still need"
+msgstr "Skopiuj to, czego jeszcze potrzebujesz"
+
+#: plinius-boot:8424
+msgid ""
+"Writing Volla OS back erases Plinius on the phone with all its files. Copy "
+"what you still need to this computer first."
+msgstr ""
+"Przywrócenie Volla OS usuwa Plinius z telefonu ze wszystkimi plikami. "
+"Najpierw skopiuj na ten komputer to, czego jeszcze potrzebujesz."
+
+#: plinius-boot:8437
+msgid "Volla OS is inside the phone"
+msgstr "Volla OS jest w telefonie"
+
+#: plinius-boot:8438
+msgid ""
+"There is nothing to write back. Leave the rescue system, and the phone "
+"starts Volla OS."
+msgstr ""
+"Nie ma niczego do przywrócenia. Opuść system ratunkowy, a telefon uruchomi "
+"Volla OS."
+
+#: plinius-boot:8446
+msgid "Looking for the backup of Volla OS…"
+msgstr "Szukanie kopii zapasowej Volla OS…"
+
+#: plinius-boot:8464
+msgid "No backup of Volla OS found"
+msgstr "Nie znaleziono kopii zapasowej Volla OS"
+
+#: plinius-boot:8465
+#, python-brace-format
+msgid ""
+"The app finds no backup in {dir} that it made of this phone while Volla OS "
+"was inside. If it is in another folder, choose that folder. Without a "
+"backup, Volla OS comes back only with Volla's own installation package for "
+"this phone and its instructions; its data from before is gone then."
+msgstr ""
+"Aplikacja nie znajduje w {dir} kopii zapasowej, którą utworzyła z tego "
+"telefonu, gdy był w nim Volla OS. Jeśli jest w innym folderze, wybierz ten "
+"folder. Bez kopii zapasowej Volla OS wraca tylko dzięki własnemu pakietowi "
+"instalacyjnemu Volla dla tego telefonu i jego instrukcji; dane sprzed tego "
+"przepadają."
+
+#: plinius-boot:8469
+msgid "Choose the storage location…"
+msgstr "Wybierz miejsce zapisu…"
+
+#: plinius-boot:8475
+msgid "The backup of Volla OS"
+msgstr "Kopia zapasowa Volla OS"
+
+#: plinius-boot:8476
+#, python-brace-format
+msgid ""
+"Made on {date}, while Volla OS was inside the phone. These partitions are "
+"written back; nobody has tried this on a real phone yet."
+msgstr ""
+"Utworzona {date}, gdy Volla OS był w telefonie. Te partycje zostaną "
+"przywrócone; nikt jeszcze nie wypróbował tego na prawdziwym telefonie."
+
+#: plinius-boot:8483
+msgid "Without your data from then"
+msgstr "Bez twoich ówczesnych danych"
+
+#: plinius-boot:8484
+msgid ""
+"Unlocking the bootloader had erased it. Volla OS starts as on its first day."
+msgstr ""
+"Odblokowanie bootloadera je usunęło. Volla OS uruchomi się jak pierwszego "
+"dnia."
+
+#: plinius-boot:8486
+msgid "With much data this takes a long time. Keep the phone connected."
+msgstr "Przy dużej ilości danych to długo trwa. Nie odłączaj telefonu."
+
+#: plinius-boot:8487 plinius-boot:9385
+msgid "I have copied what I still need"
+msgstr "Skopiowałem to, czego jeszcze potrzebuję"
+
+#: plinius-boot:8488 plinius-boot:9386
+#, python-brace-format
+msgid "{Name} is erased with all its data."
+msgstr "{Name} zostanie usunięty ze wszystkimi danymi."
+
+#: plinius-boot:8489
+#, python-brace-format
+msgid "Erase {name} and write Volla OS back"
+msgstr "Usuń {name} i przywróć Volla OS"
+
+#: plinius-boot:8498
+msgid "Write Volla OS back?"
+msgstr "Przywrócić Volla OS?"
+
+#: plinius-boot:8499
+#, python-brace-format
+msgid ""
+"{Name} and everything on it is erased: apps, files and settings. Volla OS "
+"comes back as it was on {date}. This cannot be undone."
+msgstr ""
+"{Name} i wszystko, co zawiera, zostanie usunięte: aplikacje, pliki i "
+"ustawienia. Volla OS wróci w stanie z {date}. Tego nie można cofnąć."
+
+#: plinius-boot:8501
+msgid "Erase and write back"
+msgstr "Usuń i przywróć"
+
+#: plinius-boot:8507
+msgid "Writing Volla OS back"
+msgstr "Przywracanie Volla OS"
+
+#: plinius-boot:8531
+msgid "Volla OS is back"
+msgstr "Volla OS wrócił"
+
+#: plinius-boot:8532
+#, python-brace-format
+msgid ""
+"The phone is starting Volla OS; the first start can take a few minutes. With "
+"a memory card in the phone, choose “{title}” in its boot menu."
+msgstr ""
+"Telefon uruchamia Volla OS; pierwsze uruchomienie może potrwać kilka minut. "
+"Jeśli w telefonie jest karta pamięci, wybierz „{title}” w jej menu startowym."
+
+#: plinius-boot:8537
+msgid ""
+"The phone still starts the rescue system. A partition that was being written "
+"may be incomplete: write the backup back once more before you use the phone."
+msgstr ""
+"Telefon nadal uruchamia system ratunkowy. Partycja, która była zapisywana, "
+"może być niekompletna: przywróć kopię zapasową jeszcze raz, zanim zaczniesz "
+"używać telefonu."
+
+#: plinius-boot:8540 plinius-boot:9516
+#, python-brace-format
+msgid ""
+"{error}\n"
+"\n"
+"The phone still holds the rescue system, so you can try again."
+msgstr ""
+"{error}\n"
+"\n"
+"Telefon ma jeszcze system ratunkowy, więc możesz spróbować ponownie."
+
+#: plinius-boot:8542
+msgid "Volla OS was not written back"
+msgstr "Nie przywrócono Volla OS"
+
+#: plinius-boot:8554 plinius-boot:9081
 msgid ""
 "On the phone, open Settings → About phone and tap “Build number” seven times."
 msgstr ""
 "Na telefonie otwórz Ustawienia → Informacje o telefonie i stuknij siedem "
 "razy „Numer kompilacji”."
 
-#: plinius-boot:8152
+#: plinius-boot:8555
 msgid ""
 "Open Settings → System → Developer options and turn on “OEM unlocking” and "
 "“USB debugging”."
@@ -3225,7 +3555,7 @@ msgstr ""
 "Otwórz Ustawienia → System → Opcje programistyczne i włącz „Zdejmowanie "
 "blokady OEM” oraz „Debugowanie USB”."
 
-#: plinius-boot:8153
+#: plinius-boot:8556
 msgid ""
 "Connect the phone to this computer with a USB-C cable and allow USB "
 "debugging on the phone."
@@ -3233,126 +3563,130 @@ msgstr ""
 "Podłącz telefon do tego komputera kablem USB-C i zezwól na telefonie na "
 "debugowanie USB."
 
-#: plinius-boot:8181
+#: plinius-boot:8584
 msgid "Connect"
 msgstr "Połącz"
 
-#: plinius-boot:8181
+#: plinius-boot:8584
 msgid "Check"
 msgstr "Sprawdź"
 
-#: plinius-boot:8181 plinius-boot:8448 plinius-boot:8577
+#: plinius-boot:8584 plinius-boot:8851 plinius-boot:8984
 msgid "Download"
 msgstr "Pobierz"
 
-#: plinius-boot:8343
+#: plinius-boot:8746
 msgid "Image of Plinius"
 msgstr "Obraz Pliniusa"
 
-#: plinius-boot:8383 plinius-boot:8387
+#: plinius-boot:8786 plinius-boot:8790
 #, python-brace-format
 msgid "Plinius {version}"
 msgstr "Plinius {version}"
 
-#: plinius-boot:8388 plinius-boot:8856
+#: plinius-boot:8791 plinius-boot:9260
 msgid "Plinius"
 msgstr "Plinius"
 
-#: plinius-boot:8404
+#: plinius-boot:8807
 msgid "Checking the image… A compressed one takes a few minutes."
 msgstr "Sprawdzanie obrazu… Skompresowany zajmuje kilka minut."
 
-#: plinius-boot:8410
+#: plinius-boot:8813
 msgid "Pause"
 msgstr "Wstrzymaj"
 
-#: plinius-boot:8417
+#: plinius-boot:8820
 #, python-brace-format
 msgid "{size}, ready"
 msgstr "{size}, gotowe"
 
-#: plinius-boot:8419 plinius-boot:8439
+#: plinius-boot:8822 plinius-boot:8842
 msgid "Other file…"
 msgstr "Inny plik…"
 
-#: plinius-boot:8424
+#: plinius-boot:8827
 msgid "Looking for the newest version…"
 msgstr "Szukanie najnowszej wersji…"
 
-#: plinius-boot:8426
+#: plinius-boot:8829
 #, python-brace-format
 msgid "Paused: {done} of {total}"
 msgstr "Wstrzymano: {done} z {total}"
 
-#: plinius-boot:8430
+#: plinius-boot:8833
 msgid "Resume"
 msgstr "Wznów"
 
-#: plinius-boot:8435
+#: plinius-boot:8838
 #, python-brace-format
 msgid "{size}, downloaded when you check the phone"
 msgstr "{size}, pobierane podczas sprawdzania telefonu"
 
-#: plinius-boot:8444
+#: plinius-boot:8847
 #, python-brace-format
 msgid "The download did not finish: {error}"
 msgstr "Pobieranie nie zostało ukończone: {error}"
 
-#: plinius-boot:8445
+#: plinius-boot:8848
 #, python-brace-format
 msgid "{size} to download, from {host}"
 msgstr "{size} do pobrania z {host}"
 
-#: plinius-boot:8448 plinius-boot:8621
+#: plinius-boot:8851 plinius-boot:9031
 msgid "Try again"
 msgstr "Spróbuj ponownie"
 
-#: plinius-boot:8453
+#: plinius-boot:8856
 msgid "No download is offered right now"
 msgstr "Obecnie nie ma nic do pobrania"
 
-#: plinius-boot:8453
+#: plinius-boot:8856
 msgid "none published yet"
 msgstr "jeszcze nic nie opublikowano"
 
-#: plinius-boot:8455
+#: plinius-boot:8858
 msgid "Choose a file…"
 msgstr "Wybierz plik…"
 
-#: plinius-boot:8465
+#: plinius-boot:8868
 #, python-brace-format
 msgid "{done} of {total}"
 msgstr "{done} z {total}"
 
-#: plinius-boot:8477 plinius-boot:8954
+#: plinius-boot:8880 plinius-boot:9358
 msgid "Install Plinius"
 msgstr "Zainstaluj Pliniusa"
 
-#: plinius-boot:8480
+#: plinius-boot:8883
+msgid "Back to Volla OS or Ubuntu Touch…"
+msgstr "Powrót do Volla OS lub Ubuntu Touch…"
+
+#: plinius-boot:8884
 msgid "Advanced…"
 msgstr "Zaawansowane…"
 
-#: plinius-boot:8487
+#: plinius-boot:8894
 msgid "Systems, boot menu, backups and the rescue system"
 msgstr "Systemy, menu startowe, kopie zapasowe i system ratunkowy"
 
-#: plinius-boot:8527
+#: plinius-boot:8934
 msgid "paused"
 msgstr "wstrzymano"
 
-#: plinius-boot:8536 plinius-boot:9100
+#: plinius-boot:8943 plinius-boot:9504
 msgid "Plinius is installed"
 msgstr "Plinius jest zainstalowany"
 
-#: plinius-boot:8537
+#: plinius-boot:8944
 msgid "You can disconnect the phone."
 msgstr "Możesz odłączyć telefon."
 
-#: plinius-boot:8541
+#: plinius-boot:8948
 msgid "Installing… The progress is on the page in front."
 msgstr "Instalowanie… Postęp widać na stronie na wierzchu."
 
-#: plinius-boot:8550
+#: plinius-boot:8957
 msgid ""
 "Plinius is made for the Volla Phone Plinius and Plinius Plus only. Backups "
 "of this phone are under Advanced, in the menu at the top right."
@@ -3361,15 +3695,15 @@ msgstr ""
 "Kopie zapasowe tego telefonu są w Zaawansowanych, w menu w prawym górnym "
 "rogu."
 
-#: plinius-boot:8559
+#: plinius-boot:8966
 msgid "The phone cannot be used yet"
 msgstr "Telefonu nie można jeszcze użyć"
 
-#: plinius-boot:8590
+#: plinius-boot:8997
 msgid "Check the memory card"
 msgstr "Sprawdź kartę pamięci"
 
-#: plinius-boot:8591
+#: plinius-boot:8998
 msgid ""
 "Only the rescue system can read the memory card, so the phone restarts into "
 "it. Nothing is erased without asking you first."
@@ -3377,11 +3711,11 @@ msgstr ""
 "Tylko system ratunkowy może odczytać kartę pamięci, więc telefon uruchomi "
 "się w nim ponownie. Nic nie zostanie usunięte bez wcześniejszego pytania."
 
-#: plinius-boot:8594 plinius-boot:8597
+#: plinius-boot:9001 plinius-boot:9004
 msgid "Check the phone"
 msgstr "Sprawdź telefon"
 
-#: plinius-boot:8595
+#: plinius-boot:9002
 msgid ""
 "Click “Check the phone” below. The phone restarts a few times for this; "
 "nothing is erased without asking you first."
@@ -3389,30 +3723,30 @@ msgstr ""
 "Kliknij poniżej „Sprawdź telefon”. Telefon kilka razy uruchomi się ponownie; "
 "nic nie zostanie usunięte bez wcześniejszego pytania."
 
-#: plinius-boot:8598
+#: plinius-boot:9005
 msgid "Volla Phone Plinius"
 msgstr "Volla Phone Plinius"
 
-#: plinius-boot:8598
+#: plinius-boot:9005
 msgid "Phone model"
 msgstr "Model telefonu"
 
-#: plinius-boot:8599 plinius-boot:8605 plinius-boot:8606
+#: plinius-boot:9006 plinius-boot:9012 plinius-boot:9013
 msgid "Checked after the click below"
 msgstr "Sprawdzane po kliknięciu poniżej"
 
-#: plinius-boot:8602
+#: plinius-boot:9009
 msgid ""
 "Unlocking it erases all data on the phone. Copy what you still need first."
 msgstr ""
 "Odblokowanie usuwa wszystkie dane z telefonu. Najpierw skopiuj to, czego "
 "jeszcze potrzebujesz."
 
-#: plinius-boot:8669
+#: plinius-boot:9079
 msgid "Turn on OEM unlocking"
 msgstr "Włącz odblokowanie OEM"
 
-#: plinius-boot:8670
+#: plinius-boot:9080
 msgid ""
 "On the phone, then continue here. The phone restarts into the bootloader by "
 "itself."
@@ -3420,11 +3754,11 @@ msgstr ""
 "Na telefonie, potem kontynuuj tutaj. Telefon sam uruchomi się ponownie w "
 "bootloaderze."
 
-#: plinius-boot:8677
+#: plinius-boot:9087
 msgid "Restarting into the bootloader"
 msgstr "Ponowne uruchamianie do bootloadera"
 
-#: plinius-boot:8683
+#: plinius-boot:9093
 msgid ""
 "The system on the phone does not let the app restart it. Please start the "
 "bootloader by hand."
@@ -3432,23 +3766,23 @@ msgstr ""
 "System na telefonie nie pozwala aplikacji go zrestartować. Uruchom "
 "bootloader ręcznie."
 
-#: plinius-boot:8698
+#: plinius-boot:9108
 msgid "The bootloader does not answer as expected"
 msgstr "Bootloader nie odpowiada zgodnie z oczekiwaniami"
 
-#: plinius-boot:8699
+#: plinius-boot:9109
 msgid "Restart the phone into the bootloader and connect it again."
 msgstr "Uruchom telefon ponownie do bootloadera i podłącz go jeszcze raz."
 
-#: plinius-boot:8701
+#: plinius-boot:9111
 msgid "Starting the rescue system"
 msgstr "Uruchamianie systemu ratunkowego"
 
-#: plinius-boot:8712
+#: plinius-boot:9122
 msgid "OEM unlocking is still off"
 msgstr "Odblokowanie OEM jest jeszcze wyłączone"
 
-#: plinius-boot:8713
+#: plinius-boot:9123
 msgid ""
 "It is turned on in Volla OS. The phone restarts into it, then this page "
 "shows what to do."
@@ -3456,11 +3790,11 @@ msgstr ""
 "Włącza się je w Volla OS. Telefon uruchomi się w nim ponownie, a ta strona "
 "pokaże, co zrobić."
 
-#: plinius-boot:8714
+#: plinius-boot:9124
 msgid "Restart into Volla OS"
 msgstr "Uruchom ponownie w Volla OS"
 
-#: plinius-boot:8718
+#: plinius-boot:9128
 msgid ""
 "Plinius needs it. Unlocking erases all data on the phone: apps, photos, "
 "messages and accounts."
@@ -3468,15 +3802,15 @@ msgstr ""
 "Plinius tego wymaga. Odblokowanie usuwa wszystkie dane z telefonu: "
 "aplikacje, zdjęcia, wiadomości i konta."
 
-#: plinius-boot:8722
+#: plinius-boot:9132
 msgid "Unlock and erase…"
 msgstr "Odblokuj i usuń…"
 
-#: plinius-boot:8761
+#: plinius-boot:9171
 msgid "Download Plinius"
 msgstr "Pobierz Plinius"
 
-#: plinius-boot:8762
+#: plinius-boot:9172
 msgid ""
 "The phone is ready. Once Plinius is downloaded and checked, it goes on by "
 "itself."
@@ -3484,23 +3818,15 @@ msgstr ""
 "Telefon jest gotowy. Gdy Plinius zostanie pobrany i sprawdzony, dalej "
 "pójdzie samo."
 
-#: plinius-boot:8765
+#: plinius-boot:9175
 msgid "Choose an image file…"
 msgstr "Wybierz plik obrazu…"
 
-#: plinius-boot:8792
-msgid "The current system"
-msgstr "Obecny system"
-
-#: plinius-boot:8799
+#: plinius-boot:9203
 msgid "Where should Plinius go?"
 msgstr "Gdzie zainstalować Plinius?"
 
-#: plinius-boot:8800
-msgid "On the memory card"
-msgstr "Na karcie pamięci"
-
-#: plinius-boot:8801
+#: plinius-boot:9205
 #, python-brace-format
 msgid ""
 "Recommended. {Name} stays inside the phone, and at each start a menu lets "
@@ -3509,11 +3835,7 @@ msgstr ""
 "Zalecane. {Name} zostaje w telefonie, a przy każdym uruchomieniu menu "
 "pozwala wybrać."
 
-#: plinius-boot:8803 plinius-boot:8966
-msgid "Inside the phone"
-msgstr "W samym telefonie"
-
-#: plinius-boot:8804
+#: plinius-boot:9208
 #, python-brace-format
 msgid ""
 "Replaces {name}: everything on it is erased. Plinius then starts without a "
@@ -3522,15 +3844,15 @@ msgstr ""
 "Zastępuje {name}: wszystko na nim zostanie usunięte. Plinius uruchamia się "
 "wtedy bez karty pamięci i szybciej."
 
-#: plinius-boot:8814
+#: plinius-boot:9218
 msgid "Look again"
 msgstr "Sprawdź ponownie"
 
-#: plinius-boot:8826
+#: plinius-boot:9230
 msgid "There is no free space on the card. Choose what Plinius should replace:"
 msgstr "Na karcie nie ma wolnego miejsca. Wybierz, co Plinius ma zastąpić:"
 
-#: plinius-boot:8845
+#: plinius-boot:9249
 #, python-brace-format
 msgid ""
 "No memory card found. Put one of {size} or more into the phone, then look "
@@ -3539,7 +3861,7 @@ msgstr ""
 "Nie znaleziono karty pamięci. Włóż do telefonu kartę o pojemności {size} lub "
 "większej i wyszukaj ponownie."
 
-#: plinius-boot:8848
+#: plinius-boot:9252
 #, python-brace-format
 msgid ""
 "The memory card is too small: Plinius needs {need} or more, this one has "
@@ -3548,7 +3870,7 @@ msgstr ""
 "Karta pamięci jest za mała: Plinius potrzebuje {need} lub więcej, ta ma "
 "{size}."
 
-#: plinius-boot:8851
+#: plinius-boot:9255
 msgid ""
 "There is no free space on the card, and none of its systems can be replaced. "
 "Setting it up anew would erase everything on it; that is under Advanced in "
@@ -3558,25 +3880,25 @@ msgstr ""
 "zastąpić. Ponowne przygotowanie usunęłoby wszystko; to jest w Zaawansowanych "
 "w menu."
 
-#: plinius-boot:8857
+#: plinius-boot:9261
 msgid "Change"
 msgstr "Zmień"
 
-#: plinius-boot:8868 plinius-boot:8907
+#: plinius-boot:9272 plinius-boot:9311
 msgid "Language"
 msgstr "Język"
 
-#: plinius-boot:8907
+#: plinius-boot:9311
 msgid "The keyboard follows it. Settings on the phone change both later."
 msgstr ""
 "Klawiatura się do niego dostosuje. Oba można później zmienić w Ustawieniach "
 "telefonu."
 
-#: plinius-boot:8918 plinius-boot:8920
+#: plinius-boot:9322 plinius-boot:9324
 msgid "PIN"
 msgstr "PIN"
 
-#: plinius-boot:8919
+#: plinius-boot:9323
 msgid ""
 "Plinius asks for it on the lock screen. Choose 4 to 12 digits and keep it in "
 "mind."
@@ -3584,73 +3906,64 @@ msgstr ""
 "Plinius prosi o niego na ekranie blokady. Wybierz od 4 do 12 cyfr i dobrze "
 "go zapamiętaj."
 
-#: plinius-boot:8920
+#: plinius-boot:9324
 msgid "Repeat PIN"
 msgstr "Powtórz PIN"
 
-#: plinius-boot:8948
+#: plinius-boot:9352
 msgid "Choose above where Plinius should go."
 msgstr "Wybierz powyżej, gdzie zainstalować Plinius."
 
-#: plinius-boot:8950
+#: plinius-boot:9354
 msgid "Choose above what Plinius should replace."
 msgstr "Wybierz powyżej, co Plinius ma zastąpić."
 
-#: plinius-boot:8952 plinius-boot:8972
+#: plinius-boot:9356 plinius-boot:9376
 msgid "This takes up to an hour. Keep the phone connected."
 msgstr "To potrwa do godziny. Nie odłączaj telefonu."
 
-#: plinius-boot:8954
+#: plinius-boot:9358
 msgid "Erase and install Plinius"
 msgstr "Usuń i zainstaluj Pliniusa"
 
-#: plinius-boot:8973
+#: plinius-boot:9377
 #, python-brace-format
 msgid "Erase {name} and install"
 msgstr "Usuń {name} i zainstaluj"
 
-#: plinius-boot:8981
-msgid "I have copied what I still need"
-msgstr "Skopiowałem to, czego jeszcze potrzebuję"
-
-#: plinius-boot:8982
-#, python-brace-format
-msgid "{Name} is erased with all its data."
-msgstr "{Name} zostanie usunięty ze wszystkimi danymi."
-
-#: plinius-boot:8998
+#: plinius-boot:9402
 #, python-brace-format
 msgid "Back up {name} first"
 msgstr "Najpierw kopia zapasowa: {name}"
 
-#: plinius-boot:8999
+#: plinius-boot:9403
 msgid "That is the way back. The backup is kept on this computer."
 msgstr "To droga powrotu. Kopia zostaje na tym komputerze."
 
-#: plinius-boot:9002
+#: plinius-boot:9406
 #, python-brace-format
 msgid "Back up {name}"
 msgstr "Kopia zapasowa: {name}"
 
-#: plinius-boot:9007
+#: plinius-boot:9411
 #, python-brace-format
 msgid "{Name} is backed up"
 msgstr "{Name} ma kopię zapasową"
 
-#: plinius-boot:9007
+#: plinius-boot:9411
 msgid "On this computer"
 msgstr "Na tym komputerze"
 
-#: plinius-boot:9016 plinius-boot:9019
+#: plinius-boot:9420 plinius-boot:9423
 msgid "Into the free space"
 msgstr "Na wolne miejsce"
 
-#: plinius-boot:9016
+#: plinius-boot:9420
 #, python-brace-format
 msgid "{size} on the card are unused. Nothing on the card is erased."
 msgstr "{size} na karcie jest nieużywane. Na karcie nic nie zostanie usunięte."
 
-#: plinius-boot:9019
+#: plinius-boot:9423
 #, python-brace-format
 msgid ""
 "{system} for Plinius and {data} for your files. Nothing on the card is "
@@ -3659,26 +3972,26 @@ msgstr ""
 "{system} dla Pliniusa i {data} na twoje pliki. Nic na karcie nie zostanie "
 "usunięte."
 
-#: plinius-boot:9028
+#: plinius-boot:9432
 #, python-brace-format
 msgid "{title} and its files on the card are erased."
 msgstr "{title} i jego pliki na karcie zostaną usunięte."
 
-#: plinius-boot:9029
+#: plinius-boot:9433
 #, python-brace-format
 msgid "The personal files of {title} are there as well and are erased too."
 msgstr "Są tam też osobiste pliki {title}; one również zostaną usunięte."
 
-#: plinius-boot:9031
+#: plinius-boot:9435
 #, python-brace-format
 msgid "Instead of {title}"
 msgstr "Zamiast {title}"
 
-#: plinius-boot:9033
+#: plinius-boot:9437
 msgid "Erase the memory card and set it up anew"
 msgstr "Wyczyść kartę pamięci i przygotuj ją od nowa"
 
-#: plinius-boot:9034
+#: plinius-boot:9438
 #, python-brace-format
 msgid ""
 "Everything on the card is erased. {system} for Plinius and about {data} for "
@@ -3687,19 +4000,19 @@ msgstr ""
 "Wszystko na karcie zostanie usunięte. {system} na Plinius i około {data} na "
 "twoje pliki."
 
-#: plinius-boot:9051
+#: plinius-boot:9455
 msgid "Erase and install?"
 msgstr "Usunąć i zainstalować?"
 
-#: plinius-boot:9051
+#: plinius-boot:9455
 msgid "Erase and install"
 msgstr "Usuń i zainstaluj"
 
-#: plinius-boot:9063
+#: plinius-boot:9467
 msgid "Installing Plinius"
 msgstr "Instalowanie Pliniusa"
 
-#: plinius-boot:9093
+#: plinius-boot:9497
 msgid ""
 "The phone is starting Plinius. The first start takes a few minutes; unlock "
 "it with your PIN. With a memory card in the phone, choose VollaOS in its "
@@ -3709,7 +4022,7 @@ msgstr ""
 "go swoim PIN-em. Z kartą pamięci w telefonie wybierz w menu startowym "
 "VollaOS: ten wpis uruchamia teraz Pliniusa."
 
-#: plinius-boot:9097
+#: plinius-boot:9501
 #, python-brace-format
 msgid ""
 "The phone is starting. At every start a menu shows for five seconds, then it "
@@ -3722,11 +4035,11 @@ msgstr ""
 "telefonie: {name}. Pierwsze uruchomienie Plinius trwa kilka minut; odblokuj "
 "go swoim PIN-em."
 
-#: plinius-boot:9102
+#: plinius-boot:9506
 msgid "Almost done"
 msgstr "Prawie gotowe"
 
-#: plinius-boot:9103
+#: plinius-boot:9507
 msgid ""
 "Plinius is installed, but the phone still holds the rescue system: the "
 "original it replaced was not found on the update server. Choose it on the "
@@ -3736,7 +4049,7 @@ msgstr ""
 "oryginału, który zastąpił, nie znaleziono na serwerze aktualizacji. Wybierz "
 "go jako plik na następnej stronie."
 
-#: plinius-boot:9108
+#: plinius-boot:9512
 msgid ""
 "The boot menu still shows what it showed before. Start again when you are "
 "ready."
@@ -3744,43 +4057,32 @@ msgstr ""
 "Menu startowe pokazuje to samo co wcześniej. Zacznij ponownie, gdy będziesz "
 "gotowy."
 
-#: plinius-boot:9111
+#: plinius-boot:9515
 msgid "Plinius was not installed"
 msgstr "Plinius nie został zainstalowany"
 
-#: plinius-boot:9112
-#, python-brace-format
-msgid ""
-"{error}\n"
-"\n"
-"The phone still holds the rescue system, so you can try again."
-msgstr ""
-"{error}\n"
-"\n"
-"Telefon ma jeszcze system ratunkowy, więc możesz spróbować ponownie."
-
-#: plinius-boot:9147
+#: plinius-boot:9551
 msgid "Inspect image file…"
 msgstr "Zbadaj plik obrazu…"
 
-#: plinius-boot:9148
+#: plinius-boot:9552
 msgid "Search again"
 msgstr "Wyszukaj ponownie"
 
-#: plinius-boot:9149
+#: plinius-boot:9553
 msgid "Check the tools"
 msgstr "Sprawdź narzędzia"
 
-#: plinius-boot:9150
+#: plinius-boot:9554
 #, python-brace-format
 msgid "About {name}"
 msgstr "O programie {name}"
 
-#: plinius-boot:9201
+#: plinius-boot:9609
 msgid "Connect the phone"
 msgstr "Podłącz telefon"
 
-#: plinius-boot:9203
+#: plinius-boot:9611
 msgid ""
 "Connect the Volla Phone Plinius to this computer with a USB-C cable. The app "
 "finds it by itself."
@@ -3788,19 +4090,19 @@ msgstr ""
 "Podłącz Volla Phone Plinius do tego komputera kablem USB-C. Aplikacja sama "
 "go znajdzie."
 
-#: plinius-boot:9242
+#: plinius-boot:9650
 msgid "The app needs a few programs"
 msgstr "Aplikacja potrzebuje kilku programów"
 
-#: plinius-boot:9243
+#: plinius-boot:9651
 msgid "Please provide what is missing here, then check again."
 msgstr "Zainstaluj tutaj to, czego brakuje, a potem sprawdź ponownie."
 
-#: plinius-boot:9249
+#: plinius-boot:9657
 msgid "How to provide them"
 msgstr "Jak je zainstalować"
 
-#: plinius-boot:9251
+#: plinius-boot:9659
 msgid ""
 "The Flatpak brings these programs along, so it seems to be damaged. Please "
 "install it again."
@@ -3808,15 +4110,15 @@ msgstr ""
 "Flatpak zawiera te programy, więc wygląda na uszkodzony. Zainstaluj go "
 "ponownie."
 
-#: plinius-boot:9254
+#: plinius-boot:9662
 msgid "Run this in a terminal:"
 msgstr "Uruchom to w terminalu:"
 
-#: plinius-boot:9255
+#: plinius-boot:9663
 msgid "Command"
 msgstr "Polecenie"
 
-#: plinius-boot:9257
+#: plinius-boot:9665
 msgid ""
 "Install them with your system's package manager, or use the Flatpak of this "
 "app, which brings them along."
@@ -3824,51 +4126,47 @@ msgstr ""
 "Zainstaluj je menedżerem pakietów swojego systemu albo użyj pakietu Flatpak "
 "tej aplikacji, który je zawiera."
 
-#: plinius-boot:9259
+#: plinius-boot:9667
 msgid "Check again"
 msgstr "Sprawdź ponownie"
 
-#: plinius-boot:9283
+#: plinius-boot:9691
 msgid "Is USB debugging on?"
 msgstr "Czy debugowanie USB jest włączone?"
 
-#: plinius-boot:9283
+#: plinius-boot:9691
 msgid "How to turn it on"
 msgstr "Jak je włączyć"
 
-#: plinius-boot:9292
-msgid "Waiting for the phone…"
-msgstr "Oczekiwanie na telefon…"
-
-#: plinius-boot:9300 plinius-boot:9302
+#: plinius-boot:9708 plinius-boot:9710
 msgid "A phone in the USB network"
 msgstr "Telefon w sieci USB"
 
-#: plinius-boot:9303
+#: plinius-boot:9711
 msgid "Log in with the user name and password of its system to continue."
 msgstr "Zaloguj się nazwą użytkownika i hasłem jego systemu, aby kontynuować."
 
-#: plinius-boot:9307
+#: plinius-boot:9715
 msgid "locked"
 msgstr "zablokowany"
 
-#: plinius-boot:9311
+#: plinius-boot:9719
 msgid "Start the bootloader…"
 msgstr "Uruchom bootloader…"
 
-#: plinius-boot:9329
+#: plinius-boot:9737
 msgid "Found"
 msgstr "Znaleziono"
 
-#: plinius-boot:9339
+#: plinius-boot:9747
 msgid "Earlier phones and backups"
 msgstr "Wcześniejsze telefony i kopie zapasowe"
 
-#: plinius-boot:9340
+#: plinius-boot:9748
 msgid "Their backups, also without a connection"
 msgstr "Ich kopie zapasowe, także bez połączenia"
 
-#: plinius-boot:9369
+#: plinius-boot:9777
 #, python-brace-format
 msgid ""
 "A phone is connected, but this user may not open it over USB. Install the "
@@ -3877,7 +4175,7 @@ msgstr ""
 "Telefon jest podłączony, ale ten użytkownik nie może go otworzyć przez USB. "
 "Zainstaluj pakiet {package}, a potem podłącz telefon ponownie."
 
-#: plinius-boot:9371
+#: plinius-boot:9779
 msgid ""
 "A phone is connected, but this user may not open it over USB. It needs udev "
 "rules for Android devices."
@@ -3885,7 +4183,7 @@ msgstr ""
 "Telefon jest podłączony, ale ten użytkownik nie może go otworzyć przez USB. "
 "Potrzebne są reguły udev dla urządzeń Android."
 
-#: plinius-boot:9390
+#: plinius-boot:9798
 msgid ""
 "The system on the phone lets in SSH keys only, so the app cannot log in with "
 "a password. In the bootloader the app starts its rescue system and can then "
@@ -3895,27 +4193,27 @@ msgstr ""
 "zalogować się hasłem. W bootloaderze aplikacja uruchamia swój system "
 "ratunkowy i może wtedy instalować i przywracać."
 
-#: plinius-boot:9398
+#: plinius-boot:9806
 msgid "User name"
 msgstr "Nazwa użytkownika"
 
-#: plinius-boot:9400
+#: plinius-boot:9808
 msgid "Password"
 msgstr "Hasło"
 
-#: plinius-boot:9409
+#: plinius-boot:9817
 msgid "This user name is not valid."
 msgstr "Ta nazwa użytkownika jest nieprawidłowa."
 
-#: plinius-boot:9422
+#: plinius-boot:9830
 msgid "Login failed. Check the user name and password."
 msgstr "Logowanie nie powiodło się. Sprawdź nazwę użytkownika i hasło."
 
-#: plinius-boot:9433
+#: plinius-boot:9841
 msgid "Log in to the phone"
 msgstr "Logowanie do telefonu"
 
-#: plinius-boot:9434
+#: plinius-boot:9842
 msgid ""
 "Use the user name and password of the system on the phone. The password is "
 "only kept while this app is running."
@@ -3923,37 +4221,37 @@ msgstr ""
 "Użyj nazwy użytkownika i hasła systemu na telefonie. Hasło jest "
 "przechowywane tylko podczas działania tej aplikacji."
 
-#: plinius-boot:9436
+#: plinius-boot:9844
 msgid "Log in"
 msgstr "Zaloguj się"
 
-#: plinius-boot:9460
+#: plinius-boot:9868
 msgid "Storage location for backups"
 msgstr "Miejsce zapisu kopii zapasowych"
 
-#: plinius-boot:9479
+#: plinius-boot:9887
 msgid "Inspect image file"
 msgstr "Zbadaj plik obrazu"
 
-#: plinius-boot:9491
+#: plinius-boot:9899
 #, python-brace-format
 msgid "Content: {kind}"
 msgstr "Zawartość: {kind}"
 
-#: plinius-boot:9492
+#: plinius-boot:9900
 #, python-brace-format
 msgid "File size: {size}"
 msgstr "Rozmiar pliku: {size}"
 
-#: plinius-boot:9494
+#: plinius-boot:9902
 msgid "The file is compressed with zstd."
 msgstr "Plik jest skompresowany za pomocą zstd."
 
-#: plinius-boot:9503
+#: plinius-boot:9911
 msgid "All tools work."
 msgstr "Wszystkie narzędzia działają."
 
-#: plinius-boot:9509
+#: plinius-boot:9917
 msgid "Back up and flash Volla and FuriLabs phones."
 msgstr "Tworzenie kopii zapasowych i flashowanie telefonów Volla i FuriLabs."
 

@@ -1,7 +1,7 @@
 # Plinius Boot
 
 A GTK4/libadwaita app for the PC that installs Plinius on a Volla Phone Plinius in one go: onto the
-memory card next to Volla OS, or instead of Volla OS. Under **Advanced** it detects a phone connected
+memory card next to Volla OS, or instead of Volla OS, and leads back to Volla OS or Ubuntu Touch. Under **Advanced** it detects a phone connected
 over USB-C, backs up its partitions and flashes them, unlocks its bootloader and starts a rescue system on it. It supports the Volla Phone Plinius (Plus) and the FuriLabs FLX1/FLX1s; other
 phones with GPT partition names are handled as "unknown phone".
 
@@ -91,6 +91,36 @@ right one is written back from a file under Advanced.
 
 Not tried on a real phone yet: setting up a card from the shop, which only the bootloader of a Plinius can
 confirm; installing into free space; the whole way through in one go.
+
+## Back to Volla OS or Ubuntu Touch
+
+**Back to Volla OS or Ubuntu Touch** is on the start page, also without a phone, on the page of the first step
+of the installation, and in its menu. It asks where Plinius is now, with nothing chosen, unless this app put
+Plinius inside the phone it was opened for or a connected one:
+
+- **On the memory card:** nothing has to go back, the system inside the phone was never touched. The page says
+  so: without the card the phone starts that system; with it, the entry for the phone's own storage in the boot
+  menu (`VollaOS`, or the name the card gives it) starts it within the five seconds before Plinius starts by
+  itself; and a card erased on a computer or in Volla OS has no boot menu any more. The app changes nothing on
+  the card here.
+- **Inside the phone:** the way back is the backup of Volla OS that the installation asked for. The page lists
+  the connected phones (or how to start the bootloader by hand, since Plinius lets in SSH keys only), and the
+  next page follows the phone the same way as changing systems: into the bootloader, the rescue system, then the
+  backup. It takes the newest backup this computer made of this phone (signed manifest, serial number) that holds
+  `boot`, `vendor_boot` and `init_boot` of the slot of the rescue system, and whose `init_boot` matches the
+  checksum the phone's `vbmeta` has for it now (`volla_way_back`): so it was made while Volla OS was inside, of
+  the version in `super`, and a backup of Plinius itself never counts. The page shows the date, the partitions
+  with their sizes, and whether `userdata` is missing (erased when the bootloader was unlocked); a switch "I have
+  copied what I still need" and one more confirmation come before anything is written. `run_return_volla` writes
+  `boot`, `vendor_boot` and `userdata` with the restore of the Backups tab, checked before and after, while the
+  phone still starts the rescue system; then it forgets the system it had installed there and writes the
+  `init_boot` of the backup as the original in place of the rescue system, in the bootloader, formatting
+  `userdata` first if the backup has none, and the phone starts Volla OS. Without such a backup the page offers
+  another storage location and names Volla's own installation package for the phone as the only other way, which
+  starts Volla OS anew. Not tried on a real phone yet; only the part in the rescue system has run in a virtual
+  machine.
+- **Ubuntu Touch** is installed with its own program, the UBports Installer
+  (`https://devices.ubuntu-touch.io/installer/`), shown as text. This app does not install Ubuntu Touch.
 
 ## Advanced: systems, boot menu and backups
 
@@ -282,12 +312,14 @@ The aarch64 build has never been finished, so releases contain x86_64 only for n
 
 ```sh
 tests/test-install.sh   # installer and uninstaller, in throw-away folders
-tests/test-guide.py     # the logic of the guided flow and of the installation, without a phone
+tests/test-guide.py     # the logic of the guided flow, the installation and the way back, without a phone
 rescue/test-rescue.sh   # the rescue system, in QEMU
-rescue/test-systems.sh  # installing, moving and swapping, setting up a card and the PIN, in QEMU with an emulated SD card
+rescue/test-systems.sh  # installing, moving and swapping, setting up a card and the PIN, the way back to Volla OS, in QEMU with an emulated SD card
 ```
 
-`tests/test-install.sh` also builds both archives and runs the app from them. The zstd fallback for Python
+`tests/test-guide.py` builds the pages of the way back on a display of its own when `gtk4-broadwayd` (part of
+GTK 4) is installed, and never shows them; without it those checks are skipped. `tests/test-install.sh` also
+builds both archives and runs the app from them. The zstd fallback for Python
 before 3.14 is tested by `tests/test-guide.py` when python-zstandard is installed; run it with Python 3.13 to
 test the whole app on top of it.
 

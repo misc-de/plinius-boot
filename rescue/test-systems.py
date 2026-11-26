@@ -882,6 +882,34 @@ if beside != "Encrypt the device?\tGerät verschlüsseln?\n---\n[keyboard]\nlayo
     fail(f"what the prompt at the first start takes:\n{beside!r}")
 ok("the language chosen: in the system as Settings write it, and next to the request for the prompt at the first start")
 
+# The way back to Volla OS: the backup made before the first system went into the phone goes back in the rescue
+# system, all but init_boot, which holds the rescue system and is left to write_original (it needs the bootloader,
+# which QEMU does not have). This test machine has no vbmeta: what it would name is the init_boot of that backup
+before_backup = next(b for b in app.list_backups(base) if b.path == os.path.join(base, "Plinius", "before"))
+saved = {e["name"]: e for e in before_backup.entries}
+real_volla_init_boot = app.volla_init_boot
+app.volla_init_boot = lambda device_, suffix: [saved["init_boot" + suffix]["size"], "sha256", "",
+                                               saved["init_boot" + suffix]["sha256"]]
+config["rescue_in"] = {device.serial: {"partition": "init_boot_b"}}
+if [b.path for b, _e in app.volla_backups(app.list_backups(base), device, config)] != [before_backup.path]:
+    fail("the backup of Volla OS is not found, or another one is taken for it")
+hashes = internal_hashes()
+init_boot_now = sh("sha256sum /dev/disk/by-partlabel/init_boot_b").split()[0]
+app.run_return_volla(job(), device, config, before_backup, leave=False)
+for name in ("boot_b", "vendor_boot_b", "userdata"):
+    if sh(f"sha256sum /dev/disk/by-partlabel/{name}").split()[0] != saved[name]["sha256"]:
+        fail(f"{name} does not hold the backup")
+if sh("sha256sum /dev/disk/by-partlabel/init_boot_b").split()[0] != init_boot_now:
+    fail("init_boot was written in the rescue system")
+if internal_hashes() != hashes or guid(userdata["number"], "vda") != tables:
+    fail("the way back changed the partition table or other partitions")
+if "phone_system" in config and device.serial in config["phone_system"] or \
+        config["rescue_in"][device.serial].get("expected") != app.volla_init_boot(device, "_b"):
+    fail(f"what the app remembers after the way back: {config}")
+app.volla_init_boot = real_volla_init_boot
+ok("the way back to Volla OS: boot, vendor_boot and userdata from the backup, checked on the phone, init_boot left to "
+   "the bootloader, nothing else changed, and the app forgets the system it had installed")
+
 # Stufe 7: the guided installation (InstallPage): Plinius with its own kernel and a PIN
 PIN = app.sha512_crypt("2580")
 if PIN != app.sha512_crypt("2580", PIN.split("$")[2]) or not PIN.startswith("$6$"):

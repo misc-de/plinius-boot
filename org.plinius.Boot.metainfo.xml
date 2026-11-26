@@ -11,7 +11,7 @@
   <description>
     <p>
       Installs Plinius on a Volla Phone Plinius in one go: onto its memory card next to Volla OS, or
-      instead of Volla OS. It also detects a phone connected over USB-C, backs up its partitions and
+      instead of Volla OS, and leads back to Volla OS or Ubuntu Touch. It also detects a phone connected over USB-C, backs up its partitions and
       flashes them, unlocks its bootloader and starts a rescue system on it. It supports the Volla Phone Plinius (Plus) and the
       FuriLabs FLX1 and FLX1s.
     </p>
@@ -24,6 +24,11 @@
   <url type="homepage">https://github.com/misc-de/plinius-boot</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.38" date="2026-11-26">
+      <description>
+        <p>A new page leads back to Volla OS or Ubuntu Touch. With Plinius on the memory card it explains that the phone starts its own system without the card or from the boot menu. With Plinius inside the phone it writes Volla OS back from the backup this computer made of it before the installation, after a clear warning; without such a backup it points to Volla's own installation package. For Ubuntu Touch it names the UBports Installer. Writing Volla OS back has not been tried on a real phone yet, and the page says so.</p>
+      </description>
+    </release>
     <release version="0.37" date="2026-11-26">
       <description>
         <p>A system that goes to the data partition of the memory card no longer leaves the old system partition of its place lying idle: when it replaces a system or takes free partitions, the system partition keeps only 64 MiB and the rest goes to the data partition. Numbers and identities of both partitions stay, so the boot entries stay right.</p>
