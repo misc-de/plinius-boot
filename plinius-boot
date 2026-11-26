@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.33"
+VERSION = "0.34"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -1380,6 +1380,19 @@ def askpass_env(password):
     return dict(os.environ, SSH_ASKPASS=helper, SSH_ASKPASS_REQUIRE="force", PLINIUS_BOOT_PASSWORD=password)
 
 
+def auth_methods(err):
+    """The ways of logging in an SSH server still offers, from ssh's "Permission denied (publickey,password)."
+    None if the message does not name them."""
+    m = re.search(r"Permission denied \(([a-z0-9@.,-]*)\)", err)
+    return set(m.group(1).split(",")) - {""} if m else None
+
+
+def takes_password(methods):
+    """Whether a password can log in where the server offers methods (see auth_methods); unknown counts as
+    yes, so a server that says nothing keeps the login."""
+    return methods is None or bool(methods & {"password", "keyboard-interactive"})
+
+
 class SshAccess(ShellAccess):
     """Linux on the phone (or the rescue system) over ssh; root via sudo."""
 
@@ -1389,6 +1402,7 @@ class SshAccess(ShellAccess):
         if not valid_user(user):
             raise ValueError(f"invalid user name: {user!r}")
         self.host, self.user, self.port, self.password, self.usbnet = host, user, port, password, usbnet
+        self.methods = None
         # USB network interface the phone was found on (see usbnet_link); the password only goes there
         self.link = (link or usbnet_link()) if usbnet else None
         self.env = askpass_env(password) if password else None
@@ -1415,11 +1429,15 @@ class SshAccess(ShellAccess):
         return cmd + ["--", f"{self.user}@{self.host}", remote]
 
     def check(self):
-        """"ok", "auth" (login rejected) or "unreachable"."""
+        """"ok", "auth" (login rejected) or "unreachable". After "auth", self.methods holds the ways of
+        logging in the server named (see takes_password)."""
         rc, _out, err = run(self.command("true"), timeout=15, env=self.env)
         if rc == 0:
             return "ok"
-        return "auth" if "Permission denied" in err else "unreachable"
+        if "Permission denied" not in err:
+            return "unreachable"
+        self.methods = auth_methods(err)
+        return "auth"
 
     def detect_root(self):
         """Set self.root: "" (logged in as root), a sudo prefix, or None (no root)."""
@@ -1613,13 +1631,16 @@ class FastbootAccess:
 class Device:
     """A phone found in one mode. Without access it is listed only, with problem saying why."""
 
-    def __init__(self, key, mode, access=None, info=None, problem="", login=None):
+    def __init__(self, key, mode, access=None, info=None, problem="", login=None, keys_only=False):
         self.key, self.mode, self.access = key, mode, access
         self.info = info or {}
         self.profile = find_profile(self.info)
         self.problem = problem
         # (host, port, usbnet, USB link) of the SSH target when a login is missing
         self.login = login
+        # The system lets in SSH keys only (our Arch image): no password helps, the way in is the rescue
+        # system from the bootloader
+        self.keys_only = keys_only
         self.parts = None
         # What is installed where (see read_layout), read once per connection
         self.layout = None
@@ -1825,17 +1846,23 @@ class Scanner(threading.Thread):
             if known and known[0].access and known[0].access.check() == "ok":
                 new[known[0].key] = known[0]
                 continue
-            states = []
+            states, refused = [], []
             for user in users:
                 access = SshAccess(host, user, port, self.passwords.get((host, user)), usbnet, link)
                 state = access.check()
                 states.append(state)
+                if state == "auth":
+                    refused.append(access)
                 if state == "ok":
                     d = probe_ssh(access, f"{prefix}:{user}")
                     new[d.key] = d
                     break
             else:
-                if "auth" in states:
+                if refused and not any(takes_password(a.methods) for a in refused):
+                    new[prefix] = Device(prefix, "ssh", problem=_(
+                        "Its system lets in SSH keys only, no password. Start the bootloader on the phone; "
+                        "the app then starts the rescue system there."), keys_only=True)
+                elif refused:
                     new[prefix] = Device(prefix, "ssh", problem=_("Log in to read the partitions."),
                                          login=(host, port, usbnet, link))
 
@@ -8897,7 +8924,9 @@ class Window(Adw.ApplicationWindow):
     def phone_row(self, d):
         """A connected phone and what to do with it. Without a login the app knows nothing about it yet,
         so it does not pretend to: it says where it is and asks for the login."""
-        if d.login and not d.info:
+        if d.keys_only:
+            r = row(_("A phone in the USB network"), d.problem)
+        elif d.login and not d.info:
             r = row(_("A phone in the USB network"), _(
                 "Log in with the user name and password of its system to continue."))
         else:
@@ -8906,7 +8935,11 @@ class Window(Adw.ApplicationWindow):
                 parts.append(_("locked"))
             r = row(d.title(), d.problem if d.login or not d.access and d.problem else " · ".join(parts))
         r.add_prefix(Gtk.Image(icon_name="phone-symbolic", icon_size=Gtk.IconSize.LARGE))
-        if d.login:
+        if d.keys_only:
+            b = Gtk.Button(label=_("Start the bootloader…"), valign=Gtk.Align.CENTER, css_classes=["suggested-action"])
+            b.connect("clicked", lambda _b: self.bootloader_help())
+            r.add_suffix(b)
+        elif d.login:
             b = Gtk.Button(label=_("Log in…"), valign=Gtk.Align.CENTER, css_classes=["suggested-action"])
             b.connect("clicked", lambda _b, d=d: self.login(d))
             r.add_suffix(b)
@@ -8977,6 +9010,14 @@ class Window(Adw.ApplicationWindow):
                 self.guided.add(d.serial)
                 self.push(InstallPage(self, d))
                 return
+
+    def bootloader_help(self):
+        """For a system that lets in keys only: how to reach the bootloader, where the app starts the rescue
+        system."""
+        alert(self, _("Start the rescue system"), _(
+            "The system on the phone lets in SSH keys only, so the app cannot log in with a password. In the "
+            "bootloader the app starts its rescue system and can then install and restore."),
+              [("close", _("Close"))], None, extra=steps_group(None, None, fastboot_steps()))
 
     def login(self, device):
         """Ask for user name and password, test them, and hand them to the scanner (memory only)."""

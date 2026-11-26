@@ -24,6 +24,11 @@
   <url type="homepage">https://github.com/misc-de/plinius-boot</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.34" date="2026-11-26">
+      <description>
+        <p>A phone whose system lets in SSH keys only, as the Arch image does, no longer gets a password dialog that cannot work: the app says so and shows how to start the bootloader, where it starts its rescue system.</p>
+      </description>
+    </release>
     <release version="0.33" date="2026-11-25">
       <description>
         <p>A system put on the memory card asks at its first start whether to encrypt the data partition, as one installed inside the phone does, in the language chosen. Its entry in the boot menu is called Arch Linux, or Arch Linux (SD) next to another one of that name.</p>

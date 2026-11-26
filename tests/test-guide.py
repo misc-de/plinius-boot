@@ -266,6 +266,39 @@ upgraded = types.SimpleNamespace(profile=plus, serial="S2", info={})
 scanner.remember(upgraded)
 check("Volla OS can correct a plain Plinius", config["known"]["S2"] == "volla-plinius-plus")
 
+# A system that lets in SSH keys only (our Arch image): no password dialog, the way in is the rescue system
+check("ssh names the ways in that are left", app.auth_methods("root@10.15.19.82: Permission denied (publickey).")
+      == {"publickey"} and app.auth_methods("x: Permission denied (publickey,password).") == {"publickey", "password"})
+check("a message without them says nothing", app.auth_methods("Connection closed by 10.15.19.82") is None)
+check("password or keyboard-interactive take a password", app.takes_password({"publickey", "keyboard-interactive"})
+      and app.takes_password({"password"}) and not app.takes_password({"publickey"}) and app.takes_password(None))
+
+
+def scan_refused(err):
+    """One round of scan_ssh over the USB network, every user refused with ssh's message err."""
+    real = app.run, app.usbnet_link, app.dev_ssh_target
+    app.run = lambda cmd, **_k: (255, "", err)
+    app.usbnet_link = lambda: "usb-1"
+    app.dev_ssh_target = lambda: None
+    try:
+        sc = app.Scanner({}, lambda: None)
+        new = {}
+        sc.scan_ssh({}, new)
+        return new
+    finally:
+        app.run, app.usbnet_link, app.dev_ssh_target = real
+
+
+found = scan_refused("root@10.15.19.82: Permission denied (publickey).")
+d = found.get(f"ssh:{app.USBNET_HOST}:22")
+check("keys only: no login, the rescue system instead", d and d.keys_only and d.login is None
+      and "SSH keys only" in d.problem and not d.access)
+found = scan_refused("root@10.15.19.82: Permission denied (publickey,password).")
+d = found.get(f"ssh:{app.USBNET_HOST}:22")
+check("a system that takes a password keeps the login", d and not d.keys_only and d.login
+      and d.problem == "Log in to read the partitions.")
+check("one that does not answer is not listed", scan_refused("ssh: connect to host 10.15.19.82: No route") == {})
+
 # Formatting userdata on the way out of the rescue system, only when the table was changed
 calls = []
 real_run, real_save = app.run, app.save_config
