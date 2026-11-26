@@ -31,8 +31,9 @@ echo fake-ramdisk > "$BUILD/rescue/plinius-rescue-aarch64.cpio.lz4"
 ok "installed into a prefix with a space in its path"
 
 # The list and the prefix must agree exactly: that is what makes uninstalling complete
-# (mimeinfo.cache belongs to update-desktop-database and is shared with every other application)
-diff <(cd "$prefix" && find . -type f -not -name mimeinfo.cache -not -name icon-theme.cache | sed 's|^\./||' | LC_ALL=C sort) "$list" ||
+# (mimeinfo.cache, and since desktop-file-utils 0.29 intent.cache, belong to update-desktop-database and
+# are shared with every other application)
+diff <(cd "$prefix" && find . -type f -not -name mimeinfo.cache -not -name intent.cache -not -name icon-theme.cache | sed 's|^\./||' | LC_ALL=C sort) "$list" ||
 	fail "list and files differ"
 ok "the list names exactly the installed files ($(wc -l < "$list"))"
 
@@ -150,7 +151,7 @@ printf '%s\n' "../../../outside" "$tmp/outside" >> "$list"
 ok "a damaged list cannot reach outside the prefix"
 
 left=$(cd "$prefix" && find . -type f -not -path './share/plinius-boot/originals/*' \
-	-not -name other -not -name other.desktop -not -name other.mo -not -name mimeinfo.cache -not -name icon-theme.cache)
+	-not -name other -not -name other.desktop -not -name other.mo -not -name mimeinfo.cache -not -name intent.cache -not -name icon-theme.cache)
 [[ -z $left ]] || fail "left behind: $left"
 for f in bin/other share/applications/other.desktop share/locale/de/LC_MESSAGES/other.mo; do
 	[[ -f $prefix/$f ]] || fail "removed a foreign file: $f"
