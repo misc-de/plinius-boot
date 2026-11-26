@@ -299,6 +299,48 @@ check("a system that takes a password keeps the login", d and not d.keys_only an
       and d.problem == "Log in to read the partitions.")
 check("one that does not answer is not listed", scan_refused("ssh: connect to host 10.15.19.82: No route") == {})
 
+# The steps of an installation: listed, the bar from one to the next, a time left only while bytes move
+plan = app.StepPlan([("Writing", 1000), ("Fitting", 0), ("PIN", 0), ("Kernel", 100)])
+check("before the first report nothing counts", plan.update(0, "Preparing", 0.0) == (-1, 0.0, None))
+check("a step with bytes moves within its share", plan.update(0, "Writing", 1.0)[:2] == (0, 0.0)
+      and plan.update(500, "Writing", 2.0)[:2] == (0, 0.125) and plan.update(1000, "Writing", 3.0)[:2] == (0, 0.25))
+plan2 = app.StepPlan([("Writing", 1000), ("Fitting", 0)])
+plan2.update(0, "Writing", 0.0)
+idx, frac, eta = plan2.update(400, "Writing", 10.0)
+check("its rate and time left", idx == 0 and abs(frac - 0.2) < 1e-9 and eta and abs(eta[0] - 40) < 1e-9
+      and abs(eta[1] - 15) < 1e-9)
+early = app.StepPlan([("W", 10)])
+early.update(0, "W", 0.0)
+check("no time left in the first seconds", early.update(5, "W", 2.0)[2] is None and early.update(5, "W", 4.0)[2])
+idx, frac, eta = plan.update(1000, "Fitting", 3.0)
+check("a step without bytes: its share, no rate, not 100 %", (idx, frac, eta) == (1, 0.25, None))
+check("a part of a step keeps the step", plan.update(1000, "Resizing the file system", 4.0)[:2] == (1, 0.25))
+check("the plan never goes back", plan.update(1000, "Writing", 5.0)[0] == 1)
+check("the next step and the last one with bytes", plan.update(1000, "PIN", 6.0)[:2] == (2, 0.5)
+      and plan.update(1000, "Kernel", 7.0)[:2] == (3, 0.75) and plan.update(1100, "Kernel", 8.0)[:2] == (3, 1.0))
+plan.finish()
+check("finished: every step done", plan.current == 4)
+
+real_kernel_size = app.kernel_size
+app.kernel_size = lambda _image: 30
+img = types.SimpleNamespace(size=2000, vendor=None)
+steps = app.card_steps("replace", img, True, "hash", "de_DE")
+check("instead of a system: write, fit, empty, PIN, language, kernel, entries", [t for t, _s in steps] == [
+    "Writing Plinius to the memory card", "Fitting the file system to the partition", "Emptying the data partition",
+    "Setting the PIN", "Setting the language", "Copying the kernel", "Writing the boot entries"]
+      and dict(steps)["Writing Plinius to the memory card"] == 2000 and dict(steps)["Copying the kernel"] == 30)
+steps = app.card_steps("fresh", types.SimpleNamespace(size=1, vendor=["vendor"]), False, None, None)
+check("a card set up anew starts with that, the drivers when they come along", [t for t, _s in steps] == [
+    "Setting up the memory card", "Writing Plinius to the memory card", "Fitting the file system to the partition",
+    "Copying the drivers of Volla OS", "Copying the kernel", "Writing the boot entries"])
+check("a new place starts with the partition table",
+      app.card_steps("add", img, False, None, None)[0][0] == "Changing the partition table")
+app.kernel_size = real_kernel_size
+check("leaving the rescue system adds its steps", app.leave_steps(types.SimpleNamespace(serial="S9"), {}) == []
+      and [t for t, _s in app.leave_steps(types.SimpleNamespace(serial="S9"),
+                                          {"rescue_in": {"S9": {"partition": "init_boot_a"}}})]
+      == ["Restarting into the bootloader…", "Starting the phone…"])
+
 # Formatting userdata on the way out of the rescue system, only when the table was changed
 calls = []
 real_run, real_save = app.run, app.save_config

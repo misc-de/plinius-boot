@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.34"
+VERSION = "0.35"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -2820,6 +2820,11 @@ class Job:
         self.last_step = None
         page.job = self
 
+    def plan(self, steps):
+        """The steps still to come, [(text, bytes it moves or 0)], in the order report names them: the page
+        lists them and moves its bar from one to the next."""
+        GLib.idle_add(self.page.set_plan, list(steps))
+
     def report(self, done, total, text):
         if text and text != self.last_step:
             self.last_step = text
@@ -4219,6 +4224,12 @@ def run_install_phone(job, device, config, image, system_size, restart=True, pin
         android = ext4.open_file(IMAGE_NEEDS[0])
         crypt = ext4.lookup(PHONE_CRYPT_MARK) is not None
         total, done = image.size + android.size + sum(map(len, boot.values())), 0
+        steps = [(_("Formatting the phone's data partition"), 0), (_("Writing the Android image"), android.size),
+                 (_("Writing the system"), image.size), (_("Fitting the file system to the size you chose"), 0)]
+        steps += [(t, 0) for t, on in ((_("Setting the PIN"), pin_hash), (_("Setting the language"), language),
+                                       (_("Copying the drivers of Volla OS"), image.vendor)) if on]
+        steps += [(_("Writing {name}").format(name=name), len(boot[name])) for name in ("boot", "vendor_boot", "init_boot")]
+        job.plan(steps)
         job.report(0, total, _("Formatting the phone's data partition"))
         run_checked(access, f"{MKFS} {data_path} 2>&1", 7200, _("Formatting the phone's data partition"))
         run_checked(access, f"mkdir -p {PHONE_MOUNT} && mount -t ext4 {data_path} {PHONE_MOUNT}", 120,
@@ -5166,12 +5177,13 @@ def card_entry_text(title, folder, system, data):
                       "xtype UT", f"xpart {system['number']}:{data['number']}")) + "\n"
 
 
-def run_install_card(job, device, card, choice, image, title, pin_hash, language=None):
+def run_install_card(job, device, card, choice, image, title, pin_hash, language=None, then=()):
     """Puts the image on the memory card as choice says (see card_choices), with its own kernel and the
     PIN, and makes it the system the boot menu starts by itself. The entry is written last: until then a
     stop leaves the menu as it was, except for a card that was set up anew, which then starts Volla OS.
     title: of the entry, None for card_title. An image with plinius-crypt asks at its first start whether
-    to encrypt, as inside the phone (PHONE_CRYPT_MARK)."""
+    to encrypt, as inside the phone (PHONE_CRYPT_MARK). then: the steps that follow it, for the list of steps
+    (see Job.plan)."""
     access = device.access
     card = fresh_card(device, card)
     if image.problem:
@@ -5179,10 +5191,11 @@ def run_install_card(job, device, card, choice, image, title, pin_hash, language
     problem = card_image_problem(image)
     if problem:
         raise Failed(problem)
-    kind, wipe = choice["kind"], True
+    kind, wipe = choice["kind"], choice["kind"] not in ("fresh", "add")
+    job.plan(card_steps(kind, image, wipe, pin_hash, language) + list(then))
     if kind == "fresh":
         setup_card(job, access, card, choice["settings"], choice["system"])
-        card, wipe = access.card(), False
+        card = access.card()
         by_number = {p["number"]: p for p in (card or {}).get("parts", [])}
         if not card or not card["settings"] or 2 not in by_number or 3 not in by_number:
             raise Failed(_("The memory card was set up, but it does not show what was written."))
@@ -5190,7 +5203,7 @@ def run_install_card(job, device, card, choice, image, title, pin_hash, language
     elif kind == "add":
         before = {p["name"] for p in card["parts"]}
         run_add_place(job, device, card, choice["system"], choice["data"])
-        card, wipe = access.card(), False
+        card = access.card()
         new = sorted((p for p in card["parts"] if p["name"] not in before and not p.get("internal")),
                      key=lambda p: p["start"])
         if len(new) != 2:
@@ -5214,11 +5227,11 @@ def run_install_card(job, device, card, choice, image, title, pin_hash, language
     total = image.size + kernel_size(image)
     with image.open() as f:
         done, _sha = send_to_partition(job, access, f.read, system, image.size, 0, total,
-                                       _("Writing Plinius to partition {number}").format(number=system["number"]))
+                                       _("Writing Plinius to the memory card"))
     job.report(done, total, _("Fitting the file system to the partition"))
     finish_filesystem(access, system)
     if wipe:
-        job.report(done, total, _("Emptying partition {number}").format(number=data["number"]))
+        job.report(done, total, _("Emptying the data partition"))
         run_checked(access, f"{MKFS} {part_path(data)} 2>&1", 7200, _("Emptying the data partition"))
     if pin_hash:
         job.report(done, total, _("Setting the PIN"))
@@ -5255,6 +5268,33 @@ def run_install_card(job, device, card, choice, image, title, pin_hash, language
     write_entries(access, card, {name: card_entry_text(title, folder, system, data)})
     set_last_index(access, card["settings"], name)
     return name
+
+
+def card_steps(kind, image, wipe, pin_hash, language):
+    """The steps of run_install_card in the order it reports them, [(text, bytes)] (see Job.plan)."""
+    steps = []
+    if kind == "fresh":
+        steps.append((_("Setting up the memory card"), 0))
+    elif kind == "add":
+        steps.append((_("Changing the partition table"), 0))
+    steps += [(_("Writing Plinius to the memory card"), image.size),
+              (_("Fitting the file system to the partition"), 0)]
+    if wipe:
+        steps.append((_("Emptying the data partition"), 0))
+    if pin_hash:
+        steps.append((_("Setting the PIN"), 0))
+    if language:
+        steps.append((_("Setting the language"), 0))
+    if image.vendor:
+        steps.append((_("Copying the drivers of Volla OS"), 0))
+    return steps + [(_("Copying the kernel"), kernel_size(image)), (_("Writing the boot entries"), 0)]
+
+
+def leave_steps(device, config):
+    """The steps of leave_rescue, if the phone is to leave the rescue system (see Job.plan)."""
+    if not pending_rescue(config, device.serial):
+        return []
+    return [(_("Restarting into the bootloader…"), 0), (_("Starting the phone…"), 0)]
 
 
 def leave_rescue(job, device, config):
@@ -5420,6 +5460,39 @@ class PartitionList:
         return [k for k, c in self.checks.items() if c.get_active()]
 
 
+class StepPlan:
+    """Where an operation is among its steps [(text, bytes)]. A report names its step by the text; a text that
+    is no step (a part of one) keeps the current step, and the plan never goes back. The bar moves one share
+    per step, within a step that moves bytes by those; only such a step has a rate and a time left."""
+
+    def __init__(self, steps):
+        self.steps = [(text, max(0, int(size or 0))) for text, size in steps]
+        self.current, self.start_done, self.start_time = -1, 0, 0.0
+
+    def update(self, done, text, now):
+        """(index of the current step, fraction of the whole, (bytes per second, seconds left) or None)"""
+        texts = [t for t, _s in self.steps]
+        if text in texts:
+            i = texts.index(text, max(self.current, 0)) if text in texts[max(self.current, 0):] else self.current
+            if i > self.current:
+                self.current, self.start_done, self.start_time = i, done, now
+        if self.current < 0:
+            return -1, 0.0, None
+        size = self.steps[self.current][1]
+        moved = max(0, done - self.start_done)
+        inner = min(1.0, moved / size) if size else 0.0
+        fraction = (self.current + inner) / len(self.steps)
+        elapsed = now - self.start_time
+        eta = None
+        if size and 0 < moved < size and elapsed > 3:
+            rate = moved / elapsed
+            eta = (rate, (size - moved) / rate)
+        return self.current, fraction, eta
+
+    def finish(self):
+        self.current = len(self.steps)
+
+
 class OperationPage(Adw.NavigationPage):
     """Progress of an operation with Cancel; at the end the result and buttons."""
 
@@ -5432,6 +5505,10 @@ class OperationPage(Adw.NavigationPage):
         self.step = Gtk.Label(wrap=True, justify=Gtk.Justification.CENTER)
         self.bar = Gtk.ProgressBar(show_text=True)
         self.eta = Gtk.Label(css_classes=["dim-label"])
+        # The steps of the operation, once it names them (Job.plan)
+        self.plan, self.plan_rows, self.last = None, [], (0, 0, "")
+        self.steps_list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE, css_classes=["boxed-list"],
+                                      visible=False)
         self.log = Gtk.TextView(editable=False, monospace=True, wrap_mode=Gtk.WrapMode.WORD_CHAR,
                                 cursor_visible=False, top_margin=6, bottom_margin=6, left_margin=6)
         scroller = Gtk.ScrolledWindow(child=self.log, min_content_height=160, css_classes=["card"])
@@ -5440,7 +5517,7 @@ class OperationPage(Adw.NavigationPage):
         self.cancel_button = Gtk.Button(label=_("Cancel"), css_classes=["pill"])
         self.cancel_button.connect("clicked", self.on_cancel)
         self.buttons.append(self.cancel_button)
-        for w in (self.step, self.bar, self.eta, expander, self.buttons):
+        for w in (self.step, self.bar, self.eta, self.steps_list, expander, self.buttons):
             box.append(w)
         self.status.set_child(Adw.Clamp(maximum_size=520, child=box))
         toolbar = Adw.ToolbarView(content=self.status)
@@ -5453,18 +5530,65 @@ class OperationPage(Adw.NavigationPage):
             self.step.set_label(_("Cancelling…"))
             self.job.cancel()
 
+    def set_plan(self, steps):
+        """Lists the steps; the one reported last before counts already."""
+        self.plan = StepPlan(steps)
+        for r in self.plan_rows:
+            self.steps_list.remove(r)
+        self.plan_rows = []
+        for text, _size in self.plan.steps:
+            r = Adw.ActionRow(title=text)
+            r.icon = Gtk.Image()
+            r.add_prefix(r.icon)
+            self.steps_list.append(r)
+            self.plan_rows.append(r)
+        self.steps_list.set_visible(bool(self.plan_rows))
+        self.progress(*self.last)
+        return False
+
+    def show_steps(self, current, failed=False):
+        """Done ones ticked, the current one marked (a warning if it failed), the ones to come dimmed."""
+        for i, r in enumerate(self.plan_rows):
+            if i < current:
+                r.icon.set_from_icon_name("emblem-ok-symbolic")
+            elif i == current:
+                r.icon.set_from_icon_name("dialog-warning-symbolic" if failed else "media-playback-start-symbolic")
+            else:
+                r.icon.set_from_icon_name("content-loading-symbolic")
+            if i > current:
+                r.add_css_class("dim-label")
+            else:
+                r.remove_css_class("dim-label")
+
+    def show_eta(self, rate, left):
+        mins = max(1, round(left / 60))
+        self.eta.set_label(_("{rate}/s, about {left} left").format(
+            rate=size_text(int(rate)), left=ngettext("{n} minute", "{n} minutes", mins).format(n=mins)))
+        self.eta.set_visible(True)
+
     def progress(self, done, total, text):
-        self.step.set_label(text)
+        self.last = (done, total, text)
+        if text:
+            self.step.set_label(text)
+        now = time.monotonic()
+        if self.plan:
+            current, fraction, eta = self.plan.update(done, text, now)
+            self.show_steps(current)
+            self.bar.set_fraction(min(fraction, 1))
+            if eta:
+                self.show_eta(*eta)
+            else:
+                self.eta.set_visible(False)
+            return False
         fraction = done / total if total else 0
         self.bar.set_fraction(min(fraction, 1))
-        elapsed = time.monotonic() - self.started
-        if done and elapsed > 3:
+        elapsed = now - self.started
+        # A rate and a time left only while bytes are still to come: not at 100 %, not for a step without bytes
+        if done and total and done < total and elapsed > 3:
             rate = done / elapsed
-            left = int((total - done) / rate) if rate else 0
-            mins = max(1, round(left / 60))
-            self.eta.set_label(_("{rate}/s, about {left} left").format(
-                rate=size_text(int(rate)),
-                left=ngettext("{n} minute", "{n} minutes", mins).format(n=mins)))
+            self.show_eta(rate, int((total - done) / rate) if rate else 0)
+        else:
+            self.eta.set_visible(False)
         return False
 
     def add_line(self, text):
@@ -5479,6 +5603,11 @@ class OperationPage(Adw.NavigationPage):
         self.status.set_title(title)
         notes = self.job.notes if self.job else []
         self.step.set_label("\n\n".join([text] + notes) if text and notes else text or "\n\n".join(notes))
+        if self.plan:
+            if ok:
+                self.plan.finish()
+                self.bar.set_fraction(1)
+            self.show_steps(self.plan.current, failed=not ok)
         self.bar.set_visible(ok)
         self.eta.set_visible(False)
         self.buttons.remove(self.cancel_button)
@@ -8667,7 +8796,8 @@ class InstallPage(FollowingPage):
         d, choice, image = self.device, self.choice, self.source.image
 
         def work(job):
-            run_install_card(job, d, card, choice, image, None, self.pin_hash, self.language)
+            run_install_card(job, d, card, choice, image, None, self.pin_hash, self.language,
+                             then=leave_steps(d, self.win.config))
             return leave_rescue(job, d, self.win.config)
 
         if choice["kind"] in ("free", "add"):

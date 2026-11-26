@@ -24,6 +24,11 @@
   <url type="homepage">https://github.com/misc-de/plinius-boot</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.35" date="2026-11-26">
+      <description>
+        <p>Installing lists its steps and works through them one by one, the bar moving from step to step. A rate and the time left show only while data is being written, no longer at 100 % while the system is being finished.</p>
+      </description>
+    </release>
     <release version="0.34" date="2026-11-26">
       <description>
         <p>A phone whose system lets in SSH keys only, as the Arch image does, no longer gets a password dialog that cannot work: the app says so and shows how to start the bootloader, where it starts its rescue system.</p>
