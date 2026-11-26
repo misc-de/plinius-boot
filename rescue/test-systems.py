@@ -58,6 +58,9 @@ class SilentPage:
     def progress(self, *_a):
         pass
 
+    def set_plan(self, *_a):
+        pass
+
     def add_line(self, *_a):
         pass
 
@@ -661,7 +664,7 @@ app.PHONE_DATA_MIN = 16 << 20
 
 
 def phone_image(name, vendor_line=b"bootopt=64S3,32N2,64N2", boot_files=True, crypt=False, plinius=False,
-                first_start=False):
+                first_start=False, card_data=False):
     root = os.path.join(image_dir, name)
     os.makedirs(os.path.join(root, "var/lib/lxc/android"))
     os.makedirs(os.path.join(root, "usr/lib"))
@@ -683,6 +686,11 @@ def phone_image(name, vendor_line=b"bootopt=64S3,32N2,64N2", boot_files=True, cr
         os.makedirs(os.path.join(root, "usr/share/plinius-crypt/l10n"))
         with open(os.path.join(root, "usr/share/plinius-crypt/l10n/de"), "w") as f:
             f.write("Encrypt the device?\tGerät verschlüsseln?\n")
+    if card_data:
+        # Its kernel package also looks after a system that names only its data partition
+        os.makedirs(os.path.dirname(os.path.join(root, app.PHONE_CARD_DATA_MARK)))
+        with open(os.path.join(root, app.PHONE_CARD_DATA_MARK), "w") as f:
+            f.write("")
     if first_start:
         # Its greeter asks for the first PIN itself (plinius-greeter)
         os.makedirs(os.path.dirname(os.path.join(root, app.FIRST_START_MARK)))
@@ -890,6 +898,7 @@ if app.card_image_problem(plinius) or not app.card_image_problem(phone):
     fail("an image without its own kernel must not go onto the card, one with it must")
 # Small numbers for a card of 512 MiB; the rules are the same
 app.CARD_SYSTEM_ROOM, app.CARD_DATA_MIN, app.CARD_SETTINGS_MIN = 8 << 20, 16 << 20, 16 << 20
+app.CARD_SYSTEM_STUB = 8 << 20
 
 
 def pulled_settings(card_):
@@ -1000,10 +1009,23 @@ ok("installing again on its own place keeps entry, name, number and kernel folde
 
 # An image with plinius-crypt on the card: the phone is to ask once at its first start, as inside the phone
 crypt_card, _crypt_card_files = phone_image("plinius-crypt", plinius=True, crypt=True)
+# The kernel fallback plinius-kernel-install made for the system there: no place of its own, and it goes with it
+fallback = name.removesuffix(".conf") + "-kernel-previous.conf"
+# Sharing the system's folder (its ramdisk and device tree are always the system's): it must not keep the
+# replacement from that folder, since it leaves with the system
+app.write_entries(access, card, {fallback: boot_entry(name).replace("title ", "title Fallback of ", 1).replace(
+    "rootdelay=10", "rootdelay=10 plinius.kernel=previous")})
+card, entries = read()
+if entries[fallback].get("variant_of") != name or any(e["file"] == fallback for e in app.card_places(card)):
+    fail(f"the kernel fallback of {name} is taken for a place of its own")
 again = next(c for c in app.card_choices(card, crypt_card) if c["kind"] == "replace" and c["place"]["file"] == name)
 if app.run_install_card(job(), device, card, again, crypt_card, None, PIN, "de") != name:
     fail("an image with plinius-crypt on its own place gave another entry")
 card, entries = read()
+if fallback in entries or fallback not in sh(f"m=$(mktemp -d); mount -t ext4 -o ro /dev/{card['settings']} \"$m\"; "
+                                             f"ls \"$m/db/removed\"; umount \"$m\"; rmdir \"$m\""):
+    fail("the kernel fallback of the old system stayed in the menu")
+ok("the kernel fallback of a system is no place of its own, and replacing the system moves it out of the menu")
 check_plinius(card, name, "with plinius-crypt", "plinius-crypt")
 names, request = card_data_files(entries[name])
 if request != "fresh" or sorted(names) != [".plinius-crypt-keyboard", ".plinius-crypt-l10n", app.PHONE_CRYPT_REQUEST,
@@ -1018,6 +1040,55 @@ if sh("findmnt -n /run/plinius-card-data; ls -d /run/plinius-card-data 2>/dev/nu
     fail("the card's data partition is still mounted for the request")
 ok("an image with plinius-crypt on the card: its new data partition carries the request \"fresh\" and the language "
    "of the prompt, so the phone asks once at its first start")
+
+# Its kernel package knows a system on the data partition: the system goes there as rootfs.img, as inside the phone,
+# so that the encryption covers all of it; the system partition stays, empty
+inside, inside_files = phone_image("plinius-inside", plinius=True, crypt=True, card_data=True)
+if not inside.in_data or plinius.in_data or crypt_card.in_data:
+    fail("only an image with plinius-crypt and the kernel package's mark goes to the data partition")
+# Set up anew (the test after this one empties the card anyway): a small empty system partition, the rest data
+anew = next((c for c in app.card_choices(card, inside) if c["kind"] == "fresh"), None)
+if anew is None or anew["system"] != app.CARD_SYSTEM_STUB:
+    fail(f"setting the card up anew for an image on its data partition: {anew}")
+name = app.run_install_card(job(), device, card, anew, inside, None, PIN, "de")
+card, entries = read()
+entry_ = entries[name]
+text = boot_entry(name)
+data_number, system_number = entry_["data"]["number"], entry_["system"]["number"]
+if f"options {app.ENTRY_OPTIONS} datapart=/dev/{CARD}p{data_number}\n" not in text or "systempart=" in text \
+        or f"xpart {system_number}:{data_number}\n" not in text or not entry_["in_data"]:
+    fail(f"the entry of a system on its data partition:\n{text}")
+if sh(f"m=$(mktemp -d); mount -t ext4 -o ro /dev/{entry_['system']['name']} \"$m\"; ls -A \"$m\"; umount \"$m\"; "
+      f"rmdir \"$m\"").split() != ["lost+found"]:
+    fail("the system partition of a system on its data partition is not empty")
+names, request = card_data_files(entry_)
+if request != "fresh" or sorted(names) != [".plinius-crypt-keyboard", ".plinius-crypt-l10n", app.PHONE_CRYPT_REQUEST,
+                                           app.PHONE_ANDROID, "lost+found", app.PHONE_ROOTFS]:
+    fail(f"the data partition of a system there: {names} {request!r}")
+data_part = f"/dev/{entry_['data']['name']}"
+inner = sh(f"m=$(mktemp -d); i=$(mktemp -d); mount -t ext4 -o ro {data_part} \"$m\"; stat -c %s \"$m/{app.PHONE_ROOTFS}\"; "
+           f"sha256sum < \"$m/{app.PHONE_ANDROID}\" | cut -d' ' -f1; mount -t ext4 -o loop,ro \"$m/{app.PHONE_ROOTFS}\" \"$i\"; "
+           f"cat \"$i/marker\" \"$i/etc/locale.conf\"; grep -c '^plinius:{PIN}:' \"$i/etc/shadow\"; "
+           f"umount \"$i\"; umount \"$m\"; rmdir \"$i\" \"$m\"")
+with open(os.path.join(image_dir, "plinius-inside", "var/lib/lxc/android/android-rootfs.img"), "rb") as f:
+    android_sha = hashlib.sha256(f.read()).hexdigest()
+lines = inner.splitlines()
+if len(lines) != 5 or int(lines[0]) != app.card_rootfs_size(inside, entry_["data"]["size"]) or lines[1] != android_sha \
+        or lines[2:] != ["phone-system", "LANG=de_DE.UTF-8", "1"]:
+    fail(f"rootfs.img on the data partition: {lines}")
+if app.entry_system_text(entry_) != "Phone System":
+    fail(f"the system of the entry is not read from rootfs.img: {app.entry_system_text(entry_)!r}")
+check_kernel = {e["file"]: e for e in card["entries"]}[name]["kernel"]
+settings = pulled_settings(card)
+for kernel_file in app.IMAGE_KERNEL:
+    with open(os.path.join(image_dir, "plinius-inside", "usr/share/plinius-boot", kernel_file), "rb") as f:
+        if debugfs_cat(settings, f"/{check_kernel}/{kernel_file}") != f.read():
+            fail(f"{check_kernel}/{kernel_file} is not the one from the image")
+if entry_["system"]["size"] != app.CARD_SYSTEM_STUB:
+    fail(f"the system partition of a new place for it: {entry_['system']['size']}")
+ok("an image whose kernel package knows it: the system as rootfs.img with the Android image beside it on the data "
+   "partition, PIN and language in it, the request \"fresh\" there; the entry names only the data partition, the "
+   "system partition stays empty")
 
 # A card from the shop: no boot menu, here not even a partition table
 sh(f"sgdisk --zap-all /dev/{CARD} >/dev/null 2>&1; blockdev --rereadpt /dev/{CARD}; plinius-partlinks; true")

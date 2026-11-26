@@ -57,7 +57,8 @@ bar shows its progress under its step, and ticks it when it is done before the c
    - **A card without a boot menu**, as it comes from the shop: set up the way the Volla Boot Manager does it
      (`Android-Boot-Manager/App`, `DroidBootFlow.kt`), so all of it is erased: a new GPT, `abm_settings`
      (type 8301, a 41st of the card, 512 MiB to 4 GiB) with `db/db.conf` (`timeout 5`) and
-     `db/entries/real.conf` for Volla OS, a system partition of up to 40 GiB and the rest for data.
+     `db/entries/real.conf` for Volla OS, a system partition of up to 40 GiB (an empty one of 64 MiB for a
+     system on its data partition, see below) and the rest for data.
 
    Images that ask for the PIN at their first start need nothing more. For older ones the page asks for a
    **PIN** for the lock screen, 4 to 12 digits. Only its SHA-512 crypt hash goes to the phone, into
@@ -68,8 +69,12 @@ On the card Plinius starts with its own kernel and ramdisk from `/usr/share/plin
 to `abm_settings/plinius/`, never with the kernel of another system. The entry is called **Arch Linux**, or
 **Arch Linux (SD)** (then with a number) when another entry of the menu has that name. An image with
 plinius-crypt gets the request `fresh` and the language of the prompt on its new data partition, as inside
-the phone: the ramdisk asks once at the first start whether to encrypt it. Its entry is written last, then
-`db/last_index`, so that the menu starts Plinius by itself. The bootloader counts the entries the way lwext4
+the phone: the ramdisk asks once at the first start whether to encrypt it. If its kernel package also looks
+after a system that names only its data partition (`usr/lib/plinius/kernel/card-data-system`), the system
+goes there as `rootfs.img` with the Android image beside it, as inside the phone, so that the encryption
+covers the whole system and not only the personal files; the entry names only `datapart=`, and the system
+partition of the place stays empty (64 MiB on a new place, which keeps the pair for `xpart`). Its entry is
+written last, then `db/last_index`, so that the menu starts Plinius by itself. The bootloader counts the entries the way lwext4
 goes through the directory as stored, and Linux lists a directory with a hash index in another order, so the
 app reads the directory from the partition itself (`entry_order`). Then the original `init_boot` goes back and
 the phone starts. Instead of Volla OS it is the way described under 7. below.

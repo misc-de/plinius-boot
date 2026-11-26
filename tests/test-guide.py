@@ -323,18 +323,33 @@ check("finished: every step done", plan.current == 4)
 
 real_kernel_size = app.kernel_size
 app.kernel_size = lambda _image: 30
-img = types.SimpleNamespace(size=2000, vendor=None)
+img = types.SimpleNamespace(size=2000, vendor=None, in_data=False, android_size=0)
 steps = app.card_steps("replace", img, True, "hash", "de_DE")
 check("instead of a system: write, fit, empty, PIN, language, kernel, entries", [t for t, _s in steps] == [
     "Writing Plinius to the memory card", "Fitting the file system to the partition", "Emptying the data partition",
     "Setting the PIN", "Setting the language", "Copying the kernel", "Writing the boot entries"]
       and dict(steps)["Writing Plinius to the memory card"] == 2000 and dict(steps)["Copying the kernel"] == 30)
-steps = app.card_steps("fresh", types.SimpleNamespace(size=1, vendor=["vendor"]), False, None, None)
+steps = app.card_steps("fresh", types.SimpleNamespace(size=1, vendor=["vendor"], in_data=False), False, None, None)
 check("a card set up anew starts with that, the drivers when they come along", [t for t, _s in steps] == [
     "Setting up the memory card", "Writing Plinius to the memory card", "Fitting the file system to the partition",
     "Copying the drivers of Volla OS", "Copying the kernel", "Writing the boot entries"])
 check("a new place starts with the partition table",
       app.card_steps("add", img, False, None, None)[0][0] == "Changing the partition table")
+inside = types.SimpleNamespace(size=2000, vendor=["vendor"], in_data=True, android_size=300)
+steps = app.card_steps("replace", inside, True, "hash", "de_DE")
+check("the system on the data partition: empty, Android image, system, fit, PIN, language, drivers, kernel, entries",
+      [t for t, _s in steps] == [
+          "Emptying the data partition", "Writing the Android image", "Writing the system",
+          "Fitting the file system to the partition", "Setting the PIN", "Setting the language",
+          "Copying the drivers of Volla OS", "Copying the kernel", "Writing the boot entries"]
+      and dict(steps)["Writing the Android image"] == 300 and dict(steps)["Writing the system"] == 2000)
+check("the same steps on a card set up anew, after setting it up",
+      [t for t, _s in app.card_steps("fresh", inside, False, None, None)] == [
+          "Setting up the memory card", "Emptying the data partition", "Writing the Android image",
+          "Writing the system", "Fitting the file system to the partition", "Copying the drivers of Volla OS",
+          "Copying the kernel", "Writing the boot entries"])
+check("all bytes of it: system, Android image and kernel", app.card_total(inside) == 2000 + 300 + 30
+      and app.card_total(img) == 2000 + 30)
 app.kernel_size = real_kernel_size
 check("leaving the rescue system adds its steps", app.leave_steps(types.SimpleNamespace(serial="S9"), {}) == []
       and [t for t, _s in app.leave_steps(types.SimpleNamespace(serial="S9"),
@@ -445,11 +460,13 @@ shutil.rmtree(store)
 
 # The guided installation: choices on the card, sizes, the download and the order of the boot entries
 class Img:
-    def __init__(self, size):
-        self.size, self.problem = size, ""
+    def __init__(self, size, in_data=False, android_size=0):
+        self.size, self.problem, self.in_data, self.android_size = size, "", in_data, android_size
 
     def place_problem(self, part):
         return "" if part["size"] >= self.size else "too small"
+
+    card_place_problem = app.SystemImage.card_place_problem
 
 
 image8 = Img(8 << 30)
@@ -489,6 +506,82 @@ check("the entry: own kernel, the manager's options, no line from the title", te
 check("an entry without a title is named after what it starts",
       app.card_entry_text("", "plinius", by_file["rom0.conf"]["system"], by_file["rom0.conf"]["data"])
       .startswith("title Arch Linux\n"))
+inside = Img(10 << 30, in_data=True)
+check("on its data partition a system fits places whose system partition is too small for it",
+      [(c["kind"], c.get("place", {}).get("file")) for c in app.card_choices(card, inside)]
+      == [("replace", "rom0.conf"), ("replace", "rom1.conf"), ("fresh", None)]
+      and [c["kind"] for c in app.card_choices(card, Img(10 << 30))] == ["replace", "fresh"])
+check("the data partition must hold it with the Android image beside it",
+      [c.get("place", {}).get("file") for c in app.card_choices(card, Img(10 << 30, True, 1 << 30))] == ["rom1.conf", None])
+problem = Img(10 << 30, True, 1 << 30).card_place_problem(by_file["rom0.conf"])
+check("a place too small for it names its data partition", "partition 3" in problem
+      and app.size_text((10 << 30) + (1 << 30) + app.CARD_SYSTEM_ROOM + app.CARD_DATA_MIN) in problem)
+check("set up anew for it: the system partition only a small empty one, all the rest data",
+      app.card_choices(card, inside)[-1]["system"] == app.CARD_SYSTEM_STUB)
+add_inside = app.card_choices(roomy, inside)[0]
+check("a new place for it: the same", add_inside["kind"] == "add" and add_inside["system"] == app.CARD_SYSTEM_STUB
+      and add_inside["data"] == (100 << 30) - (1 << 20) - app.CARD_SYSTEM_STUB)
+check("rootfs.img grows with the data partition, at most as inside the phone",
+      app.card_rootfs_size(inside, 200 << 30) == app.PHONE_SYSTEM_DEFAULT
+      and app.card_rootfs_size(inside, 16 << 30) == 12 << 30 and app.card_rootfs_size(inside, 15 << 30) == 0)
+check("the smallest card for it counts the small system partition and the Android image",
+      app.card_need(Img(8 << 30, True, 1 << 30)) == app.card_need(image8) + app.CARD_SYSTEM_STUB + (1 << 30))
+check("too large for a card at all, then nothing is offered", app.card_choices(blank(15_931_539_456 // 512), inside) == [])
+text = app.card_entry_text("", "plinius", by_file["rom0.conf"]["system"], by_file["rom0.conf"]["data"], in_data=True)
+check("its entry names only the data partition, and keeps the pair", "options " + app.ENTRY_OPTIONS
+      + " datapart=/dev/mmcblk0p3\n" in text and "systempart=" not in text and "xpart 2:3\n" in text)
+listing = (here / "card-plinius.txt").read_text().replace("R\tmmcblk0p4\n", "R\tmmcblk0p3\n")
+listing = re.sub(r"(E\trom0\.conf\toptions .*) systempart=/dev/mmcblk0p2", r"\1", listing)
+listing = re.sub(r"(E\trom1\.conf\toptions .*) systempart=/dev/mmcblk0p4", r"\1", listing)
+listing = "\n".join(l for l in listing.splitlines() if not l.startswith("O\tmmcblk0p2\t")) + \
+    "\nO\tmmcblk0p3\tNAME=Plinius\nO\tmmcblk0p3\tVERSION_ID=2026.11.26\nL\tmmcblk0p5\n"
+inner = {e["file"]: e for e in app.parse_card(listing)["entries"]}
+check("an entry naming only its data partition: the system there, the pair from xpart",
+      inner["rom0.conf"]["in_data"] and inner["rom0.conf"]["system"]["number"] == 2
+      and inner["rom0.conf"]["data"]["number"] == 3 and not by_file["rom0.conf"]["in_data"])
+check("its system is read from rootfs.img on the data partition", app.entry_system_text(inner["rom0.conf"]) ==
+      "Plinius 2026.11.26")
+check("an encrypted one is said to be encrypted", inner["rom1.conf"]["data"]["luks"]
+      and app.entry_system_text(inner["rom1.conf"]) == "Encrypted (LUKS)")
+check("an entry with a system partition keeps its own system", app.entry_system_text(by_file["rom0.conf"])
+      == app.system_text(by_file["rom0.conf"]["system"]["system"]))
+check("running from its data partition counts as running", app.entry_running(None, inner["rom0.conf"])
+      and not app.entry_running(None, inner["rom1.conf"]) and app.entry_running(None, by_file["rom1.conf"]))
+variants = (here / "card-plinius.txt").read_text() + "".join(
+    f"E\trom1-kernel-{kind}.conf\t{line}\n" for kind in ("previous", "trial") for line in (
+        f"title Arch Linux (previous kernel 6.1.192)", "linux rom1-kernel-previous/zImage", "initrd rom0/initrd.cpio.gz",
+        "options bootopt=64S3,32N2,64N2 androidboot.selinux=permissive systempart=/dev/mmcblk0p4 "
+        "datapart=/dev/mmcblk0p5 plinius.kernel=previous", "xtype UT", "xpart 4:5")) + "".join(
+    f"E\trom0-kernel-previous.conf\t{line}\n" for line in ("title Not a copy", "linux x/zImage", "xpart 4:5"))
+with_variants = app.parse_card(variants)
+by_variant = {e["file"]: e for e in with_variants["entries"]}
+check("the kernel trial and fallback of a card system belong to its entry",
+      by_variant["rom1-kernel-previous.conf"]["variant_of"] == "rom1.conf"
+      and by_variant["rom1-kernel-trial.conf"]["variant_of"] == "rom1.conf"
+      and [v["file"] for v in app.entry_variants(with_variants, by_variant["rom1.conf"])]
+      == ["rom1-kernel-previous.conf", "rom1-kernel-trial.conf"])
+check("a name like theirs on other partitions is no copy", "variant_of" not in by_variant["rom0-kernel-previous.conf"])
+check("they are no place of their own", [e["file"] for e in app.card_places(with_variants)]
+      == ["rom0-kernel-previous.conf", "rom0.conf", "rom1.conf"]
+      and [c.get("place", {}).get("file") for c in app.card_choices(with_variants, image8)]
+      == ["rom0-kernel-previous.conf", "rom0.conf", "rom1.conf", None])
+check("a free place has no copies", app.entry_variants(with_variants, {"file": ""}) == [])
+check("the boot menu's entry for the phone's own storage is named as on the card",
+      app.own_menu_title(types.SimpleNamespace(layout={"card": card})) == "VollaOS"
+      and app.own_menu_title(types.SimpleNamespace(layout=None)) == ""
+      and app.own_menu_title(types.SimpleNamespace(layout={"card": None})) == "")
+ran, real_run, real_exists = [], app.subprocess.run, app.os.path.exists
+app.subprocess.run = lambda cmd, **kw: ran.append(cmd)
+try:
+    app.os.path.exists = lambda path: path != "/.flatpak-info"
+    app.stop_own_adb()
+    outside = list(ran)
+    app.os.path.exists = lambda path: path == "/.flatpak-info" or real_exists(path)
+    app.stop_own_adb()
+finally:
+    app.subprocess.run, app.os.path.exists = real_run, real_exists
+check("in the Flatpak the app's own adb server stops with it, outside the system's stays",
+      outside == [] and ran == [["adb", "kill-server"]])
 new_place = {"file": ""}
 menu = lambda *titles: {"entries": [{"file": f"rom{i}.conf", "title": t} for i, t in enumerate(titles)]}
 check("a new system on the card: Arch Linux", app.card_title(menu("VollaOS", "Ubuntu Touch"), new_place) == "Arch Linux")
@@ -916,6 +1009,7 @@ app.download_image = lambda job, info: downloads.append(info["name"]) or os.path
 class FakeSystemImage:
     def __init__(self, path):
         self.path, self.size, self.problem, self.name, self.first_start = path, 5, "", "Arch Linux ARM", True
+        self.in_data, self.android_size = False, 0
 
     def check(self):
         checked.append(self.path)

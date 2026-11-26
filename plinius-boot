@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.35"
+VERSION = "0.36"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -1036,12 +1036,24 @@ def bootloader_open(device):
 # U userdata disk start sectors sector-size partitions / I place-in-the-phone label start sectors /
 # F partition blocks block-size free-blocks / O partition key=value / E file line / S the partition with
 # the boot entries / A a system using systemd's gpt-auto generator / R the partition the running system
-# came from.
+# came from / L a partition encrypted with LUKS.
 CARD_SCRIPT = r"""
 m=$(mktemp -d /tmp/plinius-card.XXXXXX) || exit 1
+# os_release DEVICE DIR: the os-release of the system in DIR, for DEVICE
+os_release() {
+	for f in etc/os-release usr/lib/os-release; do
+		t=$2/$f
+		l=$(readlink "$t") && case $l in /*) t=$2$l ;; esac
+		[ -f "$t" ] || continue
+		grep -E '^(NAME|PRETTY_NAME|VERSION_ID|BUILD_ID|IMAGE_VERSION)=' "$t" |
+			while read -r line; do printf 'O\t%s\t%s\n' "$1" "$line"; done
+		break
+	done
+}
 # read_part DEVICE: file system, systems and boot entries of one partition
 read_part() {
 	n=$1
+	[ "$(dd if="/dev/$n" bs=4 count=1 2>/dev/null)" = LUKS ] && printf 'L\t%s\n' "$n"
 	dumpe2fs -h "/dev/$n" 2>/dev/null | awk -F: -v n="$n" '
 		/^Block count/ { b = $2 + 0 } /^Free blocks/ { f = $2 + 0 } /^Block size/ { s = $2 + 0 }
 		END { if (b) printf "F\t%s\t%d\t%d\t%d\n", n, b, s, f }'
@@ -1050,14 +1062,16 @@ read_part() {
 		mount -t ext4 -o ro,noload "/dev/$n" "$m" 2>/dev/null || return 0
 		dir=$m
 	fi
-	for f in etc/os-release usr/lib/os-release; do
-		t=$dir/$f
-		l=$(readlink "$t") && case $l in /*) t=$dir$l ;; esac
-		[ -f "$t" ] || continue
-		grep -E '^(NAME|PRETTY_NAME|VERSION_ID|BUILD_ID|IMAGE_VERSION)=' "$t" |
-			while read -r line; do printf 'O\t%s\t%s\n' "$n" "$line"; done
-		break
-	done
+	os_release "$n" "$dir"
+	# A system as rootfs.img on a data partition, as inside the phone: read only from a partition mounted
+	# here, never from one in use, whose rootfs.img may be the running system
+	if [ "$dir" = "$m" ] && [ -f "$m/rootfs.img" ] && i=$(mktemp -d /tmp/plinius-rootfs.XXXXXX); then
+		if mount -t ext4 -o loop,ro,noload "$m/rootfs.img" "$i" 2>/dev/null; then
+			os_release "$n" "$i"
+			umount "$i"
+		fi
+		rmdir "$i"
+	fi
 	c=$dir/etc/system-image/channel.ini
 	[ -f "$c" ] && grep -E '^(channel|build_number): ' "$c" | sed 's/: */=/' |
 		while read -r line; do printf 'O\t%s\t%s\n' "$n" "$line"; done
@@ -1075,7 +1089,9 @@ for b in /sys/block/mmcblk*; do
 	d=${b##*/}
 	printf 'D\t%s\t%s\n' "$d" "$(cat "$b/size")"
 	printf 'G\t%s\n' "$(dd if="/dev/$d" bs=512 count=34 2>/dev/null | base64 | tr -d '\n')"
+	# A system in rootfs.img on its data partition names only that one (datapart=)
 	r=$(sed -n 's/.*systempart=\(\/dev\/[a-z0-9]*\).*/\1/p' /proc/cmdline)
+	[ -n "$r" ] || r=$(sed -n 's/.*datapart=\(\/dev\/mmcblk[0-9]*p[0-9]*\).*/\1/p' /proc/cmdline)
 	[ -n "$r" ] && printf 'R\t%s\n' "${r##*/}"
 	for p in "$b/$d"*; do
 		[ -e "$p/start" ] || continue
@@ -1176,6 +1192,8 @@ def parse_card(out):
             settings = f[1]
         elif f[0] == "A" and len(f) == 2 and f[1] in parts:
             parts[f[1]]["gpt_auto"] = True
+        elif f[0] == "L" and len(f) == 2 and f[1] in parts:
+            parts[f[1]]["luks"] = True
         elif f[0] == "F" and len(f) == 5 and f[1] in parts and all(x.isdigit() for x in f[2:]):
             blocks, size, free = int(f[2]), int(f[3]), int(f[4])
             if size and free <= blocks:
@@ -1219,8 +1237,19 @@ def parse_card(out):
                         "own_system": kv.get("xtype") == "droid", "raw": kv["raw"],
                         "options": clean_text(kv.get("options", ""), 1000),
                         "kernel": kv.get("linux", "").partition("/")[0],
+                        # The system in rootfs.img on the data partition: the system partition stays empty
+                        "in_data": bool(m and "datapart" in booted and "systempart" not in booted),
                         "system": by_path.get(booted.get("systempart")) or (by_number.get(int(m[1])) if m else None),
                         "data": by_path.get(booted.get("datapart")) or (by_number.get(int(m[2])) if m else None)})
+    # plinius-kernel of the Volla project starts a new kernel of a system on the card from "<entry>-kernel-trial"
+    # and keeps the one before as "<entry>-kernel-previous": copies of the entry on the same partitions, with
+    # another kernel. They belong to that system and are no place of their own.
+    by_file = {e["file"]: e for e in entries}
+    for e in entries:
+        m = KERNEL_VARIANT_RE.fullmatch(e["file"])
+        base = by_file.get(m[1] + ".conf") if m else None
+        if base and e["system"] and e["system"] is base["system"] and e["data"] is base["data"]:
+            e["variant_of"] = base["file"]
     free = free_areas(sectors, [(p["start"], p["sectors"]) for p in parts.values() if not p.get("internal")])
     types = gpt_types(head)
     for p in parts.values():
@@ -3099,6 +3128,8 @@ def run_restore(job, backup, entries, device):
 
 PART_PATH_RE = re.compile(r"^/dev/mmcblk\d+p\d+$")
 ENTRY_FILE_RE = re.compile(r"^[A-Za-z0-9_.-]{1,64}\.conf$")
+# The kernel trial and fallback entries plinius-kernel-install makes from an entry of a system on the card
+KERNEL_VARIANT_RE = re.compile(r"(.+)-kernel-(?:trial|previous)\.conf")
 # ext4 cannot be mounted with blocks smaller than the sector of the disk, and the phone's own storage has
 # 4096 bytes (measured). All file systems the app makes have this size, so that they can go anywhere.
 INTERNAL_BLOCK = 4096
@@ -3120,6 +3151,14 @@ PHONE_MOUNT = "/run/plinius-phone"
 # first start whether to encrypt, and then encrypt only the part in use, the device holding nothing else.
 # Declining there is final; later the phone's Settings offer it (Device Security).
 PHONE_CRYPT_MARK = "usr/lib/plinius-crypt/halium-rebuild"
+# Such an image whose kernel package also looks after a system that names only its data partition (datapart=,
+# plinius-kernel of the Volla project): on the card its system goes there as rootfs.img as well, as inside the
+# phone, so that the encryption covers the whole system and not only the personal files. On a system partition
+# of its own the system, its settings and the keys in /etc and /var would lie open on the card for anyone to
+# read and change. The system partition of the place stays, empty and small on a new place, so that the entry
+# keeps its pair (xpart N:M) and nothing takes it for free space.
+PHONE_CARD_DATA_MARK = "usr/lib/plinius/kernel/card-data-system"
+CARD_SYSTEM_STUB = 64 << 20
 PHONE_CRYPT_REQUEST = ".plinius-crypt-request"
 PHONE_SYSTEM_DEFAULT = 40 << 30
 # Room the data partition must have besides the system
@@ -3307,6 +3346,20 @@ class SystemImage:
         self.first_start = False
         # What the image wants from Volla OS on the phone (vendor_pins)
         self.vendor = {}
+        # On the card the system goes to the data partition as rootfs.img (PHONE_CARD_DATA_MARK), next to the
+        # Android image of this size
+        self.in_data, self.android_size = False, 0
+
+    def card_place_problem(self, place):
+        """Why this image cannot go to a place on the card (system and data partition), or ""."""
+        if not self.in_data:
+            return self.place_problem(place["system"])
+        data = place["data"]
+        if not card_rootfs_size(self, data["size"]):
+            return _("This image needs {need}, but partition {number} holds {size}. Nothing was changed.").format(
+                need=size_text(self.size + self.android_size + CARD_SYSTEM_ROOM + CARD_DATA_MIN),
+                number=data["number"], size=size_text(data["size"]))
+        return ""
 
     def place_problem(self, part):
         """Why this image cannot go to a system partition, or ""."""
@@ -3340,6 +3393,8 @@ class SystemImage:
                 self.name = clean_text(values.get("PRETTY_NAME") or values.get("NAME") or "Linux", 60)
                 self.first_start = ext4.lookup(FIRST_START_MARK) is not None
                 self.vendor = vendor_pins(ext4)
+                self.in_data = ext4.lookup(PHONE_CRYPT_MARK) is not None and ext4.lookup(PHONE_CARD_DATA_MARK) is not None
+                self.android_size = ext4.open_file(IMAGE_NEEDS[0]).size
                 if os.fstat(f.fileno()).st_size < self.size:
                     self.problem = _("This image is incomplete.")
         except (OSError, EOFError, ValueError, struct.error, zstd.ZstdError) as err:
@@ -3403,8 +3458,14 @@ def part_path(part):
 
 
 def card_places(card):
-    """The systems on the card that have a place of their own: a boot entry with system and data."""
-    return [e for e in card["entries"] if not e["own_system"] and e["system"] and e["data"]]
+    """The systems on the card that have a place of their own: a boot entry with system and data. The kernel
+    trial and fallback entries of a system (variant_of) belong to it and are no place."""
+    return [e for e in card["entries"] if not e["own_system"] and e["system"] and e["data"] and not e.get("variant_of")]
+
+
+def entry_variants(card, place):
+    """The kernel trial and fallback entries of the system of place (see parse_card)."""
+    return [e for e in card["entries"] if place.get("file") and e.get("variant_of") == place["file"]]
 
 
 def free_pairs(card):
@@ -3804,7 +3865,9 @@ def run_install(job, device, card, place, image, wipe_data, title, keep_copy, ba
         # name, which only knows ext2. mkfs.ext4 is the real one.
         run_checked(access, f"{MKFS} {part_path(data)} 2>&1", 7200, _("Emptying the data partition"))
     if place["file"]:
-        write_entries(access, card, {place["file"]: entry_text(place, title=title)})
+        # The old system's kernel trial and fallback would start the new one with a kernel of the old one
+        write_entries(access, card, {place["file"]: entry_text(place, title=title)},
+                      [v["file"] for v in entry_variants(card, place)])
     else:
         name, content = new_entry(card, place, title)
         write_entries(access, card, {name: content})
@@ -3845,8 +3908,11 @@ def run_move(job, device, card, source, target, keep_copy, base):
                 source=a["number"], target=b["number"]))
             finish_filesystem(access, b, not a.get("fs"))
         with_small_source(access, a, b, work)
-    write_entries(access, card, {source["file"]: entry_text(source, system=target["system"], data=target["data"])},
-                  [target["file"]] if target["file"] else ())
+    # The kernel trial and fallback of the system go with it, those of the one it replaces leave the menu
+    moved = {e["file"]: entry_text(e, system=target["system"], data=target["data"])
+             for e in [source] + entry_variants(card, source)}
+    gone = [target["file"]] + [v["file"] for v in entry_variants(card, target)] if target.get("file") else []
+    write_entries(access, card, moved, gone)
 
 
 def swap_partitions(card, state):
@@ -3907,6 +3973,10 @@ def run_swap(job, device, card, state):
     for place, other in ((a, b), (b, a)):
         place_like = {"raw": place["raw"], "title": place["title"]}
         entries[place["file"]] = entry_text(place_like, system=by_number[other["system"]], data=by_number[other["data"]])
+        # Its kernel trial and fallback swap with it
+        for variant in entry_variants(current, place):
+            entries[variant["file"]] = entry_text(variant, system=by_number[other["system"]],
+                                                  data=by_number[other["data"]])
     write_entries(access, current, entries)
     state["done"] = True
     save_state(state)
@@ -4153,7 +4223,8 @@ def remember_init_boot(device, config):
     path = phone_partition("init_boot_" + slot)
     try:
         cmdline = run_checked(access, "cat /proc/cmdline", 30, _("Reading the partition table"))
-        if re.search(r"(^|\s)systempart=/dev/mmcblk", cmdline):
+        # A system on the card names its partitions there: systempart=, or datapart= alone for one in rootfs.img
+        if re.search(r"(^|\s)(systempart|datapart)=/dev/mmcblk", cmdline):
             return None
         size = int(run_checked(access, f"blockdev --getsize64 {path}", 60, _("Reading the partition table")).strip())
         proc = access.reader(path, size)
@@ -4192,6 +4263,50 @@ def send_phone_file(job, access, read, path, size, done, total, text):
     return done, hasher.hexdigest()
 
 
+def system_file_steps(image, fit, pin_hash, language):
+    """The steps of write_system_file in the order it reports them (see Job.plan); fit names the fitting."""
+    steps = [(_("Writing the Android image"), image.android_size), (_("Writing the system"), image.size), (fit, 0)]
+    return steps + [(t, 0) for t, on in ((_("Setting the PIN"), pin_hash), (_("Setting the language"), language),
+                                         (_("Copying the drivers of Volla OS"), image.vendor)) if on]
+
+
+def write_system_file(job, device, image, android, mount, system_size, done, total, fit, pin_hash=None,
+                      language=None, crypt=False):
+    """The system as rootfs.img of system_size bytes and the Android image (android, a file of the image) beside
+    it, on the empty data partition mounted at mount: there Halium's ramdisk finds both when the command line
+    names no system partition. Both go in under another name and are renamed last; then the request to encrypt
+    (crypt), which the ramdisk looks for at the top of the partition, with the language of its prompt beside
+    it. Returns done."""
+    access = device.access
+    rootfs = f"{mount}/{PHONE_ROOTFS}"
+    done, _sha = send_phone_file(job, access, android.read, f"{mount}/{PHONE_ANDROID}.new", android.size,
+                                 done, total, _("Writing the Android image"))
+    with image.open() as f:
+        done, _sha = send_phone_file(job, access, f.read, rootfs + ".new", image.size, done, total,
+                                     _("Writing the system"))
+    job.report(done, total, fit)
+    run_checked(access, f"truncate -s {int(system_size)} {rootfs}.new", 120, _("Resizing the file system"))
+    code = run_checked(access, f"e2fsck -fy {rootfs}.new >/dev/null 2>&1; echo $?", 7200,
+                       _("Checking the file system")).strip()
+    if code not in ("0", "1", "2"):
+        raise Failed(_("The file system of the system has errors (e2fsck {code}).").format(code=code))
+    run_checked(access, f"resize2fs {rootfs}.new 2>&1", 14400, _("Resizing the file system"))
+    if pin_hash:
+        job.report(done, total, _("Setting the PIN"))
+        set_pin(access, f"{rootfs}.new", pin_hash, loop=True)
+    if language:
+        job.report(done, total, _("Setting the language"))
+        set_language(access, f"{rootfs}.new", language, loop=True, beside=mount if crypt else "")
+    if image.vendor:
+        job.report(done, total, _("Copying the drivers of Volla OS"))
+        job.notes += take_vendor(job, device, f"{rootfs}.new", image.vendor, loop=True)
+    run_checked(access, f"cd {mount} && mv {PHONE_ANDROID}.new {PHONE_ANDROID} && mv {PHONE_ROOTFS}.new "
+                f"{PHONE_ROOTFS} && sync", 600, _("Writing the system"))
+    if crypt:
+        run_checked(access, f"echo fresh > {mount}/{PHONE_CRYPT_REQUEST} && sync", 60, _("Writing the system"))
+    return done
+
+
 def run_install_phone(job, device, config, image, system_size, restart=True, pin_hash=None, empty=(), language=None):
     """Puts a system in place of Volla OS. Until the last step the phone still starts the rescue system, so
     a failure or a cancel can simply be repeated. Each file goes in under another name and is renamed last,
@@ -4224,10 +4339,8 @@ def run_install_phone(job, device, config, image, system_size, restart=True, pin
         android = ext4.open_file(IMAGE_NEEDS[0])
         crypt = ext4.lookup(PHONE_CRYPT_MARK) is not None
         total, done = image.size + android.size + sum(map(len, boot.values())), 0
-        steps = [(_("Formatting the phone's data partition"), 0), (_("Writing the Android image"), android.size),
-                 (_("Writing the system"), image.size), (_("Fitting the file system to the size you chose"), 0)]
-        steps += [(t, 0) for t, on in ((_("Setting the PIN"), pin_hash), (_("Setting the language"), language),
-                                       (_("Copying the drivers of Volla OS"), image.vendor)) if on]
+        fit = _("Fitting the file system to the size you chose")
+        steps = [(_("Formatting the phone's data partition"), 0)] + system_file_steps(image, fit, pin_hash, language)
         steps += [(_("Writing {name}").format(name=name), len(boot[name])) for name in ("boot", "vendor_boot", "init_boot")]
         job.plan(steps)
         job.report(0, total, _("Formatting the phone's data partition"))
@@ -4235,33 +4348,8 @@ def run_install_phone(job, device, config, image, system_size, restart=True, pin
         run_checked(access, f"mkdir -p {PHONE_MOUNT} && mount -t ext4 {data_path} {PHONE_MOUNT}", 120,
                     _("Mounting the phone's data partition"))
         try:
-            rootfs = f"{PHONE_MOUNT}/{PHONE_ROOTFS}"
-            done, _sha = send_phone_file(job, access, android.read, f"{PHONE_MOUNT}/{PHONE_ANDROID}.new", android.size,
-                                         done, total, _("Writing the Android image"))
-            with image.open() as f:
-                done, _sha = send_phone_file(job, access, f.read, rootfs + ".new", image.size, done, total,
-                                             _("Writing the system"))
-            job.report(done, total, _("Fitting the file system to the size you chose"))
-            run_checked(access, f"truncate -s {int(system_size)} {rootfs}.new", 120, _("Resizing the file system"))
-            code = run_checked(access, f"e2fsck -fy {rootfs}.new >/dev/null 2>&1; echo $?", 7200,
-                               _("Checking the file system")).strip()
-            if code not in ("0", "1", "2"):
-                raise Failed(_("The file system of the system has errors (e2fsck {code}).").format(code=code))
-            run_checked(access, f"resize2fs {rootfs}.new 2>&1", 14400, _("Resizing the file system"))
-            if pin_hash:
-                job.report(done, total, _("Setting the PIN"))
-                set_pin(access, f"{rootfs}.new", pin_hash, loop=True)
-            if language:
-                job.report(done, total, _("Setting the language"))
-                set_language(access, f"{rootfs}.new", language, loop=True, beside=PHONE_MOUNT if crypt else "")
-            if image.vendor:
-                job.report(done, total, _("Copying the drivers of Volla OS"))
-                job.notes += take_vendor(job, device, f"{rootfs}.new", image.vendor, loop=True)
-            run_checked(access, f"cd {PHONE_MOUNT} && mv {PHONE_ANDROID}.new {PHONE_ANDROID} && mv {PHONE_ROOTFS}.new "
-                        f"{PHONE_ROOTFS} && sync", 600, _("Writing the system"))
-            if crypt:
-                run_checked(access, f"echo fresh > {PHONE_MOUNT}/{PHONE_CRYPT_REQUEST} && sync", 60,
-                            _("Writing the system"))
+            done = write_system_file(job, device, image, android, PHONE_MOUNT, system_size, done, total, fit,
+                                     pin_hash, language, crypt)
         finally:
             access.run_root(f"cd /; umount {PHONE_MOUNT}; rmdir {PHONE_MOUNT}", 300)
     # From here on the slot changes. Without init_boot the phone still starts the rescue system.
@@ -4945,6 +5033,20 @@ def card_system_size(image, room):
     return -(-size // (ALIGN * SECTOR)) * ALIGN * SECTOR
 
 
+def card_rootfs_size(image, data_size):
+    """Size of rootfs.img on a data partition of data_size bytes for an image that goes there (in_data),
+    as card_system_size with the Android image beside it. 0 if it does not fit."""
+    return card_system_size(image, data_size - image.android_size)
+
+
+def card_new_system(image, room):
+    """Size of the system partition of a new place in room bytes, 0 if the image does not fit. For an image
+    that goes to the data partition only the empty CARD_SYSTEM_STUB, and the rest is data."""
+    if not image.in_data:
+        return card_system_size(image, room)
+    return CARD_SYSTEM_STUB if card_rootfs_size(image, room - CARD_SYSTEM_STUB) else 0
+
+
 def card_settings_size(sectors):
     """abm_settings as the Volla Boot Manager makes it: a 41st of the card, 512 MiB to 4 GiB."""
     size = ((sectors - ALIGN) // 41 + ALIGN) * SECTOR
@@ -4953,7 +5055,8 @@ def card_settings_size(sectors):
 
 def card_need(image):
     """The smallest card that can take this image on its own."""
-    return CARD_SETTINGS_MIN + image.size + CARD_SYSTEM_ROOM + CARD_DATA_MIN + (2 << 20)
+    extra = CARD_SYSTEM_STUB + image.android_size if image.in_data else 0
+    return CARD_SETTINGS_MIN + image.size + CARD_SYSTEM_ROOM + CARD_DATA_MIN + extra + (2 << 20)
 
 
 def card_size_hint(need):
@@ -4969,22 +5072,22 @@ def card_choices(card, image):
     choices = []
     if card["settings"]:
         for place in free_pairs(card):
-            if not place["system"].get("internal") and not image.place_problem(place["system"]) \
+            if not place["system"].get("internal") and not image.card_place_problem(place) \
                     and place["data"]["size"] >= 1 << 30:
                 choices.append({"kind": "free", "place": place})
                 break
         if not choices:
             # Aligning the start may cost up to a MiB of the area
             room = card["largest_free"] - (1 << 20)
-            system = card_system_size(image, room)
+            system = card_new_system(image, room)
             if system:
                 choices.append({"kind": "add", "system": system, "data": room - system})
         for place in card_places(card):
-            if not place["system"].get("internal") and not image.place_problem(place["system"]):
+            if not place["system"].get("internal") and not image.card_place_problem(place):
                 choices.append({"kind": "replace", "place": place, "warnings": place_warnings(card, place)})
     settings = card_settings_size(card["sectors"])
     room = (card["sectors"] - GPT_FIRST - GPT_RESERVED) * SECTOR - settings
-    system = card_system_size(image, room)
+    system = card_new_system(image, room)
     if system:
         choices.append({"kind": "fresh", "settings": settings, "system": system})
     return choices
@@ -5168,12 +5271,14 @@ def card_title(card, place):
     return next((n for n in names if n.casefold() not in taken), CARD_TITLE)
 
 
-def card_entry_text(title, folder, system, data):
-    """A boot entry for a system with its own kernel, in the form the Volla Boot Manager uses."""
+def card_entry_text(title, folder, system, data, in_data=False):
+    """A boot entry for a system with its own kernel, in the form the Volla Boot Manager uses. in_data: the
+    system is rootfs.img on the data partition, so the command line names only that one; the ramdisk finds
+    the system there (and opens the partition first if it is encrypted)."""
     part_path(system), part_path(data)
+    parts = f"datapart={boot_path(data)}" if in_data else f"systempart={boot_path(system)} datapart={boot_path(data)}"
     return "\n".join((f"title {clean_text(title, 60) or CARD_TITLE}", f"linux {folder}/zImage",
-                      f"initrd {folder}/initrd.cpio.gz", f"dtb {folder}/dtb.dtb",
-                      f"options {ENTRY_OPTIONS} systempart={boot_path(system)} datapart={boot_path(data)}",
+                      f"initrd {folder}/initrd.cpio.gz", f"dtb {folder}/dtb.dtb", f"options {ENTRY_OPTIONS} {parts}",
                       "xtype UT", f"xpart {system['number']}:{data['number']}")) + "\n"
 
 
@@ -5182,8 +5287,9 @@ def run_install_card(job, device, card, choice, image, title, pin_hash, language
     PIN, and makes it the system the boot menu starts by itself. The entry is written last: until then a
     stop leaves the menu as it was, except for a card that was set up anew, which then starts Volla OS.
     title: of the entry, None for card_title. An image with plinius-crypt asks at its first start whether
-    to encrypt, as inside the phone (PHONE_CRYPT_MARK). then: the steps that follow it, for the list of steps
-    (see Job.plan)."""
+    to encrypt, as inside the phone (PHONE_CRYPT_MARK); if it knows a system on the data partition
+    (image.in_data), the system goes there as rootfs.img, so that the encryption covers it, and the system
+    partition is left empty. then: the steps that follow it, for the list of steps (see Job.plan)."""
     access = device.access
     card = fresh_card(device, card)
     if image.problem:
@@ -5218,13 +5324,65 @@ def run_install_card(job, device, card, choice, image, title, pin_hash, language
     else:
         raise Failed(_("That is not possible"))
     system, data = place["system"], place["data"]
-    problem = image.place_problem(system)
+    problem = image.card_place_problem(place)
     if problem:
         raise Failed(problem)
     title = title or card_title(card, place)
+    if image.in_data:
+        done = card_data_system(job, device, image, system, data, wipe, pin_hash, language)
+    else:
+        done = card_system_partition(job, device, image, system, data, wipe, pin_hash, language)
+    # A system of this app on that place leaves its kernel folder to the new one, if nobody else uses it
+    old = place.get("kernel") or ""
+    # Its kernel trial and fallback leave the menu with it (see below) and do not count as users
+    leaving = [place] + entry_variants(card, place)
+    if kind == "replace" and re.fullmatch(r"plinius\d*", old) and \
+            not any(all(e is not x for x in leaving) and e.get("kernel") == old for e in card["entries"]):
+        folder = old
+    else:
+        folder = kernel_folder(card)
+    done = copy_kernel(job, access, card["settings"], folder, image, done, card_total(image))
+    name = place["file"] or f"{folder}.conf"
+    job.report(done, card_total(image), _("Writing the boot entries"))
+    # The old system's kernel trial and fallback would start the new one with a kernel of the old one
+    write_entries(access, card, {name: card_entry_text(title, folder, system, data, image.in_data)},
+                  [v["file"] for v in entry_variants(card, place)] if kind == "replace" else ())
+    set_last_index(access, card["settings"], name)
+    return name
+
+
+def card_total(image):
+    """The bytes run_install_card moves."""
+    return image.size + kernel_size(image) + (image.android_size if image.in_data else 0)
+
+
+def card_data_system(job, device, image, system, data, wipe, pin_hash, language):
+    """The system as rootfs.img on the data partition of its place, with the request to encrypt it (the
+    whole partition, so the system with it) at the first start. The system partition only gets an empty file
+    system: nothing of an earlier system may start from it, and nothing takes it for free. Returns done."""
+    access, total = device.access, card_total(image)
+    job.report(0, total, _("Emptying the data partition"))
+    run_checked(access, f"{MKFS} {part_path(system)} 2>&1", 7200, _("Emptying the data partition"))
+    if wipe:
+        run_checked(access, f"{MKFS} {part_path(data)} 2>&1", 7200, _("Emptying the data partition"))
+    mount = CARD_DATA_MOUNT
+    run_checked(access, f"umount {mount} 2>/dev/null; mkdir -p {mount} && mount -t ext4 {part_path(data)} {mount}",
+                120, _("Writing the system"))
+    try:
+        with image.open() as source:
+            android = Ext4Reader(source).open_file(IMAGE_NEEDS[0])
+            return write_system_file(job, device, image, android, mount, card_rootfs_size(image, data["size"]), 0,
+                                     total, _("Fitting the file system to the partition"), pin_hash, language, True)
+    finally:
+        access.run_root(f"cd /; sync; umount {mount}; rmdir {mount}", 300)
+
+
+def card_system_partition(job, device, image, system, data, wipe, pin_hash, language):
+    """The system written to the system partition of its place, the way the Volla Boot Manager installs
+    systems. An image with plinius-crypt gets the request to encrypt its data partition. Returns done."""
+    access, total = device.access, card_total(image)
     with image.open() as f:
         crypt = Ext4Reader(f).lookup(PHONE_CRYPT_MARK) is not None
-    total = image.size + kernel_size(image)
     with image.open() as f:
         done, _sha = send_to_partition(job, access, f.read, system, image.size, 0, total,
                                        _("Writing Plinius to the memory card"))
@@ -5255,19 +5413,7 @@ def run_install_card(job, device, card, choice, image, title, pin_hash, language
     if image.vendor:
         job.report(done, total, _("Copying the drivers of Volla OS"))
         job.notes += take_vendor(job, device, part_path(system), image.vendor)
-    # A system of this app on that place leaves its kernel folder to the new one, if nobody else uses it
-    old = place.get("kernel") or ""
-    if kind == "replace" and re.fullmatch(r"plinius\d*", old) and \
-            not any(e is not place and e.get("kernel") == old for e in card["entries"]):
-        folder = old
-    else:
-        folder = kernel_folder(card)
-    done = copy_kernel(job, access, card["settings"], folder, image, done, total)
-    name = place["file"] or f"{folder}.conf"
-    job.report(done, total, _("Writing the boot entries"))
-    write_entries(access, card, {name: card_entry_text(title, folder, system, data)})
-    set_last_index(access, card["settings"], name)
-    return name
+    return done
 
 
 def card_steps(kind, image, wipe, pin_hash, language):
@@ -5277,16 +5423,20 @@ def card_steps(kind, image, wipe, pin_hash, language):
         steps.append((_("Setting up the memory card"), 0))
     elif kind == "add":
         steps.append((_("Changing the partition table"), 0))
-    steps += [(_("Writing Plinius to the memory card"), image.size),
-              (_("Fitting the file system to the partition"), 0)]
-    if wipe:
+    if image.in_data:
         steps.append((_("Emptying the data partition"), 0))
-    if pin_hash:
-        steps.append((_("Setting the PIN"), 0))
-    if language:
-        steps.append((_("Setting the language"), 0))
-    if image.vendor:
-        steps.append((_("Copying the drivers of Volla OS"), 0))
+        steps += system_file_steps(image, _("Fitting the file system to the partition"), pin_hash, language)
+    else:
+        steps += [(_("Writing Plinius to the memory card"), image.size),
+                  (_("Fitting the file system to the partition"), 0)]
+        if wipe:
+            steps.append((_("Emptying the data partition"), 0))
+        if pin_hash:
+            steps.append((_("Setting the PIN"), 0))
+        if language:
+            steps.append((_("Setting the language"), 0))
+        if image.vendor:
+            steps.append((_("Copying the drivers of Volla OS"), 0))
     return steps + [(_("Copying the kernel"), kernel_size(image)), (_("Writing the boot entries"), 0)]
 
 
@@ -6575,7 +6725,7 @@ def add_layout_groups(prefs, device, layout):
             used.add(s["number"])
         if e["data"]:
             used.add(e["data"]["number"])
-        version = system_text(s["system"]) if s and s.get("system") else ""
+        version = entry_system_text(e)
         lines = [version] if version else []
         if s:
             lines.append(_("System: partition {number}, {size}").format(number=s["number"], size=size_text(s["size"])))
@@ -6584,7 +6734,7 @@ def add_layout_groups(prefs, device, layout):
                                                                       size=size_text(e["data"]["size"])))
         r = row(e["title"] or _("Unnamed system"), " · ".join(lines))
         r.add_prefix(Gtk.Image(icon_name="media-removable-symbolic"))
-        if s and s.get("running"):
+        if any(p and p.get("running") for p in (s, e["data"])):
             r.add_suffix(Gtk.Label(label=_("running now"), css_classes=["dim-label"]))
         here.add(r)
     for p in card["parts"]:
@@ -6797,6 +6947,13 @@ class PlacePage(Adw.NavigationPage):
         self.change.run_operation(title, icon, work, done_title, done_text, cleanup)
 
 
+def own_menu_title(device):
+    """The title of the boot menu entry that starts the phone's own storage, from the card last read with this
+    connection, or ""."""
+    card = (getattr(device, "layout", None) or {}).get("card") or {}
+    return next((e["title"] for e in card.get("entries", []) if e["own_system"] and e["title"]), "")
+
+
 class FollowingPage(Adw.NavigationPage):
     """A page about one phone that stays with it while it changes between its system, the bootloader
     and the rescue system: those are different entries for the scanner, with the same serial number."""
@@ -6810,6 +6967,8 @@ class FollowingPage(Adw.NavigationPage):
         self.set_child(self.toolbar)
         # waiting: the phone is gone from USB; starting: it is on its way into the rescue system
         self.waiting, self.starting = False, False
+        # The name of the boot menu's entry for the phone's own storage, as last read from the card
+        self.menu_title = own_menu_title(device)
 
     def on_devices(self, devices):
         same = [d for d in devices if d.serial and d.serial == self.device.serial] or \
@@ -6818,6 +6977,7 @@ class FollowingPage(Adw.NavigationPage):
             # A phone in two modes at once: the entry that can read tells more
             found = next((d for d in same if d.can_read), same[0])
             if found is not self.device:
+                self.menu_title = own_menu_title(self.device) or self.menu_title
                 self.device, self.waiting = found, False
                 self.render()
         elif self.device.key not in self.win.scanner.devices and not self.waiting:
@@ -6842,10 +7002,14 @@ class FollowingPage(Adw.NavigationPage):
     def add_waiting(self, prefs):
         """While the phone restarts it is gone from USB for a moment."""
         if self.starting:
+            # The rescue system sits in the phone's own init_boot: the entry for the phone's own storage starts it,
+            # whatever the name of that entry and whatever else the menu offers
+            title = own_menu_title(self.device) or self.menu_title or "VollaOS"
             prefs.add(Adw.PreferencesGroup(title=_("Choose in the boot menu"), description=_(
-                "With a memory card in the phone, its boot menu appears for a few seconds. Choose VollaOS there: "
-                "otherwise it starts the system chosen last, and not the rescue system. If that happens, restart "
-                "the phone and choose again.")))
+                "With a memory card in the phone, its boot menu appears for a few seconds. Choose “{title}” there: "
+                "that entry starts what is in the phone itself, where the rescue system is now, whatever its name "
+                "says. Every other entry starts something else, another rescue system as well. If that happens, "
+                "restart the phone and choose again.").format(title=title)))
         group = Adw.PreferencesGroup()
         group.add(spinner_row(_("Waiting for the phone. If nothing happens, check the cable.")))
         prefs.add(group)
@@ -6913,7 +7077,19 @@ def entry_running(device, entry):
     """Whether the phone runs this entry's system right now, as far as the connection tells."""
     if entry["own_system"]:
         return device.mode == "adb" and not device.rescue
-    return bool(entry["system"] and entry["system"].get("running"))
+    return any(p and p.get("running") for p in (entry["system"], entry["data"]))
+
+
+def entry_system_text(entry):
+    """The system of a card entry in one line, or "": from its system partition, or for one in rootfs.img on its
+    data partition (in_data) from there, which the card only shows while that is not encrypted. The system
+    partition of such an entry is only kept empty for the pair."""
+    part = entry["data"] if entry.get("in_data") else entry["system"]
+    if part and part.get("system"):
+        return system_text(part["system"])
+    if entry.get("in_data") and part and part.get("luks"):
+        return KINDS["luks"]
+    return ""
 
 
 def entry_summary(layout, entry):
@@ -6922,7 +7098,7 @@ def entry_summary(layout, entry):
         active = layout["android"][0] if layout["android"] else None
         text = system_text(active) if active else _("The phone's own system")
     elif entry["system"]:
-        text = system_text(entry["system"]["system"]) if entry["system"].get("system") else _("no system found")
+        text = entry_system_text(entry) or _("no system found")
     else:
         text = _("Its partitions are not there")
     return " · ".join((text, _("Phone storage") if entry_internal(entry) else _("Memory card")))
@@ -9275,6 +9451,22 @@ class App(Adw.Application):
     def do_activate(self):
         win = self.get_active_window() or Window(self)
         win.present()
+
+    def do_shutdown(self):
+        stop_own_adb()
+        Adw.Application.do_shutdown(self)
+
+
+def stop_own_adb():
+    """In the Flatpak the adb server the app started (TOOLS) is its own and runs on in the background, keeping
+    the sandbox and so the app alive after its window closed: it stops with the app. Outside the Flatpak the
+    server is the system's, which other programs may be using, and stays."""
+    if not os.path.exists("/.flatpak-info"):
+        return
+    try:
+        subprocess.run(["adb", "kill-server"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        pass
 
 
 def migrate_old_dirs():
