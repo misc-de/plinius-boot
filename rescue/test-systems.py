@@ -915,8 +915,9 @@ def debugfs_cat(path, name):
     return subprocess.run(["debugfs", "-R", f"cat {name}", path], capture_output=True, check=True).stdout
 
 
-def check_plinius(card_, name, label):
-    """The entry, its kernel, the number the bootloader starts by itself, and the PIN in the system."""
+def check_plinius(card_, name, label, tree="plinius"):
+    """The entry, its kernel (that of the image made from tree), the number the bootloader starts by itself,
+    and the PIN in the system."""
     entries_ = {e["file"]: e for e in card_["entries"]}
     entry_ = entries_.get(name)
     if not entry_ or not entry_["system"] or not entry_["data"]:
@@ -932,7 +933,7 @@ def check_plinius(card_, name, label):
         fail(f"{label}: the entry is not as the manager makes them")
     settings = pulled_settings(card_)
     for kernel_file in app.IMAGE_KERNEL:
-        with open(os.path.join(image_dir, "plinius/usr/share/plinius-boot", kernel_file), "rb") as f:
+        with open(os.path.join(image_dir, tree, "usr/share/plinius-boot", kernel_file), "rb") as f:
             if debugfs_cat(settings, f"/{folder}/{kernel_file}") != f.read():
                 fail(f"{label}: {folder}/{kernel_file} is not the one from the image")
     order = stored_order(settings)
@@ -955,15 +956,32 @@ choices = app.card_choices(card, plinius)
 if not choices or choices[-1]["kind"] != "fresh" or choices[0]["kind"] not in ("free", "add"):
     fail(f"choices on a card with a boot menu and room: {[c['kind'] for c in choices]}")
 ok(f"on a card with a boot menu, first a place where nothing is lost ({choices[0]['kind']}), last setting it up anew")
-name = app.run_install_card(job(), device, card, choices[0], plinius, "Plinius", PIN, "fr")
+name = app.run_install_card(job(), device, card, choices[0], plinius, None, PIN, "fr")
 card, entries = read()
 order = check_plinius(card, name, "into the free space")
+if entries[name]["title"] != "Arch Linux":
+    fail(f"the title of the new entry: {entries[name]['title']!r}")
+ok("the entry is named after what it starts: Arch Linux")
 system = entries[name]["system"]["name"]
 language = sh(f"m=$(mktemp -d); mount -t ext4 -o ro /dev/{system} \"$m\"; cat \"$m/etc/locale.conf\" \"$m/etc/vconsole.conf\"; "
               "umount \"$m\"; rmdir \"$m\"")
 if language != "LANG=fr_FR.UTF-8\nKEYMAP=fr-latin1\n":
     fail(f"the language on the card: {language!r}")
 ok("on the card the language is set as well")
+
+
+def card_data_files(entry_):
+    """The names on the data partition of an entry, hidden ones included, and the request in it ("" if none)."""
+    part = f"/dev/{entry_['data']['name']}"
+    names = sh(f"m=$(mktemp -d); mount -t ext4 -o ro {part} \"$m\"; ls -A \"$m\"; umount \"$m\"; rmdir \"$m\"").split()
+    request = sh(f"m=$(mktemp -d); mount -t ext4 -o ro {part} \"$m\"; cat \"$m/{app.PHONE_CRYPT_REQUEST}\" 2>/dev/null; "
+                 f"umount \"$m\"; rmdir \"$m\"; true")
+    return names, request.strip()
+
+
+if app.PHONE_CRYPT_REQUEST in card_data_files(entries[name])[0]:
+    fail("an image without plinius-crypt left a request to encrypt on the card")
+ok("an image without plinius-crypt leaves no request on the card's data partition")
 if any(boot_entry(n) != text for n, text in before.items()):
     fail("other entries changed")
 ok(f"installed next to the others as {name}: own kernel in its folder, last_index {order.index(name)} as the "
@@ -971,12 +989,35 @@ ok(f"installed next to the others as {name}: own kernel in its folder, last_inde
 
 # Once more on the same place: the folder is used again, the entry keeps its name and so its number
 again = next(c for c in app.card_choices(card, plinius) if c["kind"] == "replace" and c["place"]["file"] == name)
-if app.run_install_card(job(), device, card, again, plinius, "Plinius", PIN) != name:
+if app.run_install_card(job(), device, card, again, plinius, None, PIN) != name:
     fail("installing again on its own place gave another entry")
 card, entries = read()
 if check_plinius(card, name, "again") != order or entries[name]["kernel"] != "plinius":
     fail("installing again changed the order or the kernel folder")
-ok("installing again on its own place keeps entry, number and kernel folder")
+if entries[name]["title"] != "Arch Linux":
+    fail(f"installing again renamed the entry: {entries[name]['title']!r}")
+ok("installing again on its own place keeps entry, name, number and kernel folder")
+
+# An image with plinius-crypt on the card: the phone is to ask once at its first start, as inside the phone
+crypt_card, _crypt_card_files = phone_image("plinius-crypt", plinius=True, crypt=True)
+again = next(c for c in app.card_choices(card, crypt_card) if c["kind"] == "replace" and c["place"]["file"] == name)
+if app.run_install_card(job(), device, card, again, crypt_card, None, PIN, "de") != name:
+    fail("an image with plinius-crypt on its own place gave another entry")
+card, entries = read()
+check_plinius(card, name, "with plinius-crypt", "plinius-crypt")
+names, request = card_data_files(entries[name])
+if request != "fresh" or sorted(names) != [".plinius-crypt-keyboard", ".plinius-crypt-l10n", app.PHONE_CRYPT_REQUEST,
+                                           "lost+found"]:
+    fail(f"the data partition after an image with plinius-crypt: {names} {request!r}")
+data_part = f"/dev/{entries[name]['data']['name']}"
+beside = sh(f"m=$(mktemp -d); mount -t ext4 -o ro {data_part} \"$m\"; cat \"$m/.plinius-crypt-l10n\"; echo ---; "
+            f"cat \"$m/.plinius-crypt-keyboard\"; umount \"$m\"; rmdir \"$m\"")
+if beside != "Encrypt the device?\tGerät verschlüsseln?\n---\n[keyboard]\nlayout=de\n\n[hardware keyboard]\nlayout=de\n":
+    fail(f"the language of the prompt on the card: {beside!r}")
+if sh("findmnt -n /run/plinius-card-data; ls -d /run/plinius-card-data 2>/dev/null; true"):
+    fail("the card's data partition is still mounted for the request")
+ok("an image with plinius-crypt on the card: its new data partition carries the request \"fresh\" and the language "
+   "of the prompt, so the phone asks once at its first start")
 
 # A card from the shop: no boot menu, here not even a partition table
 sh(f"sgdisk --zap-all /dev/{CARD} >/dev/null 2>&1; blockdev --rereadpt /dev/{CARD}; plinius-partlinks; true")
@@ -991,7 +1032,7 @@ small.check()
 small.size = 1 << 30
 if app.card_choices(card, small):
     fail("an image too large for the card was offered")
-name = app.run_install_card(job(), device, card, choices[0], plinius, "Plinius", PIN)
+name = app.run_install_card(job(), device, card, choices[0], plinius, None, PIN)
 card, entries = read()
 gpt = sh(f"sgdisk -p /dev/{CARD}")
 if [p["number"] for p in card["parts"]] != [1, 2, 3] or card["settings"] != f"{CARD}p1" or "abm_settings" not in gpt \

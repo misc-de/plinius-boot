@@ -65,7 +65,10 @@ bar shows its progress under its step, and ticks it when it is done before the c
    password locked, and nobody would get past the lock screen.
 
 On the card Plinius starts with its own kernel and ramdisk from `/usr/share/plinius-boot` in the image, copied
-to `abm_settings/plinius/`, never with the kernel of another system. Its entry is written last, then
+to `abm_settings/plinius/`, never with the kernel of another system. The entry is called **Arch Linux**, or
+**Arch Linux (SD)** (then with a number) when another entry of the menu has that name. An image with
+plinius-crypt gets the request `fresh` and the language of the prompt on its new data partition, as inside
+the phone: the ramdisk asks once at the first start whether to encrypt it. Its entry is written last, then
 `db/last_index`, so that the menu starts Plinius by itself. The bootloader counts the entries the way lwext4
 goes through the directory as stored, and Linux lists a directory with a hash index in another order, so the
 app reads the directory from the partition itself (`entry_order`). Then the original `init_boot` goes back and

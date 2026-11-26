@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.32"
+VERSION = "0.33"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -5116,10 +5116,24 @@ def kernel_size(image):
         return sum(ext4.open_file(f"{PHONE_BOOT_DIR}/{name}").size for name in IMAGE_KERNEL)
 
 
+# The name of a system this app puts on the card, in the boot menu: what starts there, not the project's name
+CARD_TITLE = "Arch Linux"
+# Where the data partition of a new system on the card is mounted, for the request to encrypt
+CARD_DATA_MOUNT = "/run/plinius-card-data"
+
+
+def card_title(card, place):
+    """The title of the entry for a system put on place: CARD_TITLE, or "(SD)" and then a number added when
+    another entry of the menu has that name already. The entry the system replaces does not count."""
+    taken = {e["title"].casefold() for e in card["entries"] if e["file"] != place["file"]}
+    names = [CARD_TITLE, f"{CARD_TITLE} (SD)"] + [f"{CARD_TITLE} (SD {i})" for i in range(2, 100)]
+    return next((n for n in names if n.casefold() not in taken), CARD_TITLE)
+
+
 def card_entry_text(title, folder, system, data):
     """A boot entry for a system with its own kernel, in the form the Volla Boot Manager uses."""
     part_path(system), part_path(data)
-    return "\n".join((f"title {clean_text(title, 60) or 'Plinius'}", f"linux {folder}/zImage",
+    return "\n".join((f"title {clean_text(title, 60) or CARD_TITLE}", f"linux {folder}/zImage",
                       f"initrd {folder}/initrd.cpio.gz", f"dtb {folder}/dtb.dtb",
                       f"options {ENTRY_OPTIONS} systempart={boot_path(system)} datapart={boot_path(data)}",
                       "xtype UT", f"xpart {system['number']}:{data['number']}")) + "\n"
@@ -5128,7 +5142,9 @@ def card_entry_text(title, folder, system, data):
 def run_install_card(job, device, card, choice, image, title, pin_hash, language=None):
     """Puts the image on the memory card as choice says (see card_choices), with its own kernel and the
     PIN, and makes it the system the boot menu starts by itself. The entry is written last: until then a
-    stop leaves the menu as it was, except for a card that was set up anew, which then starts Volla OS."""
+    stop leaves the menu as it was, except for a card that was set up anew, which then starts Volla OS.
+    title: of the entry, None for card_title. An image with plinius-crypt asks at its first start whether
+    to encrypt, as inside the phone (PHONE_CRYPT_MARK)."""
     access = device.access
     card = fresh_card(device, card)
     if image.problem:
@@ -5165,6 +5181,9 @@ def run_install_card(job, device, card, choice, image, title, pin_hash, language
     problem = image.place_problem(system)
     if problem:
         raise Failed(problem)
+    title = title or card_title(card, place)
+    with image.open() as f:
+        crypt = Ext4Reader(f).lookup(PHONE_CRYPT_MARK) is not None
     total = image.size + kernel_size(image)
     with image.open() as f:
         done, _sha = send_to_partition(job, access, f.read, system, image.size, 0, total,
@@ -5177,7 +5196,20 @@ def run_install_card(job, device, card, choice, image, title, pin_hash, language
     if pin_hash:
         job.report(done, total, _("Setting the PIN"))
         set_pin(access, part_path(system), pin_hash)
-    if language:
+    if crypt:
+        # The request "fresh" on the data partition, empty by now, and the language of the prompt next to it:
+        # the card's ramdisk (halium-unlock) looks for both on the partition datapart= names
+        mount = CARD_DATA_MOUNT
+        run_checked(access, f"umount {mount} 2>/dev/null; mkdir -p {mount} && mount -t ext4 {part_path(data)} {mount}",
+                    120, _("Writing the system"))
+        try:
+            if language:
+                job.report(done, total, _("Setting the language"))
+                set_language(access, part_path(system), language, beside=mount)
+            run_checked(access, f"echo fresh > {mount}/{PHONE_CRYPT_REQUEST} && sync", 60, _("Writing the system"))
+        finally:
+            access.run_root(f"sync; umount {mount}; rmdir {mount}", 120)
+    elif language:
         job.report(done, total, _("Setting the language"))
         set_language(access, part_path(system), language)
     if image.vendor:
@@ -8608,7 +8640,7 @@ class InstallPage(FollowingPage):
         d, choice, image = self.device, self.choice, self.source.image
 
         def work(job):
-            run_install_card(job, d, card, choice, image, "Plinius", self.pin_hash, self.language)
+            run_install_card(job, d, card, choice, image, None, self.pin_hash, self.language)
             return leave_rescue(job, d, self.win.config)
 
         if choice["kind"] in ("free", "add"):

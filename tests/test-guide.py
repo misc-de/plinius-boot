@@ -411,6 +411,18 @@ text = app.card_entry_text("Plinius\nlinux evil", "plinius", by_file["rom0.conf"
 check("the entry: own kernel, the manager's options, no line from the title", text.splitlines() == [
     "title Pliniuslinux evil", "linux plinius/zImage", "initrd plinius/initrd.cpio.gz", "dtb plinius/dtb.dtb",
     "options " + app.ENTRY_OPTIONS + " systempart=/dev/mmcblk0p2 datapart=/dev/mmcblk0p3", "xtype UT", "xpart 2:3"])
+check("an entry without a title is named after what it starts",
+      app.card_entry_text("", "plinius", by_file["rom0.conf"]["system"], by_file["rom0.conf"]["data"])
+      .startswith("title Arch Linux\n"))
+new_place = {"file": ""}
+menu = lambda *titles: {"entries": [{"file": f"rom{i}.conf", "title": t} for i, t in enumerate(titles)]}
+check("a new system on the card: Arch Linux", app.card_title(menu("VollaOS", "Ubuntu Touch"), new_place) == "Arch Linux")
+check("next to another Arch Linux: (SD), then a number, whatever the case",
+      app.card_title(menu("VollaOS", "arch linux"), new_place) == "Arch Linux (SD)"
+      and app.card_title(menu("Arch Linux", "Arch Linux (SD)"), new_place) == "Arch Linux (SD 2)")
+check("the entry it replaces does not count",
+      app.card_title(menu("VollaOS", "Arch Linux"), {"file": "rom1.conf"}) == "Arch Linux"
+      and app.card_title(menu("VollaOS", "Plinius"), {"file": "rom1.conf"}) == "Arch Linux")
 
 check("SHA-512 crypt gives Drepper's test vector", app.sha512_crypt("Hello world!", "saltstring") ==
       "$6$saltstring$svn8UoSVapNtMuq1ukKS4tPQd8iKwSMHWjl/O817G3uBnIFNjnQJuesI68u4OTLiBFdcbYEdFCoEOfaS35inz1")

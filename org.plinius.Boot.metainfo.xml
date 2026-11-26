@@ -24,6 +24,11 @@
   <url type="homepage">https://github.com/misc-de/plinius-boot</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.33" date="2026-11-25">
+      <description>
+        <p>A system put on the memory card asks at its first start whether to encrypt the data partition, as one installed inside the phone does, in the language chosen. Its entry in the boot menu is called Arch Linux, or Arch Linux (SD) next to another one of that name.</p>
+      </description>
+    </release>
     <release version="0.32" date="2026-11-25">
       <description>
         <p>The app no longer takes its own rescue system for the original init_boot: not while the rescue system sits there, not from a system started from the memory card, and never when writing back.</p>
