@@ -348,6 +348,10 @@ check("the same steps on a card set up anew, after setting it up",
           "Setting up the memory card", "Emptying the data partition", "Writing the Android image",
           "Writing the system", "Fitting the file system to the partition", "Copying the drivers of Volla OS",
           "Copying the kernel", "Writing the boot entries"])
+check("a free or replaced place shaped anew for it starts with the partition table",
+      [t for t, _s in app.card_steps("replace", inside, True, None, None, True)][:2] == [
+          "Changing the partition table", "Emptying the data partition"]
+      and [t for t, _s in app.card_steps("free", inside, True, None, None, True)].count("Changing the partition table") == 1)
 check("all bytes of it: system, Android image and kernel", app.card_total(inside) == 2000 + 300 + 30
       and app.card_total(img) == 2000 + 30)
 app.kernel_size = real_kernel_size
@@ -511,11 +515,97 @@ check("on its data partition a system fits places whose system partition is too 
       [(c["kind"], c.get("place", {}).get("file")) for c in app.card_choices(card, inside)]
       == [("replace", "rom0.conf"), ("replace", "rom1.conf"), ("fresh", None)]
       and [c["kind"] for c in app.card_choices(card, Img(10 << 30))] == ["replace", "fresh"])
-check("the data partition must hold it with the Android image beside it",
-      [c.get("place", {}).get("file") for c in app.card_choices(card, Img(10 << 30, True, 1 << 30))] == ["rom1.conf", None])
-problem = Img(10 << 30, True, 1 << 30).card_place_problem(by_file["rom0.conf"])
-check("a place too small for it names its data partition", "partition 3" in problem
-      and app.size_text((10 << 30) + (1 << 30) + app.CARD_SYSTEM_ROOM + app.CARD_DATA_MIN) in problem)
+# rom0: p2 ends 1286 sectors before p3 starts, so the two lie next to each other
+stub = app.CARD_SYSTEM_STUB // 512
+fitted = (stub, 8392704 + stub, 28645376 + 33554432 - 8392704 - stub)
+check("a place for it: the system partition shrinks to the stub, the data partition takes the rest up to its end",
+      app.card_place_fit(by_file["rom0.conf"], card["parts"]) == fitted
+      and app.card_place_fit(by_file["rom0.conf"]) == fitted and (8392704 + stub) % app.ALIGN == 0)
+part = lambda name, start, sectors, **more: dict(name=name, number=int(name[8:]), start=start, sectors=sectors,
+                                                 size=sectors * 512, **more)
+p2, p3 = part("mmcblk0p2", 4096, 1 << 22), part("mmcblk0p3", 4096 + (1 << 22), 1 << 23)
+check("an unaligned system partition: the data partition starts at the next MiB",
+      app.card_place_fit({"system": part("mmcblk0p2", 4097, (1 << 22) - 1), "data": p3})[1] == 4096 + stub + app.ALIGN)
+check("nothing to gain, a gap, something in between, another disk or the phone's own storage: the place stays",
+      app.card_place_fit({"system": part("mmcblk0p2", 4096, stub), "data": part("mmcblk0p3", 4096 + stub, 1 << 23)}) is None
+      and app.card_place_fit({"system": p2, "data": dict(p3, start=p3["start"] + app.ALIGN)}) is None
+      and app.card_place_fit({"system": p2, "data": dict(p3, start=p3["start"] - 1)}) is None
+      and app.card_place_fit({"system": p2, "data": p3}, [p2, part("mmcblk0p9", p3["start"] - 8, 8), p3]) is None
+      and app.card_place_fit({"system": p2, "data": dict(p3, name="mmcblk1p3")}) is None
+      and app.card_place_fit({"system": dict(p2, internal=True), "data": p3}) is None
+      and app.card_place_fit({"system": p2, "data": p2}) is None and app.card_place_fit({"system": None, "data": p3}) is None
+      and app.card_place_fit({"system": p2, "data": p3}, [p2, p3, part("mmcblk0p9", p3["start"] + (1 << 23), 8)])
+      == (stub, 4096 + stub, (1 << 22) + (1 << 23) - stub))
+check("the data partition must hold it with the Android image beside it, the system partition counts but its stub",
+      [c.get("place", {}).get("file") for c in app.card_choices(card, Img(10 << 30, True, 1 << 30))]
+      == ["rom0.conf", "rom1.conf", None]
+      and [c.get("place", {}).get("file") for c in app.card_choices(card, Img(20 << 30, True, 1 << 30))] == ["rom1.conf", None])
+problem = Img(20 << 30, True, 1 << 30).card_place_problem(by_file["rom0.conf"], card["parts"])
+check("a place too small for it names its data partition and what it would hold", "partition 3" in problem
+      and app.size_text((20 << 30) + (1 << 30) + app.CARD_SYSTEM_ROOM + app.CARD_DATA_MIN) in problem
+      and app.size_text(fitted[2] * 512) in problem)
+problem = Img(10 << 30, True, 1 << 30).card_place_problem(
+    dict(by_file["rom0.conf"], data=dict(by_file["rom0.conf"]["data"], start=by_file["rom0.conf"]["data"]["start"] + 4096)))
+check("not next to each other: only the data partition counts", "partition 3" in problem
+      and app.size_text(by_file["rom0.conf"]["data"]["size"]) in problem)
+
+
+def fit_access(geometry=None, block="512"):
+    """A phone for fit_place: the card as card-plinius.txt, every command recorded."""
+    log, guids = [], {2: "11111111-2222-3333-4444-555555555552", 3: "11111111-2222-3333-4444-555555555553"}
+    shape = {}
+
+    def run_root(script, timeout=0):
+        log.append(script)
+        if "logical_block_size" in script:
+            return 0, block + "\n", ""
+        m = re.match(r"sgdisk -i (\d+) ", script)
+        if m:
+            n = int(m[1])
+            return 0, (f"Partition GUID code: {'B921B045-1DF0-41C3-AF44-4C6F280D3FAE' if n == 2 else '0FC63DAF-8483-4772-8E79-3D69D8477DE4'} (x)\n"
+                       f"Partition unique GUID: {guids[n]}\nPartition name: '{'' if n == 2 else 'data'}'\n"), ""
+        for n, first, last in re.findall(r"-n (\d+):(\d+):(\d+)", script):
+            shape[f"mmcblk0p{n}"] = (int(first), int(last) - int(first) + 1)
+        m = re.match(r"cat /sys/class/block/(\w+)/start", script)
+        if m:
+            start, size = (geometry or shape)[m[1]]
+            return 0, f"{start}\n{size}\n", ""
+        return 0, "", ""
+    return types.SimpleNamespace(run_root=run_root), log
+
+
+reports = []
+fit_job = types.SimpleNamespace(report=lambda done, total, text: reports.append(text))
+access_, log = fit_access()
+app.fit_place(fit_job, access_, card, by_file["rom0.conf"], fitted)
+table = next(line for line in log if "-d 2 -d 3" in line)
+check("fit_place: both partitions anew in one write, number, type, identity and name kept, nothing else touched",
+      table.startswith("sgdisk -a 1 -d 2 -d 3 ") and table.endswith(" /dev/mmcblk0 2>&1")
+      and f"-n 2:8392704:{8392704 + stub - 1}" in table and "-t 2:B921B045-1DF0-41C3-AF44-4C6F280D3FAE" in table
+      and "-u 2:11111111-2222-3333-4444-555555555552" in table and "-c 2:" not in table
+      and f"-n 3:{fitted[1]}:{28645376 + 33554432 - 1}" in table and "-u 3:11111111-2222-3333-4444-555555555553" in table
+      and "-c 3:data" in table and "-t 3:0FC63DAF-8483-4772-8E79-3D69D8477DE4" in table
+      and not re.search(r"-[dn] [14]", table) and reports == ["Changing the partition table"])
+check("fit_place: the table read again, the start of both new partitions emptied",
+      any("blockdev --rereadpt /dev/mmcblk0" in line for line in log)
+      and "dd if=/dev/zero of=/dev/mmcblk0p2 bs=1M count=1" in log[-1]
+      and "dd if=/dev/zero of=/dev/mmcblk0p3 bs=1M count=1" in log[-1] and log[-1].endswith("; sync"))
+for label, access_ in (("another sector size", fit_access(block="4096")[0]),
+                       ("the kernel shows another table", fit_access({"mmcblk0p2": (8392704, stub),
+                                                                      "mmcblk0p3": (fitted[1], 1)})[0])):
+    try:
+        app.fit_place(fit_job, access_, card, by_file["rom0.conf"], fitted)
+        check(f"fit_place refuses: {label}", False)
+    except app.Failed:
+        check(f"fit_place refuses: {label}", True)
+access_, log = fit_access()
+for bad in (dict(card, disk="sda"), dict(card, disk="mmcblk0;reboot")):
+    try:
+        app.fit_place(fit_job, access_, bad, by_file["rom0.conf"], fitted)
+        check("fit_place: a strange disk", False)
+    except app.Failed:
+        pass
+check("fit_place: a strange disk is refused before anything runs", log == [])
 check("set up anew for it: the system partition only a small empty one, all the rest data",
       app.card_choices(card, inside)[-1]["system"] == app.CARD_SYSTEM_STUB)
 add_inside = app.card_choices(roomy, inside)[0]

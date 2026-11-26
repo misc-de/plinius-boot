@@ -197,7 +197,7 @@ if zstd is None:
 APP_ID = "org.plinius.Boot"
 # A proper name, not translated
 APP_NAME = "Plinius Boot"
-VERSION = "0.36"
+VERSION = "0.37"
 HERE = os.path.dirname(os.path.realpath(__file__))
 # Data lies next to the bin folder: /usr/share for the package, ~/.local/share after install.sh,
 # /app/share in the Flatpak
@@ -3155,8 +3155,8 @@ PHONE_CRYPT_MARK = "usr/lib/plinius-crypt/halium-rebuild"
 # plinius-kernel of the Volla project): on the card its system goes there as rootfs.img as well, as inside the
 # phone, so that the encryption covers the whole system and not only the personal files. On a system partition
 # of its own the system, its settings and the keys in /etc and /var would lie open on the card for anyone to
-# read and change. The system partition of the place stays, empty and small on a new place, so that the entry
-# keeps its pair (xpart N:M) and nothing takes it for free space.
+# read and change. The system partition of the place stays, empty and small (on a free or replaced place it
+# shrinks, see fit_place), so that the entry keeps its pair (xpart N:M) and nothing takes it for free space.
 PHONE_CARD_DATA_MARK = "usr/lib/plinius/kernel/card-data-system"
 CARD_SYSTEM_STUB = 64 << 20
 PHONE_CRYPT_REQUEST = ".plinius-crypt-request"
@@ -3350,15 +3350,18 @@ class SystemImage:
         # Android image of this size
         self.in_data, self.android_size = False, 0
 
-    def card_place_problem(self, place):
-        """Why this image cannot go to a place on the card (system and data partition), or ""."""
+    def card_place_problem(self, place, parts=()):
+        """Why this image cannot go to a place on the card (system and data partition), or "". parts: those
+        of the card, for card_place_fit."""
         if not self.in_data:
             return self.place_problem(place["system"])
         data = place["data"]
-        if not card_rootfs_size(self, data["size"]):
+        fit = card_place_fit(place, parts)
+        room = fit[2] * SECTOR if fit else data["size"]
+        if not card_rootfs_size(self, room):
             return _("This image needs {need}, but partition {number} holds {size}. Nothing was changed.").format(
                 need=size_text(self.size + self.android_size + CARD_SYSTEM_ROOM + CARD_DATA_MIN),
-                number=data["number"], size=size_text(data["size"]))
+                number=data["number"], size=size_text(room))
         return ""
 
     def place_problem(self, part):
@@ -5047,6 +5050,58 @@ def card_new_system(image, room):
     return CARD_SYSTEM_STUB if card_rootfs_size(image, room - CARD_SYSTEM_STUB) else 0
 
 
+def card_place_fit(place, parts=()):
+    """For an image on the data partition (in_data) on a place whose contents go anyway (free, replace): the
+    system partition only CARD_SYSTEM_STUB, the data partition from right behind it to its old end, as
+    (system sectors, data start, data sectors) in sectors of the card. None if that gains nothing, or if the
+    two do not lie next to each other on the card: nothing of parts in between, no gap of ALIGN or more."""
+    system, data = place.get("system"), place.get("data")
+    if not system or not data or system.get("internal") or data.get("internal") or system["name"] == data["name"] \
+            or disk_of(system) != disk_of(data):
+        return None
+    end = system["start"] + system["sectors"]
+    if not 0 <= data["start"] - end < ALIGN:
+        return None
+    if any(p["name"] not in (system["name"], data["name"]) and p["start"] < data["start"] + data["sectors"]
+           and p["start"] + p["sectors"] > system["start"] for p in parts):
+        return None
+    start = -(-(system["start"] + CARD_SYSTEM_STUB // SECTOR) // ALIGN) * ALIGN
+    if start >= data["start"]:
+        return None
+    return start - system["start"], start, data["start"] + data["sectors"] - start
+
+
+def fit_place(job, access, card, place, fit):
+    """Shapes a place anew as card_place_fit says, before an image on the data partition goes there: the
+    system partition shrinks to its stub, the data partition starts right behind it and keeps its end. What
+    was on both is gone, as on any place that is replaced. Number, type, identity and name of both stay: the
+    boot entries name the partitions by their numbers."""
+    system, data = place["system"], place["data"]
+    disk = card["disk"]
+    if not re.fullmatch(r"mmcblk\d+", disk) or disk_of(system) != disk or disk_of(data) != disk:
+        raise Failed(_("The name of a partition is not valid."))
+    part_path(system)
+    part_path(data)
+    if access.run_root(f"cat /sys/block/{disk}/queue/logical_block_size", 30)[1].strip() != str(SECTOR):
+        raise Failed(_("The partition table of the memory card looks different than expected. Nothing was changed."))
+    job.report(0, 0, _("Changing the partition table"))
+    sectors, start, length = fit
+    shapes = ((system, system["start"], sectors), (data, start, length))
+    options = []
+    for part, first, count in shapes:
+        type_guid, unique, name = gpt_info(access, disk, part["number"])
+        options += sgdisk_entry(part["number"], first, first + count - 1, type_guid, unique, name)
+    run_checked(access, f"{SGDISK} -d {int(system['number'])} -d {int(data['number'])} {' '.join(options)} "
+                f"/dev/{disk} 2>&1", 120, _("Changing the partition table"))
+    relist_partitions(access, disk)
+    if any(part_geometry(access, part["name"]) != (first, count) for part, first, count in shapes):
+        raise Failed(_("The partition table does not show what was written. Restart the rescue system and check."))
+    # The new data partition starts inside the old system partition: nothing left there may be taken for a
+    # file system when the card is read again
+    run_checked(access, "; ".join(f"dd if=/dev/zero of={part_path(part)} bs=1M count=1 2>/dev/null"
+                                  for part in (system, data)) + "; sync", 120, _("Changing the partition table"))
+
+
 def card_settings_size(sectors):
     """abm_settings as the Volla Boot Manager makes it: a 41st of the card, 512 MiB to 4 GiB."""
     size = ((sectors - ALIGN) // 41 + ALIGN) * SECTOR
@@ -5072,7 +5127,7 @@ def card_choices(card, image):
     choices = []
     if card["settings"]:
         for place in free_pairs(card):
-            if not place["system"].get("internal") and not image.card_place_problem(place) \
+            if not place["system"].get("internal") and not image.card_place_problem(place, card["parts"]) \
                     and place["data"]["size"] >= 1 << 30:
                 choices.append({"kind": "free", "place": place})
                 break
@@ -5083,7 +5138,7 @@ def card_choices(card, image):
             if system:
                 choices.append({"kind": "add", "system": system, "data": room - system})
         for place in card_places(card):
-            if not place["system"].get("internal") and not image.card_place_problem(place):
+            if not place["system"].get("internal") and not image.card_place_problem(place, card["parts"]):
                 choices.append({"kind": "replace", "place": place, "warnings": place_warnings(card, place)})
     settings = card_settings_size(card["sectors"])
     room = (card["sectors"] - GPT_FIRST - GPT_RESERVED) * SECTOR - settings
@@ -5289,7 +5344,8 @@ def run_install_card(job, device, card, choice, image, title, pin_hash, language
     title: of the entry, None for card_title. An image with plinius-crypt asks at its first start whether
     to encrypt, as inside the phone (PHONE_CRYPT_MARK); if it knows a system on the data partition
     (image.in_data), the system goes there as rootfs.img, so that the encryption covers it, and the system
-    partition is left empty. then: the steps that follow it, for the list of steps (see Job.plan)."""
+    partition is left empty; on a free or replaced place it first gives all but CARD_SYSTEM_STUB to the data
+    partition (fit_place). then: the steps that follow it, for the list of steps (see Job.plan)."""
     access = device.access
     card = fresh_card(device, card)
     if image.problem:
@@ -5298,7 +5354,16 @@ def run_install_card(job, device, card, choice, image, title, pin_hash, language
     if problem:
         raise Failed(problem)
     kind, wipe = choice["kind"], choice["kind"] not in ("fresh", "add")
-    job.plan(card_steps(kind, image, wipe, pin_hash, language) + list(then))
+    fit = target = None
+    if image.in_data and kind in ("free", "replace"):
+        # Its system partition would only stay empty: all but a stub of it goes to the data partition
+        by_name = {p["name"]: p for p in card["parts"]}
+        target = {k: by_name.get((choice["place"].get(k) or {}).get("name")) for k in ("system", "data")}
+        fit = card_place_fit(target, card["parts"])
+    job.plan(card_steps(kind, image, wipe, pin_hash, language, bool(fit)) + list(then))
+    if fit:
+        fit_place(job, access, card, target, fit)
+        card = access.card()
     if kind == "fresh":
         setup_card(job, access, card, choice["settings"], choice["system"])
         card = access.card()
@@ -5324,7 +5389,7 @@ def run_install_card(job, device, card, choice, image, title, pin_hash, language
     else:
         raise Failed(_("That is not possible"))
     system, data = place["system"], place["data"]
-    problem = image.card_place_problem(place)
+    problem = image.card_place_problem(place, card["parts"])
     if problem:
         raise Failed(problem)
     title = title or card_title(card, place)
@@ -5416,12 +5481,13 @@ def card_system_partition(job, device, image, system, data, wipe, pin_hash, lang
     return done
 
 
-def card_steps(kind, image, wipe, pin_hash, language):
-    """The steps of run_install_card in the order it reports them, [(text, bytes)] (see Job.plan)."""
+def card_steps(kind, image, wipe, pin_hash, language, fit=False):
+    """The steps of run_install_card in the order it reports them, [(text, bytes)] (see Job.plan). fit: the
+    place is shaped anew first (fit_place)."""
     steps = []
     if kind == "fresh":
         steps.append((_("Setting up the memory card"), 0))
-    elif kind == "add":
+    elif kind == "add" or fit:
         steps.append((_("Changing the partition table"), 0))
     if image.in_data:
         steps.append((_("Emptying the data partition"), 0))

@@ -24,6 +24,11 @@
   <url type="homepage">https://github.com/misc-de/plinius-boot</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.37" date="2026-11-26">
+      <description>
+        <p>A system that goes to the data partition of the memory card no longer leaves the old system partition of its place lying idle: when it replaces a system or takes free partitions, the system partition keeps only 64 MiB and the rest goes to the data partition. Numbers and identities of both partitions stay, so the boot entries stay right.</p>
+      </description>
+    </release>
     <release version="0.36" date="2026-11-26">
       <description>
         <p>On the memory card an image whose kernel package allows it puts the system as rootfs.img on its data partition, as inside the phone, so that the encryption covers the whole system and not only the personal files. The kernel trial and fallback entries of a system no longer show as places of their own and leave the menu with it. While the phone starts into the rescue system, the page names the entry of the boot menu to choose as it is called on the card. Closing the window ends the Flatpak as well: its adb server no longer keeps it running.</p>

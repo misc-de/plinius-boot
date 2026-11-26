@@ -1046,6 +1046,50 @@ ok("an image with plinius-crypt on the card: its new data partition carries the 
 inside, inside_files = phone_image("plinius-inside", plinius=True, crypt=True, card_data=True)
 if not inside.in_data or plinius.in_data or crypt_card.in_data:
     fail("only an image with plinius-crypt and the kernel package's mark goes to the data partition")
+# On the place of the system before: its system partition would only stay empty, so all but the stub of it goes
+# to the data partition first; numbers and identities stay, the entry names the same partitions
+card, entries = read()
+old_place = entries[name]
+fit = app.card_place_fit(old_place, card["parts"])
+if not fit:
+    fail(f"the place {name} cannot be shaped anew: {[(p['name'], p['start'], p['sectors']) for p in card['parts']]}")
+system_number, data_number = old_place["system"]["number"], old_place["data"]["number"]
+identities = {n: guid(n) for n in (system_number, data_number)}
+data_end = old_place["data"]["start"] + old_place["data"]["sectors"]
+before = {n: boot_entry(n) for n in entries if n != name and entries[n].get("variant_of") != name}
+# The place on this small card is a few MiB short of the image with the usual minimum for data
+data_min, app.CARD_DATA_MIN = app.CARD_DATA_MIN, 8 << 20
+again = next((c for c in app.card_choices(card, inside) if c["kind"] == "replace" and c["place"]["file"] == name), None)
+if again is None:
+    fail(f"{name} is not offered for an image on its data partition: {inside.card_place_problem(old_place, card['parts'])} "
+         f"(image {inside.size}, Android {inside.android_size}, fit {fit})")
+if app.run_install_card(job(), device, card, again, inside, None, PIN, "de") != name:
+    fail("the place shaped anew gave another entry")
+app.CARD_DATA_MIN = data_min
+card, entries = read()
+entry_ = entries[name]
+if entry_["system"]["number"] != system_number or entry_["data"]["number"] != data_number \
+        or entry_["system"]["start"] != old_place["system"]["start"] or entry_["system"]["size"] != app.CARD_SYSTEM_STUB \
+        or entry_["data"]["start"] != fit[1] or entry_["data"]["start"] + entry_["data"]["sectors"] != data_end:
+    fail(f"the place after shaping it anew: {entry_['system']} {entry_['data']}")
+if any(guid(n) != identities[n] for n in identities):
+    fail("shaping the place anew changed the identity of its partitions")
+text = boot_entry(name)
+if f"datapart=/dev/{CARD}p{data_number}\n" not in text or "systempart=" in text or f"xpart {system_number}:{data_number}\n" not in text:
+    fail(f"the entry on the place shaped anew:\n{text}")
+names, request = card_data_files(entry_)
+if request != "fresh" or app.PHONE_ROOTFS not in names or app.PHONE_ANDROID not in names:
+    fail(f"the data partition of the place shaped anew: {names} {request!r}")
+if sh(f"m=$(mktemp -d); mount -t ext4 -o ro /dev/{entry_['system']['name']} \"$m\"; ls -A \"$m\"; umount \"$m\"; "
+      f"rmdir \"$m\"").split() != ["lost+found"]:
+    fail("the system partition of the place shaped anew is not empty")
+if any(boot_entry(n) != t for n, t in before.items()):
+    fail("shaping a place anew changed other entries")
+if app.card_place_fit(entry_, card["parts"]) is not None:
+    fail("a place shaped anew would be shaped again")
+ok("instead of a system, an image on its data partition: the system partition shrinks to the stub, the data "
+   "partition grows to it and keeps its end, numbers and identities stay, the other entries untouched")
+
 # Set up anew (the test after this one empties the card anyway): a small empty system partition, the rest data
 anew = next((c for c in app.card_choices(card, inside) if c["kind"] == "fresh"), None)
 if anew is None or anew["system"] != app.CARD_SYSTEM_STUB:

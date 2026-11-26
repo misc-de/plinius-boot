@@ -73,7 +73,9 @@ the phone: the ramdisk asks once at the first start whether to encrypt it. If it
 after a system that names only its data partition (`usr/lib/plinius/kernel/card-data-system`), the system
 goes there as `rootfs.img` with the Android image beside it, as inside the phone, so that the encryption
 covers the whole system and not only the personal files; the entry names only `datapart=`, and the system
-partition of the place stays empty (64 MiB on a new place, which keeps the pair for `xpart`). Its entry is
+partition of the place stays empty and keeps only 64 MiB, which keeps the pair for `xpart`: on a new place
+from the start, and on a free or replaced place whose two partitions lie next to each other the rest of the
+system partition goes to the data partition before anything is written (`fit_place`). Its entry is
 written last, then `db/last_index`, so that the menu starts Plinius by itself. The bootloader counts the entries the way lwext4
 goes through the directory as stored, and Linux lists a directory with a hash index in another order, so the
 app reads the directory from the partition itself (`entry_order`). Then the original `init_boot` goes back and
